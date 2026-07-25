@@ -63,19 +63,51 @@ export function subscribeTracking(fn: (s: { enabled: boolean; current: TrackingC
 let ctx: AudioContext | null = null;
 let timer: number | null = null;
 let firing = false;
+let gestureHooked = false;
 
-function ensureCtx(): AudioContext {
-  if (!ctx) {
-    const Ctor = (window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext }).AudioContext
-      ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    ctx = new (Ctor as typeof AudioContext)();
-  }
-  if (ctx.state === "suspended") void ctx.resume().catch(() => undefined);
-  return ctx;
+// Chromium refuses to start an AudioContext before the user has interacted
+// with the page: it is created "suspended" and resume() rejects. The siren
+// fires at BOOT, long before any gesture — so without this, the very thing
+// that's supposed to be impossible to ignore was silently doing nothing.
+// Arm a one-shot listener that resumes on the first real interaction and
+// immediately fires the blast the user should already have heard.
+function hookFirstGesture() {
+  if (gestureHooked) return;
+  gestureHooked = true;
+  const wake = () => {
+    if (ctx && ctx.state === "suspended") {
+      void ctx.resume().then(() => { if (firing) blast(); }).catch(() => undefined);
+    }
+    window.removeEventListener("pointerdown", wake);
+    window.removeEventListener("keydown", wake);
+  };
+  window.addEventListener("pointerdown", wake);
+  window.addEventListener("keydown", wake);
+}
+
+// Returns null when audio genuinely can't play yet — callers skip silently
+// rather than throwing on every 4s tick.
+function ensureCtx(): AudioContext | null {
+  try {
+    if (!ctx) {
+      const Ctor = (window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext }).AudioContext
+        ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!Ctor) return null;
+      ctx = new (Ctor as typeof AudioContext)();
+    }
+    if (ctx.state === "suspended") {
+      void ctx.resume().catch(() => undefined);
+      hookFirstGesture();
+      // Still suspended right now — nothing audible would come out.
+      if (ctx.state === "suspended") return null;
+    }
+    return ctx;
+  } catch { return null; }
 }
 
 function blast() {
   const c = ensureCtx();
+  if (!c) return;
   const now = c.currentTime;
   // Up-sweep then down-sweep, classic air-raid shape.
   const osc = c.createOscillator();

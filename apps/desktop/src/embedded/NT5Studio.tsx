@@ -9,6 +9,7 @@
 // any saved broadcast back as a real video reel.
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { NT } from "./nt5/nt5theme";
 
 type ClipKind = "pexels" | "local" | "scene" | "title";
 
@@ -160,11 +161,11 @@ export function NT5Studio() {
   const totalDur = active?.clips.reduce((s, c) => s + c.duration, 0) || 0;
 
   return (
-    <div className="stage" style={{ background: "#06060d", display: "flex", flexDirection: "column" }}>
+    <div className="stage nt5-shell" style={{ background: NT.bg, display: "flex", flexDirection: "column" }}>
       {/* Header strip with broadcast picker + actions */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", borderBottom: "1px solid rgba(217,70,239,0.35)", background: "linear-gradient(90deg, #0a0820, #06061a)" }}>
-        <span className="mono glow-text" style={{ fontSize: 13, letterSpacing: 2, textTransform: "uppercase" }}>NT5 STUDIO</span>
-        <span className="mono" style={{ fontSize: 10, color: "var(--mute)" }}>{active ? `${active.clips.length} clip${active.clips.length === 1 ? "" : "s"} · ${totalDur.toFixed(1)}s` : "no broadcast loaded"}</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderBottom: `1px solid ${NT.border}`, background: NT.bg2 }}>
+        <span className="nt5-kicker" style={{ fontSize: 11, color: NT.ink }}>NT5 BACKSTAGE</span>
+        <span style={{ fontFamily: NT.fontM, fontSize: 10, color: NT.ink2 }}>{active ? `${active.clips.length} clip${active.clips.length === 1 ? "" : "s"} · ${totalDur.toFixed(1)}s` : "no broadcast loaded"}</span>
         <div style={{ flex: 1 }} />
         {active && (
           <input value={active.name} onChange={(e) => patchActive({ name: e.target.value })} style={inp} />
@@ -173,9 +174,9 @@ export function NT5Studio() {
           <option value="">— pick a broadcast —</option>
           {broadcasts.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
         </select>
-        <button className="btn" onClick={newBroadcast}>+ New</button>
-        {active && <button className="btn" onClick={() => deleteBroadcast(active.id)}>Delete</button>}
-        <button className="btn" onClick={playing ? stop : play} disabled={!active || active.clips.length === 0} style={playing ? { color: "var(--orange)" } : undefined}>
+        <button className="nt5-btn" onClick={newBroadcast}>+ New</button>
+        {active && <button className="nt5-btn" onClick={() => deleteBroadcast(active.id)}>Delete</button>}
+        <button className="nt5-btn" onClick={playing ? stop : play} disabled={!active || active.clips.length === 0} style={playing ? { color: "var(--orange)" } : undefined}>
           {playing ? "■ Stop" : "▶ Play reel"}
         </button>
       </div>
@@ -188,7 +189,7 @@ export function NT5Studio() {
           <SubHead>Pexels stock video</SubHead>
           <div style={{ display: "flex", gap: 4 }}>
             <input value={pexelsQ} onChange={(e) => setPexelsQ(e.target.value)} placeholder="e.g. solar flare, city night" style={inp} onKeyDown={(e) => { if (e.key === "Enter") void searchPexels(); }} />
-            <button className="btn" onClick={() => void searchPexels()} disabled={pexelsBusy}>{pexelsBusy ? "…" : "Find"}</button>
+            <button className="nt5-btn" onClick={() => void searchPexels()} disabled={pexelsBusy}>{pexelsBusy ? "…" : "Find"}</button>
           </div>
           {pexelsErr && <div style={{ fontSize: 10, color: "var(--mute)", marginTop: 4 }}>{pexelsErr} — connect Pexels in the Control Panel.</div>}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, marginTop: 6 }}>
@@ -215,11 +216,11 @@ export function NT5Studio() {
           {scenes.length === 0 ? (
             <div style={{ fontSize: 10, color: "var(--mute)" }}>Save a scene in DigitalBlueprint to use it as a 3D backdrop.</div>
           ) : scenes.map((s) => (
-            <button key={s.id} className="btn" style={{ width: "100%", marginBottom: 4, textAlign: "left", padding: "6px 8px", fontSize: 11 }} onClick={() => addClip({ kind: "scene", src: s.id, duration: 5, effect: "kenburns" })}>{s.name}</button>
+            <button key={s.id} className="nt5-btn" style={{ width: "100%", marginBottom: 4, textAlign: "left", padding: "6px 8px", fontSize: 11 }} onClick={() => addClip({ kind: "scene", src: s.id, duration: 5, effect: "kenburns" })}>{s.name}</button>
           ))}
 
           <SubHead>Title card</SubHead>
-          <button className="btn" style={{ width: "100%" }} onClick={() => addClip({ kind: "title", src: "TITLE", duration: 3, overlay: "BREAKING — NT5", effect: "none" })}>+ Add title card</button>
+          <button className="nt5-btn" style={{ width: "100%" }} onClick={() => addClip({ kind: "title", src: "TITLE", duration: 3, overlay: "BREAKING — NT5", effect: "none" })}>+ Add title card</button>
         </div>
 
         {/* CENTER — preview canvas */}
@@ -257,7 +258,7 @@ export function NT5Studio() {
                     <option value="grade-cool">cool grade</option>
                   </select>
                 </Field>
-                <button className="btn" onClick={() => removeClip(c.id)} style={{ marginTop: 10 }}>Remove clip</button>
+                <button className="nt5-btn" onClick={() => removeClip(c.id)} style={{ marginTop: 10 }}>Remove clip</button>
               </div>
             );
           })()}
@@ -289,16 +290,16 @@ function PreviewStage({ clip, videoRef }: { clip: StudioClip | null; videoRef: R
         </div>
       )}
       {clip.kind === "title" && (
-        <div className={fxClass} style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, #1a0820 0%, #06061a 70%)" }} />
+        <div className={fxClass} style={{ position: "absolute", inset: 0, background: `linear-gradient(135deg, ${NT.bg4} 0%, ${NT.bg} 70%)` }} />
       )}
       {clip.effect === "vignette" && <div style={{ position: "absolute", inset: 0, boxShadow: "inset 0 0 200px 60px rgba(0,0,0,0.75)" }} />}
       {clip.effect === "glitch" && <div className="fx-glitch-overlay" style={{ position: "absolute", inset: 0, pointerEvents: "none" }} />}
       {clip.overlay && (
         <div style={{
           position: "absolute", left: 24, bottom: 30, padding: "10px 16px",
-          background: "linear-gradient(90deg, rgba(217,70,239,0.92), rgba(124,58,237,0.85))",
-          borderLeft: "4px solid #22d3ee", color: "#fff",
-          fontFamily: "'Orbitron','Space Grotesk',sans-serif", fontSize: 22, fontWeight: 800, letterSpacing: 2,
+          background: "rgba(12,9,24,0.92)",
+          borderLeft: `4px solid ${NT.live}`, color: "#fff",
+          fontFamily: NT.fontD, fontSize: 22, fontWeight: 800, letterSpacing: 2,
           textShadow: "0 2px 6px rgba(0,0,0,0.6)", maxWidth: "70%",
         }}>{clip.overlay}</div>
       )}
@@ -311,8 +312,8 @@ function Timeline({ clips, selected, playIdx, onSelect, onMove, onRemove }: {
   onSelect: (id: string) => void; onMove: (id: string, dir: -1 | 1) => void; onRemove: (id: string) => void;
 }) {
   return (
-    <div style={{ borderTop: "1px solid var(--line)", background: "#0a0a14", padding: 10, minHeight: 130, maxHeight: 200, overflowX: "auto", overflowY: "hidden" }}>
-      <div className="mono" style={{ fontSize: 10, color: "var(--mute)", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 6 }}>Timeline</div>
+    <div style={{ borderTop: `1px solid ${NT.border}`, background: NT.bg2, padding: 10, minHeight: 130, maxHeight: 200, overflowX: "auto", overflowY: "hidden" }}>
+      <div className="nt5-kicker" style={{ fontSize: 9.5, color: NT.ink2, marginBottom: 6 }}>Timeline</div>
       {clips.length === 0 ? (
         <div style={{ color: "var(--mute)", fontSize: 11, paddingTop: 16 }}>Empty. Add clips from the Sources panel.</div>
       ) : (
@@ -330,9 +331,9 @@ function Timeline({ clips, selected, playIdx, onSelect, onMove, onRemove }: {
               <div style={{ position: "absolute", right: 4, top: 4, padding: "1px 5px", background: "rgba(0,0,0,0.75)", fontSize: 9, color: "#fff" }}>{c.duration.toFixed(1)}s</div>
               {c.overlay && <div style={{ position: "absolute", left: 4, bottom: 22, fontSize: 9, padding: "1px 4px", background: "rgba(217,70,239,0.85)", color: "#fff", maxWidth: "calc(100% - 8px)", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>{c.overlay}</div>}
               <div style={{ position: "absolute", left: 4, bottom: 4, display: "flex", gap: 2 }}>
-                <button className="btn" onClick={(e) => { e.stopPropagation(); onMove(c.id, -1); }} style={{ padding: "1px 5px", fontSize: 9 }}>‹</button>
-                <button className="btn" onClick={(e) => { e.stopPropagation(); onMove(c.id, 1); }} style={{ padding: "1px 5px", fontSize: 9 }}>›</button>
-                <button className="btn" onClick={(e) => { e.stopPropagation(); onRemove(c.id); }} style={{ padding: "1px 5px", fontSize: 9 }}>✕</button>
+                <button className="nt5-btn" onClick={(e) => { e.stopPropagation(); onMove(c.id, -1); }} style={{ padding: "1px 5px", fontSize: 9 }}>‹</button>
+                <button className="nt5-btn" onClick={(e) => { e.stopPropagation(); onMove(c.id, 1); }} style={{ padding: "1px 5px", fontSize: 9 }}>›</button>
+                <button className="nt5-btn" onClick={(e) => { e.stopPropagation(); onRemove(c.id); }} style={{ padding: "1px 5px", fontSize: 9 }}>✕</button>
               </div>
             </div>
           ))}
@@ -358,8 +359,8 @@ function Field({ l, children }: { l: string; children: React.ReactNode }) {
 }
 
 const inp: React.CSSProperties = {
-  background: "rgba(0,0,0,0.5)", border: "1px solid var(--line)", borderRadius: 6,
-  color: "var(--ink)", padding: "5px 8px", fontSize: 12, fontFamily: "ui-monospace, monospace", outline: "none", width: "100%",
+  background: NT.bg, border: `1px solid ${NT.border}`, borderRadius: 6,
+  color: NT.ink, padding: "6px 8px", fontSize: 12, fontFamily: NT.fontM, outline: "none", width: "100%",
 };
 
 const STUDIO_CSS = `
