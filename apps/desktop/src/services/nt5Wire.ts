@@ -1,8 +1,7 @@
 // The in-app NT5 wire. Generates fresh news items in the anchor desk's voices
-// using the bundled house model — runs on a timer as long as the app is open,
-// persists to localStorage, and posts new items into any open NT5 iframe so
-// the bundled site stays alive too. Subscribers (the FloatingInfo overlay,
-// the ticker) get notified on every new batch.
+// using the bundled house model — runs on a timer as long as the app is open
+// and persists to localStorage. Subscribers (the front page, the broadcast
+// queue, the ambient ticker) get notified on every new batch.
 //
 // Honest scope: "while the app is open." True 24/7 across system reboots
 // needs a background service / tray — not in this slice.
@@ -313,9 +312,6 @@ export async function runWireOnce(count = 3): Promise<{ ok: boolean; added: Wire
     const merged = [...added, ...existing].slice(0, 80);
     writeAll(merged);
     subs.forEach((fn) => fn(merged));
-    document.querySelectorAll("iframe").forEach((f) => {
-      try { f.contentWindow?.postMessage({ type: "nt5-add-articles", articles: added }, "*"); } catch { /* ignore */ }
-    });
   }
   return { ok: added.length > 0, added, error: added.length === 0 ? lastError : undefined };
 }
@@ -408,9 +404,6 @@ export function fileExternalArticle(input: ExternalArticleInput): { ok: boolean;
   const merged = [article, ...existing].slice(0, 120);
   writeAll(merged);
   subs.forEach((fn) => fn(merged));
-  document.querySelectorAll("iframe").forEach((f) => {
-    try { f.contentWindow?.postMessage({ type: "nt5-add-articles", articles: [article] }, "*"); } catch { /* ignore */ }
-  });
   return { ok: true, id };
 }
 
@@ -465,9 +458,6 @@ export async function runRealWorldOnce(maxPerTopic = 3): Promise<{ ok: boolean; 
     const merged = [...added, ...existing].slice(0, 120);
     writeAll(merged);
     subs.forEach((fn) => fn(readAll()));
-    document.querySelectorAll("iframe").forEach((f) => {
-      try { f.contentWindow?.postMessage({ type: "nt5-add-articles", articles: added }, "*"); } catch { /* ignore */ }
-    });
   }
   return { ok: true, added };
 }

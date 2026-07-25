@@ -23,6 +23,10 @@ nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
   artifactName: "MoreMe-Setup.${ext}"
+  # Force-closes a running MoreMe before replacing files — otherwise Windows
+  # locks MoreMe.exe and the install silently no-ops behind a "Can't close
+  # MoreMe / Retry" prompt. See build/installer.nsh.
+  include: build/installer.nsh
 mac:
   target:
     - target: dmg
