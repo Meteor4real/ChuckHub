@@ -195,6 +195,8 @@ body.reduce-motion .moreme-embed .mm-card-mint { animation: none; }
 .moreme-embed .mm-btn { font-family: "Inter", sans-serif; font-size: 12px; padding: 8px 14px; border-radius: 10px; border: 1px solid ${T.line}; background: ${T.sunk}; color: ${T.ink}; cursor: pointer; transition: all .15s; }
 .moreme-embed .mm-btn:hover { border-color: ${T.mint}; }
 .moreme-embed .mm-btn-primary { background: ${T.mint}; border-color: ${T.mint}; color: ${T.bg}; font-weight: 600; }
+.moreme-embed .mm-btn-secondary { background: transparent; border-color: ${T.cool}; color: ${T.cool}; }
+.moreme-embed .mm-btn-secondary:hover { background: ${T.cool}22; }
 .moreme-embed .mm-btn-danger { background: transparent; border-color: ${T.warn}; color: ${T.warn}; }
 .moreme-embed .mm-pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .moreme-embed input, .moreme-embed select, .moreme-embed textarea { background: ${T.bg}; border: 1px solid ${T.line}; border-radius: 10px; color: ${T.ink}; padding: 8px 10px; font: inherit; outline: none; }
@@ -225,9 +227,9 @@ body.reduce-motion .moreme-embed .mm-card-mint { animation: none; }
 .moreme-embed .mm-seg button.on { background: ${T.mint}; color: ${T.bg}; font-weight: 700; }
 .moreme-embed .mm-conflict { border-color: ${T.warn} !important; box-shadow: 0 0 0 1px ${T.warn}55; }
 .moreme-embed .mm-ach { display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: 12px; border: 1px solid ${T.line}; background: ${T.sunk}; }
-.moreme-embed .mm-ach.unlocked { border-color: ${T.mint}; background: ${T.mint}0d; }
+.moreme-embed .mm-ach.unlocked { border-color: var(--c, ${T.mint}); background: var(--c, ${T.mint})0d; }
 .moreme-embed .mm-medal { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; font-size: 18px; flex: none; background: ${T.bg}; border: 1px solid ${T.line}; color: ${T.inkTiny}; }
-.moreme-embed .mm-ach.unlocked .mm-medal { background: ${T.mint}; color: ${T.bg}; border-color: ${T.mint}; }
+.moreme-embed .mm-ach.unlocked .mm-medal { background: var(--c, ${T.mint}); color: ${T.bg}; border-color: var(--c, ${T.mint}); }
 .moreme-embed .scrolly { overflow: auto; }
 .moreme-embed .scrolly::-webkit-scrollbar { width: 8px; height: 8px; }
 .moreme-embed .scrolly::-webkit-scrollbar-thumb { background: ${T.line}; border-radius: 4px; }

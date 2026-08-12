@@ -18,7 +18,7 @@ export function InsightsView({ s }: { s: State }) {
   const hasRoutineDelta = ins.routineDays > 0 && ins.noRoutineDays > 0;
 
   return (
-    <div style={{ maxWidth: 900, margin: "0 auto" }}>
+    <div style={{ maxWidth: 1300, margin: "0 auto" }}>
       <div className="serif" style={{ fontSize: 22, marginBottom: 14 }}>Insights</div>
 
       {/* Top KPI strip */}

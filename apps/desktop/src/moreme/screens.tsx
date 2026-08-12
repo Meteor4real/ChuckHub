@@ -124,7 +124,7 @@ export function ScreensView({ s }: { s: State }) {
   const print = makePrintHandler(() => printRef.current);
 
   return (
-    <div ref={printRef} style={{ maxWidth: 920, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
+    <div ref={printRef} style={{ maxWidth: 1300, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={{ display: "flex", alignItems: "flex-end", gap: 12 }}>
         <div style={{ flex: 1 }}>
           <div className="serif" style={{ fontSize: 22, lineHeight: 1 }}>Screens</div>
