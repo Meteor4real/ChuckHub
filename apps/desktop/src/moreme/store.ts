@@ -5,7 +5,7 @@
 import type {
   CalEvent, Category, Class, ClassPeriod, CustomAchievement, CustomTheme,
   Customization, DistractionLog, DynamicTab, Goal, Goals, InboxItem, LevelReward,
-  Note, Person, Project, ProjectKind, Replacement, School, SchoolPath, ScreenCategory,
+  Note, Person, Project, ProjectKind, Recurrence, Replacement, School, SchoolPath, ScreenCategory,
   ScreenSession, ScreenSettings, State, StatSource, UrgeLog, UrgeResolution,
   Venture, VentureStatus, Widget,
 } from "./types";
@@ -525,6 +525,108 @@ export function clearClassPeriods(classId: string) {
 }
 export function setClassPeriod(classId: string, period: ClassPeriod | undefined) {
   updateState((s) => ({ ...s, classes: s.classes.map((c) => (c.id === classId ? { ...c, period } : c)) }));
+}
+
+// ── routine templates ─────────────────────────────────────────────────────
+// Real routine content, carried over from the original More_Me site
+// (js/routines.js) into actual CalEvents instead of a static reference page.
+// Nothing is auto-seeded — these only land on the calendar when you apply a
+// template yourself, same as generateClassPeriods. "Bounded" templates
+// (beach / anywhere) run for a date range you pick, meant for an actual trip
+// — everything else runs indefinitely until you remove it, same as any
+// other recurring routine.
+export type RoutineTemplateId = "weekday" | "weekend" | "beach" | "anywhere";
+type RoutineTemplateItem = {
+  slug: string;
+  title: string;
+  category: Category;
+  start: string;
+  end: string;
+  recurrence: Recurrence;
+  checklist: string[];
+};
+export const ROUTINE_TEMPLATES: Record<RoutineTemplateId, { label: string; blurb: string; bounded: boolean; items: RoutineTemplateItem[] }> = {
+  weekday: {
+    label: "Weekday routine",
+    blurb: "Morning + night anchors, plus a 3-day/week training split (Mon strength & basketball, Wed jog, Fri mixed). Runs indefinitely until you remove it.",
+    bounded: false,
+    items: [
+      { slug: "morning", title: "Morning routine", category: "routine", start: "06:30", end: "06:40", recurrence: { kind: "weekdays" },
+        checklist: ["Drink water", "Stretch (2–3 min)", "Quick movement — push-ups, squats, or a walk", "Set top 3 goals", "Deep breaths"] },
+      { slug: "mon-strength", title: "Strength + Basketball", category: "fitness", start: "16:00", end: "17:00", recurrence: { kind: "weekly", days: [1] },
+        checklist: ["Push-ups 3×8–12", "Squats 3×12–15", "Plank 3×20–30s", "Lunges 2×10 each leg", "Basketball"] },
+      { slug: "wed-cardio", title: "Jog / cardio", category: "fitness", start: "16:00", end: "16:30", recurrence: { kind: "weekly", days: [3] },
+        checklist: ["10–20 min jog or fast walk", "or 30s run / 30s walk ×10"] },
+      { slug: "fri-mixed", title: "Mixed / any sport", category: "fitness", start: "16:00", end: "17:00", recurrence: { kind: "weekly", days: [5] },
+        checklist: ["Jumping jacks 2×30", "Mountain climbers 2×20", "Sit-ups 3×10–15", "Any sport"] },
+      { slug: "night", title: "Night routine", category: "routine", start: "21:40", end: "22:00", recurrence: { kind: "daily" },
+        checklist: ["Light stretching or slow breathing", "Set clothes out for tomorrow", "Think of 1 win from the day", "Lights out at 10:00 MAX", "Screens and loud things off"] },
+    ],
+  },
+  weekend: {
+    label: "Weekend routine",
+    blurb: "Saturday strength circuit + sports block, Sunday light movement + weekly planning. Runs indefinitely until you remove it.",
+    bounded: false,
+    items: [
+      { slug: "sat-morning", title: "Saturday strength + sports", category: "fitness", start: "09:00", end: "11:00", recurrence: { kind: "weekly", days: [6] },
+        checklist: ["Warm-up 3 min", "Push-ups 3×10–15", "Squats 3×15–20", "Plank 3×30–45s", "Mountain climbers 2×20", "Sports 1–2 hours — basketball, soccer, running, biking, tennis…"] },
+      { slug: "sun-reset", title: "Sunday reset + planning", category: "personal", start: "16:00", end: "16:30", recurrence: { kind: "weekly", days: [0] },
+        checklist: ["Light movement — walk, stretch, easy jog", "Weekly planning — goals for the week, school calendar", "Optional workout — short run / bodyweight / basketball"] },
+    ],
+  },
+  beach: {
+    label: "Beach routine",
+    blurb: "Morning beach walk/jog, sunset walk. Runs for the date range you pick — this one's for an actual trip.",
+    bounded: true,
+    items: [
+      { slug: "morning", title: "Beach walk or jog", category: "fitness", start: "08:00", end: "08:30", recurrence: { kind: "daily" }, checklist: ["Beach walk or jog", "Stretching"] },
+      { slug: "evening", title: "Sunset walk", category: "fitness", start: "19:30", end: "20:00", recurrence: { kind: "daily" }, checklist: ["Sunset walk"] },
+    ],
+  },
+  anywhere: {
+    label: "Anywhere / travel routine",
+    blurb: "A universal travel workout + explore-on-foot habit, wherever you are. Runs for the date range you pick.",
+    bounded: true,
+    items: [
+      { slug: "morning", title: "Universal travel workout", category: "fitness", start: "08:00", end: "08:20", recurrence: { kind: "daily" },
+        checklist: ["15 squats", "10 push-ups", "20 jumping jacks", "30-second plank", "Repeat 2–3 times"] },
+      { slug: "explore", title: "Walk everywhere", category: "personal", start: "12:00", end: "12:30", recurrence: { kind: "daily" },
+        checklist: ["Explore the area on foot", "Stairs, parks, hotel gym if there is one"] },
+    ],
+  },
+};
+
+const routineTemplateEventId = (tmpl: RoutineTemplateId, slug: string) => `tmpl-${tmpl}-${slug}`;
+
+// Idempotent, same shape as generateClassPeriods: re-applying updates the
+// same events (and keeps whatever checklist progress you'd already
+// checked off) instead of stacking duplicates.
+export function applyRoutineTemplate(tmpl: RoutineTemplateId, startDate: string, untilDate?: string) {
+  const def = ROUTINE_TEMPLATES[tmpl];
+  updateState((s) => {
+    let events = s.events;
+    for (const item of def.items) {
+      const id = routineTemplateEventId(tmpl, item.slug);
+      const existing = events.find((e) => e.id === id);
+      const ev: CalEvent = {
+        id, title: item.title, category: item.category, date: startDate,
+        until: def.bounded ? untilDate : undefined,
+        allDay: false, start: item.start, end: item.end,
+        people: [], checklist: existing?.checklist ?? item.checklist.map((t) => ({ id: uid(), text: t, done: false })),
+        priority: "normal", visibility: "visible", recurrence: item.recurrence,
+        reminders: [], xp: item.category === "fitness" ? 25 : 15,
+        status: "planned", createdAt: existing?.createdAt ?? Date.now(),
+      };
+      events = existing ? events.map((e) => (e.id === id ? ev : e)) : [...events, ev];
+    }
+    return { ...s, events };
+  });
+}
+export function removeRoutineTemplate(tmpl: RoutineTemplateId) {
+  updateState((s) => ({ ...s, events: s.events.filter((e) => !e.id.startsWith(`tmpl-${tmpl}-`)) }));
+}
+export function routineTemplateApplied(tmpl: RoutineTemplateId, s: State): boolean {
+  return s.events.some((e) => e.id.startsWith(`tmpl-${tmpl}-`));
 }
 
 // ── notes / plans ─────────────────────────────────────────────────────────

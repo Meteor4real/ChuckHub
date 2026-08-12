@@ -33,6 +33,8 @@ import { ScreensView, ScreenCardToday, LogSessionModal, UrgeModal } from "./scre
 import { isTabHidden, rankFor, tabLabel } from "./store";
 import { WidgetView } from "./widgets";
 import { generateClassPeriods, clearClassPeriods, setClassPeriod } from "./store";
+import { ROUTINE_TEMPLATES, applyRoutineTemplate, removeRoutineTemplate, routineTemplateApplied, type RoutineTemplateId } from "./store";
+import { addDays } from "./store";
 import { pullOnce, pushOnce, subscribeSync, type SyncStatus } from "./sync";
 import { THEME_META, currentThemeName, heroImageUrl, setTheme, subscribeTheme, type ThemeName } from "./styles";
 import { quoteOfDay } from "./quotes";
@@ -990,10 +992,73 @@ function ChecklistEditor({ items, onChange }: { items: ChecklistItem[]; onChange
 }
 
 // ── Projects + Circle ─────────────────────────────────────────────────────
+// ── Routine templates — the real weekday/weekend/beach/travel schedule
+// content, ported off the original site as opt-in one-click calendar
+// generators instead of a static reference page. Nothing here is auto-
+// seeded: it only lands on the calendar when you apply it, same as class
+// periods.
+const ROUTINE_TEMPLATE_ORDER: RoutineTemplateId[] = ["weekday", "weekend", "beach", "anywhere"];
+function RoutineTemplatesSection({ s }: { s: State }) {
+  return (
+    <div style={{ marginBottom: 4 }}>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 4 }}>
+        <div className="serif" style={{ fontSize: 20 }}>Routines</div>
+        <div style={{ fontSize: 11, color: T.inkTiny }}>Real schedules — apply one, it lands on your calendar</div>
+      </div>
+      <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", alignItems: "start", marginBottom: 4 }}>
+        {ROUTINE_TEMPLATE_ORDER.map((id) => <RoutineTemplateCard key={id} id={id} s={s} />)}
+      </div>
+    </div>
+  );
+}
+function RoutineTemplateCard({ id, s }: { id: RoutineTemplateId; s: State }) {
+  const def = ROUTINE_TEMPLATES[id];
+  const applied = routineTemplateApplied(id, s);
+  const [start, setStart] = useState(today());
+  const [until, setUntil] = useState(addDays(today(), 7));
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mm-card" style={{ padding: 14, borderColor: applied ? T.mint : T.line }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+        <b style={{ fontSize: 14, flex: 1 }}>{def.label}</b>
+        {applied && <span className="mm-pill" style={{ background: T.mint, color: T.bg }}>On calendar</span>}
+      </div>
+      <div style={{ fontSize: 11, color: T.inkSoft, lineHeight: 1.5, marginBottom: 8 }}>{def.blurb}</div>
+      <button className="mm-btn" style={{ marginBottom: 8 }} onClick={() => setOpen((o) => !o)}>{open ? "Hide" : "Show"} what's in it</button>
+      {open && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
+          {def.items.map((it) => (
+            <div key={it.slug} style={{ fontSize: 11, color: T.inkSoft }}>
+              <b style={{ color: T.ink }}>{it.title}</b> · {it.start}–{it.end}
+              <div style={{ color: T.inkTiny, marginTop: 1 }}>{it.checklist.join(" · ")}</div>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="mm-row" style={{ alignItems: "flex-end" }}>
+        <Field label={def.bounded ? "Trip starts" : "Starting"}>
+          <input type="date" value={start} onChange={(e) => setStart(e.target.value)} style={{ width: 130 }} />
+        </Field>
+        {def.bounded && (
+          <Field label="Trip ends">
+            <input type="date" value={until} onChange={(e) => setUntil(e.target.value)} style={{ width: 130 }} />
+          </Field>
+        )}
+        <button className="mm-btn mm-btn-primary" onClick={() => applyRoutineTemplate(id, start, def.bounded ? until : undefined)}>
+          {applied ? "Update" : "Apply"}
+        </button>
+        {applied && <button className="mm-btn mm-btn-danger" onClick={() => removeRoutineTemplate(id)}>Remove</button>}
+      </div>
+    </div>
+  );
+}
+
 function ProjectsView({ s }: { s: State }) {
   return (
     <div style={{ display: "grid", gap: 16, gridTemplateColumns: "minmax(0,1fr) 300px", alignItems: "start" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <RoutineTemplatesSection s={s} />
+
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div className="serif" style={{ fontSize: 20 }}>Projects & Ventures</div>
           <button className="mm-btn mm-btn-primary" onClick={() => upsertProject({ ...blankProject(), name: "New project" })}>+ Project</button>
