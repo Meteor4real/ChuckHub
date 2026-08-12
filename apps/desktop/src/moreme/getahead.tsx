@@ -68,7 +68,7 @@ export function GetAheadView({ s, onEdit }: { s: State; onEdit: (e: CalEvent) =>
 
       {rows.length === 0 && <Empty>Add some classes in Projects → Classes to start grouping school work.</Empty>}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", alignItems: "start" }}>
         {rows.map((r) => (
           <div key={r.classId ?? "_"} className="mm-card" style={{ padding: 14, borderColor: r.pct >= 100 ? T.mint : T.line }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>

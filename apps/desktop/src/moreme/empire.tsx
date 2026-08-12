@@ -40,18 +40,18 @@ export function EmpireView({ s }: { s: State }) {
         </div>
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {s.ventures.length === 0 ? (
-          <EmptyState
-            title="No ventures yet"
-            line="The Empire tracks every business you run — status, monthly revenue, next action. Add the first one and the dashboard starts filling in."
-            ctaLabel="Add your first venture"
-            onCta={() => upsertVenture({ ...blankVenture(), name: "" })}
-          />
-        ) : (
-          s.ventures.map((v) => <VentureCard key={v.id} v={v} />)
-        )}
-      </div>
+      {s.ventures.length === 0 ? (
+        <EmptyState
+          title="No ventures yet"
+          line="The Empire tracks every business you run — status, monthly revenue, next action. Add the first one and the dashboard starts filling in."
+          ctaLabel="Add your first venture"
+          onCta={() => upsertVenture({ ...blankVenture(), name: "" })}
+        />
+      ) : (
+        <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", alignItems: "start" }}>
+          {s.ventures.map((v) => <VentureCard key={v.id} v={v} />)}
+        </div>
+      )}
     </div>
   );
 }

@@ -980,7 +980,9 @@ function ProjectsView({ s }: { s: State }) {
           <button className="mm-btn mm-btn-primary" onClick={() => upsertProject({ ...blankProject(), name: "New project" })}>+ Project</button>
         </div>
         {s.projects.length === 0 && <Empty>No projects yet.</Empty>}
-        {s.projects.map((p) => <ProjectCard key={p.id} p={p} />)}
+        <div style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", alignItems: "start" }}>
+          {s.projects.map((p) => <ProjectCard key={p.id} p={p} />)}
+        </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <SchoolCard s={s} />
@@ -1302,7 +1304,7 @@ function AchievementsView({ s }: { s: State }) {
 function LevelsView({ s }: { s: State }) {
   const lv = levelInfo(s);
   return (
-    <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+    <div style={{ maxWidth: 1300, margin: "0 auto" }}>
       <div className="serif" style={{ fontSize: 20, marginBottom: 6 }}>Level Track</div>
       <div style={{ fontSize: 12, color: T.inkSoft, marginBottom: 16 }}>
         20 levels on a steep curve — each level costs more than the last. Set a reward you'll actually give yourself at each one.
