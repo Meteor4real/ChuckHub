@@ -37,22 +37,30 @@ const TAB_DEFAULTS: { id: string; label: string }[] = [
 
 export function CustomizeView({ s }: { s: State }) {
   return (
-    <div style={{ maxWidth: 1300, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
-      <div>
+    <div style={{ maxWidth: 1400, margin: "0 auto" }}>
+      <div style={{ marginBottom: 16 }}>
         <div className="serif" style={{ fontSize: 22, lineHeight: 1 }}>Customize</div>
         <div style={{ fontSize: 11, color: T.inkTiny, letterSpacing: ".08em", textTransform: "uppercase", marginTop: 4 }}>
           Make MoreMe yours
         </div>
       </div>
-      <TabsCard s={s} />
-      <PagesAndWidgetsCard s={s} />
-      <RanksCard s={s} />
-      <CustomAchievementsCard s={s} />
-      <QuotesCard s={s} />
-      <CustomThemeCard s={s} />
-      <FeedbackCard />
-      <AiSwitchCard />
-      <div style={{ fontSize: 11, color: T.inkTiny, fontStyle: "italic", padding: "6px 0 20px" }}>
+      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-start" }}>
+        {/* Main column — the builder-heavy cards. */}
+        <div style={{ flex: "3 1 620px", minWidth: 320, display: "flex", flexDirection: "column", gap: 16 }}>
+          <PagesAndWidgetsCard s={s} />
+          <CustomAchievementsCard s={s} />
+          <RanksCard s={s} />
+          <CustomThemeCard s={s} />
+        </div>
+        {/* Side rail — quick toggles and short lists. */}
+        <div style={{ flex: "1 1 340px", minWidth: 300, display: "flex", flexDirection: "column", gap: 16 }}>
+          <TabsCard s={s} />
+          <QuotesCard s={s} />
+          <FeedbackCard />
+          <AiSwitchCard />
+        </div>
+      </div>
+      <div style={{ fontSize: 11, color: T.inkTiny, fontStyle: "italic", padding: "16px 0 20px" }}>
         Every override is saved instantly. Reset any field to put the default back.
       </div>
     </div>
@@ -219,7 +227,7 @@ function RanksCard({ s }: { s: State }) {
   const lv = levelInfo(s).level;
   return (
     <Section title="Rank names" sub={`Override any of the 20 rank names. Yours appear in the header at the matching level.`}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 6 }}>
         {Array.from({ length: MAX_LEVEL }, (_, i) => i + 1).map((level) => {
           const def = RANK_NAMES[level - 1] ?? "";
           const cur = s.customization.customRanks[level - 1] ?? "";

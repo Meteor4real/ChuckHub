@@ -124,8 +124,8 @@ export function ScreensView({ s }: { s: State }) {
   const print = makePrintHandler(() => printRef.current);
 
   return (
-    <div ref={printRef} style={{ maxWidth: 1300, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 12 }}>
+    <div ref={printRef} style={{ maxWidth: 1400, margin: "0 auto" }}>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 12, marginBottom: 16 }}>
         <div style={{ flex: 1 }}>
           <div className="serif" style={{ fontSize: 22, lineHeight: 1 }}>Screens</div>
           <div style={{ fontSize: 11, color: T.inkTiny, letterSpacing: ".08em", textTransform: "uppercase", marginTop: 4 }}>
@@ -136,56 +136,58 @@ export function ScreensView({ s }: { s: State }) {
       </div>
 
       {/* Hero */}
-      <ScreenCardToday s={s} onOpenLog={() => setLogOpen(true)} onOpenUrge={() => setUrgeOpen(true)} />
+      <div style={{ marginBottom: 16 }}>
+        <ScreenCardToday s={s} onOpenLog={() => setLogOpen(true)} onOpenUrge={() => setUrgeOpen(true)} />
+      </div>
 
-      {/* Today's sessions */}
-      <Section title={`Today's sessions · ${todays.length}`}>
-        {todays.length === 0
-          ? <Empty>No sessions logged yet today.</Empty>
-          : todays.map((x) => <SessionRow key={x.id} x={x} />)}
-        <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-          <button className="mm-btn" onClick={() => setLogOpen(true)}>+ Log a session</button>
-          <button className="mm-btn" onClick={() => setUrgeOpen(true)}>Felt the urge</button>
-        </div>
-      </Section>
-
-      {/* 30-day trend */}
-      <Section title="Last 30 days">
-        <TrendBars data={trend} />
-        <div style={{ fontSize: 11, color: T.inkTiny, marginTop: 8 }}>
-          {used <= budget.total ? `Today: ${fmtMin(used)} of ${fmtMin(budget.total)} earned.` : `Today: ${fmtMin(used)}, ${fmtMin(used - budget.total)} over.`}
-        </div>
-      </Section>
-
-      {/* Urges */}
-      <Section title={`Urges · ${s.urges.filter((u) => u.resolution === "resisted").length} resisted, ${s.urges.length} logged`}>
-        {urges.length === 0
-          ? <Empty>None logged yet. Hit "Felt the urge" the next time something pulls at you — that's the win.</Empty>
-          : urges.map((u) => (
-            <div key={u.id} className="mm-action" style={{ cursor: "default" }}>
-              <span className="mm-dot" style={{ ["--c" as never]: u.resolution === "resisted" ? T.mint : (u.resolution === "later" ? "#FFD23E" : "#FF7A2D") }} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <b style={{ fontSize: 13 }}>{u.what || "Urge"} · {RESOLUTION_LABEL[u.resolution]}</b>
-                <div style={{ fontSize: 11, color: T.inkTiny }}>
-                  {new Date(u.ts).toLocaleDateString(undefined, { month: "short", day: "numeric" })} · {new Date(u.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                  {u.replacement ? ` · chose: ${u.replacement}` : ""}
-                </div>
-              </div>
-              <button className="mm-btn" style={{ padding: "3px 8px" }} onClick={() => removeUrge(u.id)}>×</button>
+      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-start" }}>
+        {/* Main column — activity: today's sessions, trend, urges. */}
+        <div style={{ flex: "3 1 560px", minWidth: 320, display: "flex", flexDirection: "column", gap: 16 }}>
+          <Section title={`Today's sessions · ${todays.length}`}>
+            {todays.length === 0
+              ? <Empty>No sessions logged yet today.</Empty>
+              : todays.map((x) => <SessionRow key={x.id} x={x} />)}
+            <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+              <button className="mm-btn" onClick={() => setLogOpen(true)}>+ Log a session</button>
+              <button className="mm-btn" onClick={() => setUrgeOpen(true)}>Felt the urge</button>
             </div>
-          ))}
-      </Section>
+          </Section>
 
-      {/* Settings */}
-      <ScreenSettingsCard s={s} />
+          <Section title="Last 30 days">
+            <TrendBars data={trend} />
+            <div style={{ fontSize: 11, color: T.inkTiny, marginTop: 8 }}>
+              {used <= budget.total ? `Today: ${fmtMin(used)} of ${fmtMin(budget.total)} earned.` : `Today: ${fmtMin(used)}, ${fmtMin(used - budget.total)} over.`}
+            </div>
+          </Section>
 
-      {/* OS-level foreground tracking — opt-in. Siren fires until enabled. */}
-      <TrackingCard />
+          <Section title={`Urges · ${s.urges.filter((u) => u.resolution === "resisted").length} resisted, ${s.urges.length} logged`}>
+            {urges.length === 0
+              ? <Empty>None logged yet. Hit "Felt the urge" the next time something pulls at you — that's the win.</Empty>
+              : urges.map((u) => (
+                <div key={u.id} className="mm-action" style={{ cursor: "default" }}>
+                  <span className="mm-dot" style={{ ["--c" as never]: u.resolution === "resisted" ? T.mint : (u.resolution === "later" ? "#FFD23E" : "#FF7A2D") }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <b style={{ fontSize: 13 }}>{u.what || "Urge"} · {RESOLUTION_LABEL[u.resolution]}</b>
+                    <div style={{ fontSize: 11, color: T.inkTiny }}>
+                      {new Date(u.ts).toLocaleDateString(undefined, { month: "short", day: "numeric" })} · {new Date(u.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      {u.replacement ? ` · chose: ${u.replacement}` : ""}
+                    </div>
+                  </div>
+                  <button className="mm-btn" style={{ padding: "3px 8px" }} onClick={() => removeUrge(u.id)}>×</button>
+                </div>
+              ))}
+          </Section>
+        </div>
 
-      {/* Replacement drawer manager */}
-      <ReplacementDrawerCard s={s} />
+        {/* Side rail — settings, OS tracking, replacement drawer. */}
+        <div style={{ flex: "1 1 340px", minWidth: 300, display: "flex", flexDirection: "column", gap: 16 }}>
+          <ScreenSettingsCard s={s} />
+          <TrackingCard />
+          <ReplacementDrawerCard s={s} />
+        </div>
+      </div>
 
-      <div style={{ fontSize: 11, color: T.inkTiny, fontStyle: "italic", textAlign: "center", padding: "6px 0 20px" }}>
+      <div style={{ fontSize: 11, color: T.inkTiny, fontStyle: "italic", textAlign: "center", padding: "16px 0 20px" }}>
         MoreMe doesn't lock anything. The lever is yours.
       </div>
 
