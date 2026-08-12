@@ -252,8 +252,21 @@ function SideNav({ s, tab, onTab, onReview }: { s: State; tab: Tab; onTab: (t: T
         <button className="mm-btn" style={{ width: "100%", padding: "6px 10px", fontSize: 11 }} onClick={onReview}>Weekly Review</button>
         {item("customize", "❖", tabLabel("customize", "Customize", s))}
         <SyncPip />
+        <DDDBanner />
       </div>
     </aside>
+  );
+}
+
+// The anchor — fixed, not part of the user-editable quote bank, never
+// rotates out. Verbatim, always here.
+const DDD_QUOTE = "Discipline. Dedication. Domination.";
+const DDD_WHO = 'Dwayne "The Rock" Johnson';
+function DDDBanner() {
+  return (
+    <div style={{ fontSize: 9, color: T.inkTiny, fontStyle: "italic", textAlign: "center", lineHeight: 1.5, padding: "4px 4px 0" }}>
+      “{DDD_QUOTE}”<br />— {DDD_WHO}
+    </div>
   );
 }
 
@@ -805,6 +818,12 @@ function EventEditor({ s, draft, onClose, onSaved }: { s: State; draft: CalEvent
             </select>
           </Field>
 
+          {e.category === "iproject" && (
+            <div style={{ fontSize: 11, color: T.inkSoft, lineHeight: 1.5, padding: "8px 10px", background: T.sunk, borderRadius: 8, borderLeft: `3px solid ${T.mint}` }}>
+              F.L.O.W. — Full-Length Optimal Work. Not a timer, not a mode: one project, no tabs, no context-switching, for as long as it takes.
+            </div>
+          )}
+
           <div className="mm-row">
             <Field label="Date"><input type="date" value={e.date} onChange={(ev) => set("date", ev.target.value)} /></Field>
             <Field label="All day">
@@ -1239,12 +1258,13 @@ const ACH_CAT_COLOR: Record<string, string> = {
   social: "#E0529C",
   level: T.cool,
   special: T.cool,
+  fitness: "#4ADE80",
 };
 
 function AchievementsView({ s }: { s: State }) {
   const prog = achievementProgress(s);
   const unlockedCount = ACHIEVEMENTS.filter((a) => s.unlockedAchievements[a.id]).length;
-  const cats = ["discipline", "school", "build", "social", "level", "special"] as const;
+  const cats = ["discipline", "school", "build", "fitness", "social", "level", "special"] as const;
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 14 }}>

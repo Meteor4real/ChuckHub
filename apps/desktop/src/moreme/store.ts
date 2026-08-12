@@ -1351,7 +1351,7 @@ export type AchievementDef = {
   id: string;
   title: string;
   desc: string;
-  category: "discipline" | "school" | "build" | "social" | "level" | "special";
+  category: "discipline" | "school" | "build" | "social" | "level" | "special" | "fitness";
   // returns [have, need] for progress display
   progress: (a: Aggregates, s: State) => [number, number];
 };
@@ -1399,6 +1399,11 @@ type Aggregates = {
   schoolPrepared: number;          // completed school items with prepared=true
   schoolAllYours: number;          // completed school items with helpUsed === "none"
   schoolHonestlyLogged: number;    // completed school items with helpUsed set (any value)
+  // ── fitness ───────────────────────────────────────────────────────────
+  fitnessCount: number;            // total completed fitness-category occurrences
+  fitnessDaysTotal: number;        // distinct days with ≥1 fitness completion
+  fitnessStreak: number;           // longest run of consecutive days with a fitness completion
+  longFitnessDone: boolean;        // a single fitness item completed with ≥45min logged
 };
 
 // Semantic routine-slot tests. "Morning" = starts before 10:00; "bed" =
@@ -1425,6 +1430,7 @@ function aggregate(s: State): Aggregates {
   let completionCount = 0, aheadCompletions = 0;
   const perDayCats: Record<string, Set<string>> = {};
   const perDayCompletions: Record<string, number> = {};
+  const fitnessDates = new Set<string>();
 
   let morningRoutineDone = 0, bedRoutineDone = 0;
   for (const [key, ts] of Object.entries(s.completions)) {
@@ -1434,6 +1440,7 @@ function aggregate(s: State): Aggregates {
     completionCount++;
     byCategory[e.category] = (byCategory[e.category] ?? 0) + 1;
     if (e.category === "routine") routineCounts[e.id] = (routineCounts[e.id] ?? 0) + 1;
+    if (e.category === "fitness") fitnessDates.add(date);
     if (isMorningRoutine(e)) morningRoutineDone++;
     if (isBedRoutine(e)) bedRoutineDone++;
     // "ahead": completed before the occurrence date arrived
@@ -1445,6 +1452,7 @@ function aggregate(s: State): Aggregates {
   const t = today();
   let futureSchoolDone7 = 0, futureSchoolDone30 = 0;
   let longIProjectDone = false, argDone = 0, meetingPrepDone = 0, ventureDone = 0;
+  let longFitnessDone = false;
   let eventsLinkedToPeople = 0;
   for (const e of s.events) {
     if (e.people.length) eventsLinkedToPeople++;
@@ -1456,9 +1464,21 @@ function aggregate(s: State): Aggregates {
       if (e.date <= addDays(t, 30)) futureSchoolDone30++;
     }
     if (e.category === "iproject" && e.start && e.end && toMin(e.end) - toMin(e.start) >= 180) longIProjectDone = true;
+    if (e.category === "fitness" && e.start && e.end && toMin(e.end) - toMin(e.start) >= 45) longFitnessDone = true;
     if (e.category === "arg") argDone++;
     if (e.category === "meeting" && e.checklist.length && e.checklist.every((c) => c.done)) meetingPrepDone++;
     if (e.category === "venture" || e.category === "business") ventureDone++;
+  }
+
+  // fitness days/streak — same "distinct completion days, longest consecutive
+  // run" shape as the quiet streak below, scoped to fitness-category days.
+  const fitnessDaysTotal = fitnessDates.size;
+  const sortedFitnessDates = [...fitnessDates].sort();
+  let fitnessStreak = 0, fitRun = 0, fitPrev = "";
+  for (const d of sortedFitnessDates) {
+    fitRun = fitPrev && addDays(fitPrev, 1) === d ? fitRun + 1 : 1;
+    fitnessStreak = Math.max(fitnessStreak, fitRun);
+    fitPrev = d;
   }
 
   let polymathMax = 0;
@@ -1551,6 +1571,7 @@ function aggregate(s: State): Aggregates {
     urgesLogged: s.urges.length, urgesResisted,
     daysAllSessionsInWindow, routineFirstDays, earnedItDays,
     schoolPrepared, schoolAllYours, schoolHonestlyLogged,
+    fitnessCount: byCategory.fitness ?? 0, fitnessDaysTotal, fitnessStreak, longFitnessDone,
   };
 }
 
@@ -1573,7 +1594,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: "month-ahead", title: "Living In The Future", desc: "Complete 15 future school items inside the next month.", category: "school", progress: (a) => [a.futureSchoolDone30, 15] },
 
   // Build — what you make, ship, and run
-  { id: "iproject-marathon", title: "I'ma Do A Minecraf", desc: "Complete a 3-hour F.L.O.W. block on iProject in a single sitting.", category: "build", progress: (a) => [a.longIProjectDone ? 1 : 0, 1] },
+  { id: "iproject-marathon", title: "I'ma Do A Minecraf", desc: "F.L.O.W. — Full-Length Optimal Work: one project, zero context-switching, 3+ hours in a single sitting. Log one on iProject.", category: "build", progress: (a) => [a.longIProjectDone ? 1 : 0, 1] },
   { id: "arg-architect", title: "Puppet Master", desc: "Complete 3 ARG items.", category: "build", progress: (a) => [a.argDone, 3] },
   { id: "investor", title: "Walked In With A Plan For Once", desc: "Complete a meeting with its prep checklist fully done.", category: "build", progress: (a) => [a.meetingPrepDone, 1] },
   { id: "ship-it", title: "It's Actually Done", desc: "Complete a project.", category: "build", progress: (a) => [a.projectsDone, 1] },
@@ -1593,6 +1614,15 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: "level-10", title: "Halfway There (Cue The Song)", desc: "Reach level 10 — Tycoon.", category: "level", progress: (a) => [a.level, 10] },
   { id: "level-15", title: "Titan Energy", desc: "Reach level 15 — Titan.", category: "level", progress: (a) => [a.level, 15] },
   { id: "level-20", title: "This Is Just Me Now", desc: "Reach level 20 — Davis.", category: "level", progress: (a) => [a.level, 20] },
+
+  // Fitness — the training half of the story, not just the business half
+  { id: "fitness-first", title: "I May Not Be A Threat, But I Still Sweat", desc: "Complete your first fitness session.", category: "fitness", progress: (a) => [Math.min(a.fitnessCount, 1), 1] },
+  { id: "fitness-10", title: "Certified Athlete (Self-Proclaimed)", desc: "Complete 10 fitness sessions.", category: "fitness", progress: (a) => [a.fitnessCount, 10] },
+  { id: "fitness-50", title: "This Is Basically My Job Now", desc: "Complete 50 fitness sessions.", category: "fitness", progress: (a) => [a.fitnessCount, 50] },
+  { id: "fitness-long", title: "Basically A Solid Rock", desc: "Log a single fitness session of 45 minutes or more.", category: "fitness", progress: (a) => [a.longFitnessDone ? 1 : 0, 1] },
+  { id: "fitness-streak-3", title: "Three Days Of Actually Moving", desc: "3-day streak of completed fitness sessions.", category: "fitness", progress: (a) => [a.fitnessStreak, 3] },
+  { id: "fitness-streak-7", title: "A Week Of Not Being A Couch", desc: "7-day streak of completed fitness sessions.", category: "fitness", progress: (a) => [a.fitnessStreak, 7] },
+  { id: "fitness-days-30", title: "Thirty Different Days I Moved", desc: "30 distinct days with a completed fitness session, total.", category: "fitness", progress: (a) => [a.fitnessDaysTotal, 30] },
 
   // Screens — training honestly. Celebrates noticing + resisting; never
   // punishes over-budget days.
