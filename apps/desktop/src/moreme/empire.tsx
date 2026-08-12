@@ -20,7 +20,7 @@ export function EmpireView({ s }: { s: State }) {
   const mrr = empireMRR(s);
   const lifetime = empireLifetime(s);
   return (
-    <div style={{ maxWidth: 900, margin: "0 auto" }}>
+    <div style={{ maxWidth: 1300, margin: "0 auto" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
         <div>
           <div className="serif" style={{ fontSize: 22, lineHeight: 1 }}>The Empire</div>

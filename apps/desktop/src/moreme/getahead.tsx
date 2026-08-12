@@ -37,7 +37,7 @@ export function GetAheadView({ s, onEdit }: { s: State; onEdit: (e: CalEvent) =>
   }
 
   return (
-    <div style={{ maxWidth: 920, margin: "0 auto" }}>
+    <div style={{ maxWidth: 1300, margin: "0 auto" }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 14 }}>
         <div>
           <div className="serif" style={{ fontSize: 22, lineHeight: 1 }}>Get Ahead</div>

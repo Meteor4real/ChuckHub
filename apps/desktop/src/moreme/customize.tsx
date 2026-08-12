@@ -37,7 +37,7 @@ const TAB_DEFAULTS: { id: string; label: string }[] = [
 
 export function CustomizeView({ s }: { s: State }) {
   return (
-    <div style={{ maxWidth: 920, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
+    <div style={{ maxWidth: 1300, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
       <div>
         <div className="serif" style={{ fontSize: 22, lineHeight: 1 }}>Customize</div>
         <div style={{ fontSize: 11, color: T.inkTiny, letterSpacing: ".08em", textTransform: "uppercase", marginTop: 4 }}>

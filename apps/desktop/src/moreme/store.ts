@@ -1556,61 +1556,61 @@ function aggregate(s: State): Aggregates {
 
 export const ACHIEVEMENTS: AchievementDef[] = [
   // Discipline — showing up, staying on it
-  { id: "first-step", title: "Showed Up", desc: "Complete anything you scheduled.", category: "discipline", progress: (a) => [Math.min(a.completionCount, 1), 1] },
-  { id: "polymath", title: "Polymath", desc: "Complete items across 5 categories in one day.", category: "discipline", progress: (a) => [a.polymathMax, 5] },
-  { id: "quiet-quarter", title: "Heads Down", desc: "7-day streak with zero logged distractions.", category: "discipline", progress: (a) => [a.quietStreak, 7] },
-  { id: "locked-in", title: "Phone Off", desc: "30 productive days with no distractions logged, total.", category: "discipline", progress: (a) => [a.quietDays, 30] },
-  { id: "streak-3", title: "Three in a Row", desc: "3-day routine streak.", category: "discipline", progress: (a) => [a.streakBest, 3] },
-  { id: "streak-7", title: "Week Lit", desc: "7-day routine streak.", category: "discipline", progress: (a) => [a.streakBest, 7] },
-  { id: "streak-30", title: "Lock-In · 30d", desc: "30-day routine streak.", category: "discipline", progress: (a) => [a.streakBest, 30] },
-  { id: "early-bird", title: "Early Bird", desc: "Complete a morning routine (any routine starting before 10:00) 30 times.", category: "discipline", progress: (a) => [a.morningRoutineDone, 30] },
-  { id: "sleep-pro", title: "Sleep Pro", desc: "Complete a bedtime routine (any routine starting 20:00 or later) 14 times.", category: "discipline", progress: (a) => [a.bedRoutineDone, 14] },
-  { id: "planner", title: "All Booked Up", desc: "Have 25 items on your calendar.", category: "discipline", progress: (a) => [a.totalEvents, 25] },
+  { id: "first-step", title: "I Did A Thing", desc: "Complete anything you scheduled. Bar is on the floor and you cleared it.", category: "discipline", progress: (a) => [Math.min(a.completionCount, 1), 1] },
+  { id: "polymath", title: "Jack Of All Trades, Actually Decent At Most", desc: "Complete items across 5 categories in one day.", category: "discipline", progress: (a) => [a.polymathMax, 5] },
+  { id: "quiet-quarter", title: "He Isn't Using Drugs!?", desc: "7-day streak with zero logged distractions.", category: "discipline", progress: (a) => [a.quietStreak, 7] },
+  { id: "locked-in", title: "Touch Grass: Unlocked", desc: "30 productive days with no distractions logged, total.", category: "discipline", progress: (a) => [a.quietDays, 30] },
+  { id: "streak-3", title: "Three's A Pattern", desc: "3-day routine streak.", category: "discipline", progress: (a) => [a.streakBest, 3] },
+  { id: "streak-7", title: "One Whole Week??", desc: "7-day routine streak.", category: "discipline", progress: (a) => [a.streakBest, 7] },
+  { id: "streak-30", title: "Okay, This Is Just Who I Am Now", desc: "30-day routine streak.", category: "discipline", progress: (a) => [a.streakBest, 30] },
+  { id: "early-bird", title: "I'm Either Really Energized Or Really Sleepy!", desc: "Complete a morning routine (any routine starting before 10:00) 30 times.", category: "discipline", progress: (a) => [a.morningRoutineDone, 30] },
+  { id: "sleep-pro", title: "Actually Went To Bed", desc: "Complete a bedtime routine (any routine starting 20:00 or later) 14 times.", category: "discipline", progress: (a) => [a.bedRoutineDone, 14] },
+  { id: "planner", title: "Control Freak (Affectionate)", desc: "Have 25 items on your calendar.", category: "discipline", progress: (a) => [a.totalEvents, 25] },
 
   // School — the get-ahead superpower
-  { id: "ahead-of-bell", title: "Ahead of the Bell", desc: "Finish a school item before its day even arrives.", category: "school", progress: (a) => [Math.min(a.aheadCompletions, 1), 1] },
-  { id: "week-ahead", title: "A Week Up On You", desc: "Complete 5 future school items inside the next week.", category: "school", progress: (a) => [a.futureSchoolDone7, 5] },
-  { id: "month-ahead", title: "Already Doing Next Month", desc: "Complete 15 future school items inside the next month.", category: "school", progress: (a) => [a.futureSchoolDone30, 15] },
+  { id: "ahead-of-bell", title: "Beat The Bell", desc: "Finish a school item before its day even arrives.", category: "school", progress: (a) => [Math.min(a.aheadCompletions, 1), 1] },
+  { id: "week-ahead", title: "A Week Up On Everyone Else", desc: "Complete 5 future school items inside the next week.", category: "school", progress: (a) => [a.futureSchoolDone7, 5] },
+  { id: "month-ahead", title: "Living In The Future", desc: "Complete 15 future school items inside the next month.", category: "school", progress: (a) => [a.futureSchoolDone30, 15] },
 
   // Build — what you make, ship, and run
-  { id: "iproject-marathon", title: "Locked In", desc: "Complete a 3-hour iProject block in a single sitting.", category: "build", progress: (a) => [a.longIProjectDone ? 1 : 0, 1] },
-  { id: "arg-architect", title: "ARG Architect", desc: "Complete 3 ARG items.", category: "build", progress: (a) => [a.argDone, 3] },
-  { id: "investor", title: "Walks In Prepared", desc: "Complete a meeting with its prep checklist fully done.", category: "build", progress: (a) => [a.meetingPrepDone, 1] },
-  { id: "ship-it", title: "Shipped It", desc: "Complete a project.", category: "build", progress: (a) => [a.projectsDone, 1] },
-  { id: "trilogy", title: "Three Down", desc: "Complete 3 projects.", category: "build", progress: (a) => [a.projectsDone, 3] },
-  { id: "mile-markers", title: "Mile Markers", desc: "Finish 10 project milestones.", category: "build", progress: (a) => [a.milestonesDone, 10] },
-  { id: "mogul", title: "Mogul", desc: "Complete 10 business / venture items.", category: "build", progress: (a) => [a.ventureDone, 10] },
-  { id: "first-dollar", title: "First Dollar", desc: "Log revenue on a venture for the first time.", category: "build", progress: (a) => [a.empireLifetime > 0 ? 1 : 0, 1] },
-  { id: "five-figures", title: "Five Figures", desc: "Reach $10,000 in combined monthly revenue.", category: "build", progress: (a) => [Math.min(a.empireMRR, 10000), 10000] },
-  { id: "empire", title: "Empire", desc: "Run 3 live or scaling ventures at once.", category: "build", progress: (a) => [a.liveVentures, 3] },
+  { id: "iproject-marathon", title: "I'ma Do A Minecraf", desc: "Complete a 3-hour F.L.O.W. block on iProject in a single sitting.", category: "build", progress: (a) => [a.longIProjectDone ? 1 : 0, 1] },
+  { id: "arg-architect", title: "Puppet Master", desc: "Complete 3 ARG items.", category: "build", progress: (a) => [a.argDone, 3] },
+  { id: "investor", title: "Walked In With A Plan For Once", desc: "Complete a meeting with its prep checklist fully done.", category: "build", progress: (a) => [a.meetingPrepDone, 1] },
+  { id: "ship-it", title: "It's Actually Done", desc: "Complete a project.", category: "build", progress: (a) => [a.projectsDone, 1] },
+  { id: "trilogy", title: "Threepeat", desc: "Complete 3 projects.", category: "build", progress: (a) => [a.projectsDone, 3] },
+  { id: "mile-markers", title: "Chipping Away At It", desc: "Finish 10 project milestones.", category: "build", progress: (a) => [a.milestonesDone, 10] },
+  { id: "mogul", title: "Certified Business Guy", desc: "Complete 10 business / venture items.", category: "build", progress: (a) => [a.ventureDone, 10] },
+  { id: "first-dollar", title: "First Dollar, Baby", desc: "Log revenue on a venture for the first time.", category: "build", progress: (a) => [a.empireLifetime > 0 ? 1 : 0, 1] },
+  { id: "five-figures", title: "Five Figures, Let's Go", desc: "Reach $10,000 in combined monthly revenue.", category: "build", progress: (a) => [Math.min(a.empireMRR, 10000), 10000] },
+  { id: "empire", title: "Multiple Streams (Actually)", desc: "Run 3 live or scaling ventures at once.", category: "build", progress: (a) => [a.liveVentures, 3] },
 
   // Social — your reputation at school
-  { id: "people-person", title: "Knows Everyone", desc: "Link 5 items to people in your circle.", category: "social", progress: (a) => [a.eventsLinkedToPeople, 5] },
+  { id: "people-person", title: "Knows Everyone For Real", desc: "Link 5 items to people in your circle.", category: "social", progress: (a) => [a.eventsLinkedToPeople, 5] },
   { id: "announcer", title: "Made It Official", desc: "Reveal a hidden announcement (create it unannounced, then make it visible).", category: "social", progress: (a) => [a.announcementsRevealed, 1] },
 
   // Level milestones — the rank ladder, big steps only
-  { id: "level-5", title: "Up the Ladder", desc: "Reach level 5 — Operator.", category: "level", progress: (a) => [a.level, 5] },
-  { id: "level-10", title: "Halfway", desc: "Reach level 10 — Tycoon.", category: "level", progress: (a) => [a.level, 10] },
-  { id: "level-15", title: "Top Floor", desc: "Reach level 15 — Titan.", category: "level", progress: (a) => [a.level, 15] },
-  { id: "level-20", title: "It's You", desc: "Reach level 20 — Davis.", category: "level", progress: (a) => [a.level, 20] },
+  { id: "level-5", title: "Operator Status", desc: "Reach level 5 — Operator.", category: "level", progress: (a) => [a.level, 5] },
+  { id: "level-10", title: "Halfway There (Cue The Song)", desc: "Reach level 10 — Tycoon.", category: "level", progress: (a) => [a.level, 10] },
+  { id: "level-15", title: "Titan Energy", desc: "Reach level 15 — Titan.", category: "level", progress: (a) => [a.level, 15] },
+  { id: "level-20", title: "This Is Just Me Now", desc: "Reach level 20 — Davis.", category: "level", progress: (a) => [a.level, 20] },
 
   // Screens — training honestly. Celebrates noticing + resisting; never
   // punishes over-budget days.
-  { id: "honest-screen", title: "Honest Log", desc: "Log your first screen session. Noticing is half of it.", category: "discipline", progress: (a) => [Math.min(a.screenSessionsLogged, 1), 1] },
-  { id: "under-budget-1", title: "Under the Line", desc: "End a day under your earned screen budget.", category: "discipline", progress: (a) => [Math.min(a.daysUnderBudget, 1), 1] },
-  { id: "earned-it", title: "Earned It", desc: "Stay under budget on a day where routines added bonus minutes.", category: "discipline", progress: (a) => [Math.min(a.earnedItDays, 1), 1] },
-  { id: "below-the-line-7", title: "Below the Line · 7d", desc: "Seven days in a row under budget.", category: "discipline", progress: (a) => [a.underBudgetStreak, 7] },
-  { id: "screen-discipline-30", title: "Screen Discipline · 30d", desc: "Thirty days under budget, total.", category: "discipline", progress: (a) => [a.daysUnderBudget, 30] },
-  { id: "felt-it", title: "Felt It", desc: "Log your first urge. Catching the urge IS the win.", category: "discipline", progress: (a) => [Math.min(a.urgesLogged, 1), 1] },
-  { id: "ten-resisted", title: "Ten Down", desc: "Resist ten urges (pick a replacement instead).", category: "discipline", progress: (a) => [a.urgesResisted, 10] },
-  { id: "kept-window", title: "Window Keeper", desc: "Seven days where every screen session started inside your pre-committed window.", category: "discipline", progress: (a) => [a.daysAllSessionsInWindow, 7] },
+  { id: "honest-screen", title: "Admitting It's The First Step", desc: "Log your first screen session. Noticing is half of it.", category: "discipline", progress: (a) => [Math.min(a.screenSessionsLogged, 1), 1] },
+  { id: "under-budget-1", title: "Under The Line, Barely", desc: "End a day under your earned screen budget.", category: "discipline", progress: (a) => [Math.min(a.daysUnderBudget, 1), 1] },
+  { id: "earned-it", title: "Earned It, Spent It Wisely", desc: "Stay under budget on a day where routines added bonus minutes.", category: "discipline", progress: (a) => [Math.min(a.earnedItDays, 1), 1] },
+  { id: "below-the-line-7", title: "A Week Of Not Doomscrolling", desc: "Seven days in a row under budget.", category: "discipline", progress: (a) => [a.underBudgetStreak, 7] },
+  { id: "screen-discipline-30", title: "Thirty Days Of Self Control", desc: "Thirty days under budget, total.", category: "discipline", progress: (a) => [a.daysUnderBudget, 30] },
+  { id: "felt-it", title: "Caught Myself", desc: "Log your first urge. Catching the urge IS the win.", category: "discipline", progress: (a) => [Math.min(a.urgesLogged, 1), 1] },
+  { id: "ten-resisted", title: "Ten Times I Didn't Cave", desc: "Resist ten urges (pick a replacement instead).", category: "discipline", progress: (a) => [a.urgesResisted, 10] },
+  { id: "kept-window", title: "Stayed In My Lane", desc: "Seven days where every screen session started inside your pre-committed window.", category: "discipline", progress: (a) => [a.daysAllSessionsInWindow, 7] },
   { id: "routine-first-5", title: "Routine Before Phone", desc: "Five days where the morning routine was done before any screens.", category: "discipline", progress: (a) => [a.routineFirstDays, 5] },
 
   // School integrity — honest self-mirror
-  { id: "learn-first-1", title: "Learn First", desc: "Complete a school item with the prep box honestly checked.", category: "school", progress: (a) => [Math.min(a.schoolPrepared, 1), 1] },
-  { id: "learn-first-10", title: "Read, Then Did · 10", desc: "Ten school items completed prepared.", category: "school", progress: (a) => [a.schoolPrepared, 10] },
-  { id: "honest-school", title: "Honest Effort", desc: "Mark a school item's help honestly (any value).", category: "school", progress: (a) => [Math.min(a.schoolHonestlyLogged, 1), 1] },
-  { id: "all-yours-5", title: "All Yours", desc: "Five school items completed with help = 'none'.", category: "school", progress: (a) => [a.schoolAllYours, 5] },
+  { id: "learn-first-1", title: "DAD, I UNDERSTAND!", desc: "Complete a school item with the prep box honestly checked.", category: "school", progress: (a) => [Math.min(a.schoolPrepared, 1), 1] },
+  { id: "learn-first-10", title: "Read, Then Did — Ten Times", desc: "Ten school items completed prepared.", category: "school", progress: (a) => [a.schoolPrepared, 10] },
+  { id: "honest-school", title: "Told The Truth About The Help", desc: "Mark a school item's help honestly (any value).", category: "school", progress: (a) => [Math.min(a.schoolHonestlyLogged, 1), 1] },
+  { id: "all-yours-5", title: "All Me, Five Times", desc: "Five school items completed with help = 'none'.", category: "school", progress: (a) => [a.schoolAllYours, 5] },
 
 ];
 

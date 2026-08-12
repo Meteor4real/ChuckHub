@@ -99,7 +99,7 @@ export function MoreMeUI() {
         <CaptureBar />
         <div className="scrolly" style={{ flex: 1, minHeight: 0, padding: 18 }}>
           {widgetsHere.length > 0 && tab !== "customize" && !dynamicCurrent && !mergedHub && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 760, margin: "0 auto 16px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 1400, margin: "0 auto 16px" }}>
               {widgetsHere.map((w) => <WidgetView key={w.id} s={s} tabId={tabIdStr} w={w} />)}
             </div>
           )}
@@ -156,7 +156,7 @@ function SegmentHub({ s, segments, render }: {
         </div>
       )}
       {widgets.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 760, margin: "0 auto 16px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 1400, margin: "0 auto 16px" }}>
           {widgets.map((w) => <WidgetView key={w.id} s={s} tabId={active} w={w} />)}
         </div>
       )}
@@ -277,7 +277,7 @@ function DynamicTabView({ s, tabId }: { s: State; tabId: string }) {
   const t = s.customization.dynamicTabs.find((x) => x.id === tabId);
   const list = s.customization.widgets[tabId] ?? [];
   return (
-    <div style={{ maxWidth: 760, margin: "0 auto", display: "flex", flexDirection: "column", gap: 14 }}>
+    <div style={{ maxWidth: 1400, margin: "0 auto", display: "flex", flexDirection: "column", gap: 14 }}>
       <div className="serif" style={{ fontSize: 22 }}>{t?.icon ? `${t.icon} ` : ""}{t?.label ?? "Tab"}</div>
       {list.length === 0
         ? <div style={{ fontSize: 12, color: T.inkTiny, fontStyle: "italic", padding: 16 }}>No widgets here yet. Open <b>Customize → Pages &amp; widgets</b> to drop some in.</div>
@@ -504,7 +504,7 @@ function TodayView({ s, onEdit }: { s: State; onEdit: (e: CalEvent) => void }) {
   const hero = heroImageUrl();
 
   return (
-    <div ref={printRef} style={{ display: "grid", gap: 16, gridTemplateColumns: "1fr", maxWidth: 760, margin: "0 auto", position: "relative" }}>
+    <div ref={printRef} style={{ maxWidth: 1400, margin: "0 auto", position: "relative" }}>
       {/* Decorative backdrop — theme's hero image, very faint. Fixed
           position absolutely behind the content; img.onerror hides it so
           a broken URL doesn't leave a placeholder. */}
@@ -518,7 +518,7 @@ function TodayView({ s, onEdit }: { s: State; onEdit: (e: CalEvent) => void }) {
           style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.07, zIndex: 0, pointerEvents: "none", borderRadius: 14 }}
         />
       )}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, position: "relative", zIndex: 1 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, position: "relative", zIndex: 1, marginBottom: 16 }}>
         <div className="serif" style={{ fontSize: 20 }}>{new Date(date + "T00:00:00").toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}</div>
         <div className="mm-no-print" style={{ display: "flex", gap: 6 }}>
           <button className="mm-btn" onClick={print} title="Print today">⎙ Print</button>
@@ -526,75 +526,83 @@ function TodayView({ s, onEdit }: { s: State; onEdit: (e: CalEvent) => void }) {
         </div>
       </div>
 
-      {quote && <QuoteBanner quote={quote} />}
+      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-start", position: "relative", zIndex: 1 }}>
+        {/* Main column — the day's actual work. */}
+        <div style={{ flex: "3 1 520px", minWidth: 320, display: "flex", flexDirection: "column", gap: 16 }}>
+          {s.inbox.length > 0 && (
+            <Section title={`Inbox · ${s.inbox.length} to triage`}>
+              {s.inbox.map((it) => <InboxRow key={it.id} item={it} onEdit={onEdit} />)}
+            </Section>
+          )}
 
-      {conflicts.size > 0 && (
-        <div className="mm-card" style={{ padding: "10px 14px", borderColor: T.warn, color: T.warn, fontSize: 12 }}>
-          {conflicts.size} item{conflicts.size === 1 ? "" : "s"} overlap in time today — adjust the schedule.
-        </div>
-      )}
-
-      {upcoming.length > 0 && (
-        <div className="mm-card-mint" style={{ padding: "10px 14px" }}>
-          <div style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: T.mint, marginBottom: 6 }}>
-            Upcoming reminders
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            {upcoming.map((u) => (
-              <div key={u.e.id + u.on} onClick={() => onEdit(u.e)} style={{ display: "flex", gap: 8, alignItems: "baseline", fontSize: 12, cursor: "pointer" }}>
-                <span className="mm-dot" style={{ ["--c" as never]: CATEGORY_META[u.e.category].color, width: 6, height: 6 }} />
-                <b style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.e.title || CATEGORY_META[u.e.category].label}</b>
-                <span style={{ color: T.inkSoft, fontSize: 11 }}>
-                  {u.on === date ? "today" : new Date(u.on + "T00:00:00").toLocaleDateString(undefined, { weekday: "short" })}
-                  {" · "}{fmtTime(u.e.start)} · -{u.firstReminderMin}m
-                </span>
+          <Section title={`Routine · ${routines.filter((e) => isDone(e, date, s)).length}/${routines.length}`}>
+            {routines.length === 0 ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <Empty>No routines yet — routines are the daily backbone: they feed streaks and earn screen minutes.</Empty>
+                <button
+                  className="mm-btn"
+                  style={{ flex: "none" }}
+                  onClick={() => onEdit({ ...blankEvent(date), category: "routine", start: "07:00", end: "07:20", recurrence: { kind: "daily" } })}
+                >+ Add a routine</button>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+            ) : routines.map((e) => <EventRow key={e.id} e={e} date={date} s={s} onEdit={onEdit} />)}
+          </Section>
 
-      <ScreenCardToday s={s} onOpenLog={() => setScreenModal("log")} onOpenUrge={() => setScreenModal("urge")} />
+          <Section title="Scheduled">
+            {rest.length === 0 ? <Empty>Nothing scheduled. Add a class, meeting, or project block.</Empty> : rest.map((e) => <EventRow key={e.id} e={e} date={date} s={s} onEdit={onEdit} />)}
+          </Section>
 
-      {s.inbox.length > 0 && (
-        <Section title={`Inbox · ${s.inbox.length} to triage`}>
-          {s.inbox.map((it) => <InboxRow key={it.id} item={it} onEdit={onEdit} />)}
-        </Section>
-      )}
-
-      <Section title={`Routine · ${routines.filter((e) => isDone(e, date, s)).length}/${routines.length}`}>
-        {routines.length === 0 ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <Empty>No routines yet — routines are the daily backbone: they feed streaks and earn screen minutes.</Empty>
-            <button
-              className="mm-btn"
-              style={{ flex: "none" }}
-              onClick={() => onEdit({ ...blankEvent(date), category: "routine", start: "07:00", end: "07:20", recurrence: { kind: "daily" } })}
-            >+ Add a routine</button>
-          </div>
-        ) : routines.map((e) => <EventRow key={e.id} e={e} date={date} s={s} onEdit={onEdit} />)}
-      </Section>
-
-      <Section title="Scheduled">
-        {rest.length === 0 ? <Empty>Nothing scheduled. Add a class, meeting, or project block.</Empty> : rest.map((e) => <EventRow key={e.id} e={e} date={date} s={s} onEdit={onEdit} />)}
-      </Section>
-
-      <Section title="Distraction-free check">
-        <div style={{ fontSize: 12, color: T.inkSoft, marginBottom: 8 }}>
-          Zero distractions is the standing expectation — not a box to check. If you slipped, log it honestly; a clean day counts toward Quiet streaks.
-        </div>
-        {dists.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8 }}>
-            {dists.map((d) => (
-              <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: T.warn }}>
-                <span style={{ flex: 1 }}>{d.note}</span>
-                <button className="mm-btn" style={{ padding: "2px 8px" }} onClick={() => removeDistraction(d.id)}>×</button>
+          <Section title="Distraction-free check">
+            <div style={{ fontSize: 12, color: T.inkSoft, marginBottom: 8 }}>
+              Zero distractions is the standing expectation — not a box to check. If you slipped, log it honestly; a clean day counts toward Quiet streaks.
+            </div>
+            {dists.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8 }}>
+                {dists.map((d) => (
+                  <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: T.warn }}>
+                    <span style={{ flex: 1 }}>{d.note}</span>
+                    <button className="mm-btn" style={{ padding: "2px 8px" }} onClick={() => removeDistraction(d.id)}>×</button>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
-        <DistractionAdder />
-      </Section>
+            )}
+            <DistractionAdder />
+          </Section>
+        </div>
+
+        {/* Side rail — quote, alerts, reminders, screen status. */}
+        <div style={{ flex: "1 1 320px", minWidth: 280, display: "flex", flexDirection: "column", gap: 16 }}>
+          {quote && <QuoteBanner quote={quote} />}
+
+          {conflicts.size > 0 && (
+            <div className="mm-card" style={{ padding: "10px 14px", borderColor: T.warn, color: T.warn, fontSize: 12 }}>
+              {conflicts.size} item{conflicts.size === 1 ? "" : "s"} overlap in time today — adjust the schedule.
+            </div>
+          )}
+
+          {upcoming.length > 0 && (
+            <div className="mm-card-mint" style={{ padding: "10px 14px" }}>
+              <div style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: T.mint, marginBottom: 6 }}>
+                Upcoming reminders
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                {upcoming.map((u) => (
+                  <div key={u.e.id + u.on} onClick={() => onEdit(u.e)} style={{ display: "flex", gap: 8, alignItems: "baseline", fontSize: 12, cursor: "pointer" }}>
+                    <span className="mm-dot" style={{ ["--c" as never]: CATEGORY_META[u.e.category].color, width: 6, height: 6 }} />
+                    <b style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.e.title || CATEGORY_META[u.e.category].label}</b>
+                    <span style={{ color: T.inkSoft, fontSize: 11 }}>
+                      {u.on === date ? "today" : new Date(u.on + "T00:00:00").toLocaleDateString(undefined, { weekday: "short" })}
+                      {" · "}{fmtTime(u.e.start)} · -{u.firstReminderMin}m
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <ScreenCardToday s={s} onOpenLog={() => setScreenModal("log")} onOpenUrge={() => setScreenModal("urge")} />
+        </div>
+      </div>
 
       {screenModal === "log" && <LogSessionModal onClose={() => setScreenModal(null)} />}
       {screenModal === "urge" && <UrgeModal s={s} onClose={() => setScreenModal(null)} />}
@@ -1218,6 +1226,19 @@ function GoalColumn({ title, goals, onChange }: { title: string; goals: Goal[]; 
 }
 
 // ── Achievements ──────────────────────────────────────────────────────────
+// Per-category accent so unlocked achievements read as five different
+// tracks, not one monochrome mint wall. Colors echo the calendar category
+// hues already used elsewhere in the app; "level" gets Papatui's cool
+// bronze since it's the rank ladder, not the daily-discipline loop.
+const ACH_CAT_COLOR: Record<string, string> = {
+  discipline: T.mint,
+  school: "#3EA0FF",
+  build: "#A855F7",
+  social: "#E0529C",
+  level: T.cool,
+  special: T.cool,
+};
+
 function AchievementsView({ s }: { s: State }) {
   const prog = achievementProgress(s);
   const unlockedCount = ACHIEVEMENTS.filter((a) => s.unlockedAchievements[a.id]).length;
@@ -1230,6 +1251,7 @@ function AchievementsView({ s }: { s: State }) {
       </div>
       {cats.map((cat) => {
         const list = ACHIEVEMENTS.filter((a) => a.category === cat);
+        const accent = ACH_CAT_COLOR[cat] ?? T.mint;
         return (
           <div key={cat} style={{ marginBottom: 18 }}>
             <div style={{ fontSize: 11, letterSpacing: ".12em", textTransform: "uppercase", color: T.inkTiny, marginBottom: 8 }}>{cat}</div>
@@ -1238,7 +1260,7 @@ function AchievementsView({ s }: { s: State }) {
                 const p = prog[a.id];
                 const unlocked = !!s.unlockedAchievements[a.id];
                 return (
-                  <div key={a.id} className={"mm-ach" + (unlocked ? " unlocked" : "")}>
+                  <div key={a.id} className={"mm-ach" + (unlocked ? " unlocked" : "")} style={{ ["--c" as never]: accent }}>
                     <div className="mm-medal">{unlocked ? "★" : "◇"}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <b style={{ fontSize: 13 }}>{a.title}</b>
@@ -1255,10 +1277,10 @@ function AchievementsView({ s }: { s: State }) {
       })}
       {s.customization.customAchievements.length > 0 && (
         <div style={{ marginBottom: 18 }}>
-          <div style={{ fontSize: 11, letterSpacing: ".12em", textTransform: "uppercase", color: T.mint, marginBottom: 8 }}>yours</div>
+          <div style={{ fontSize: 11, letterSpacing: ".12em", textTransform: "uppercase", color: T.cool, marginBottom: 8 }}>yours</div>
           <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
             {s.customization.customAchievements.map((a) => (
-              <div key={a.id} className={"mm-ach" + (a.claimedAt ? " unlocked" : "")}>
+              <div key={a.id} className={"mm-ach" + (a.claimedAt ? " unlocked" : "")} style={{ ["--c" as never]: T.cool }}>
                 <div className="mm-medal">{a.claimedAt ? "★" : "◇"}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <b style={{ fontSize: 13 }}>{a.title || "(untitled)"}</b>
@@ -1280,7 +1302,7 @@ function AchievementsView({ s }: { s: State }) {
 function LevelsView({ s }: { s: State }) {
   const lv = levelInfo(s);
   return (
-    <div style={{ maxWidth: 720, margin: "0 auto" }}>
+    <div style={{ maxWidth: 1000, margin: "0 auto" }}>
       <div className="serif" style={{ fontSize: 20, marginBottom: 6 }}>Level Track</div>
       <div style={{ fontSize: 12, color: T.inkSoft, marginBottom: 16 }}>
         20 levels on a steep curve — each level costs more than the last. Set a reward you'll actually give yourself at each one.
