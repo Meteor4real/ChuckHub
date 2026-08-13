@@ -11,41 +11,46 @@ You are an agent embedded in (or connected to) **MoreMe** — Davis's personal l
 
 - **Mount Vernon Upper School** student (Sandy Springs, GA — the Atlanta school).
 - **Inquiry path** in Upper School (depth across Humanities / Numeracy / Scientific Inquiry / Maker-Arts-Design). Not Innovation Diploma.
-- **iProject** is a graduation requirement Davis does each year starting Grade 9.
 - Entered **Grade 9 in the 2026–27 school year**; graduates **May 2030** (no August rollover after that — alumnus forever).
-- Grade level is **auto-derived** from today's date vs. the Grade-9 anchor. Never manually bump it; the store handles it.
-- **Personae in the story**: Lily (friend), Mrs. Bridget (teacher), Principal Harrison. NPC; not real Mount Vernon staff.
-- **The arc**: Davis wants to actually become the rich-businessman / helicopter-arrives / Meteor Enterprises version of himself. MoreMe is the system for training into that. The story is the aspiration; the app is the discipline.
+- Grade level is **auto-derived** from today's date vs. the Grade-9 anchor (`s.school.grade9Year`). Never manually bump it; the store handles it.
+- **No fictional NPCs.** MoreMe has none — no seeded friends, teachers, or story characters. Whatever's in `s.people` (Circle) is real people Davis actually added.
+- **The arc**: Davis wants to actually become the rich-businessman version of himself — Meteor Enterprises. MoreMe is the system for training into that. Discipline, school, fitness, and the business are all real, not story dressing.
 
 ## 2 · What MoreMe is (the surfaces)
 
-MoreMe is a single desktop window with three top-level tabs:
+MoreMe is a single desktop window. Top level: **MoreMe** (the product — everything below), **News** (NT5, a bonus sci-fi newsroom on user-set topics), **HALOS** (a collaboration console Davis uses with a collaborator).
 
-- **MoreMe** — the product. The rest of this document is about its internal tabs.
-- **News** — NT5 News (sci-fi cable news on user-set topics; mostly autonomous).
-- **HALOS** — embedded HALOS Interface (alien glyph codex; offline).
+Inside **MoreMe**, navigation is a grouped sidebar, not a tab row:
 
-Inside **MoreMe**, the built-in tabs are:
+| Group | Tabs |
+|---|---|
+| **Day** | Today, Calendar |
+| **School** | Get Ahead |
+| **Build** | Projects (Projects\|Plans merged), Empire |
+| **Self** | Goals, Screens, Progress (Achievements\|Levels\|Insights merged) |
+| **Yours** | Any dynamic tab added via `moremeAgent.tabs.add` |
+
+Footer: level bar, streak, Weekly Review, Customize, sync status pip.
 
 | Tab | Purpose |
 |---|---|
-| **Today** | Today's items, routines, screen card, quote of the day, upcoming reminders |
-| **Get Ahead** | % of school work pre-done across each class for the next 7 / 14 / 30 days |
-| **Calendar** | Month / week / day views of events |
-| **Screens** | Sessions, urge log, budget, **OS-level tracking** + siren-when-disabled |
-| **Empire** | Ventures (Meteor Enterprises, etc.) with MRR + revenue history |
-| **Projects** | Active projects, ventures, classes, circle of people, theme switcher, background prefs |
-| **Plans** | Freeform notes / "unannounced" plans (the Mount Vernon announcement bucket) |
+| **Today** | Today's items, routines, screen card, fitness card, Empire pulse, quote of the day, upcoming reminders, inbox triage |
+| **Calendar** | Month / week / day views. Day + Week are real positioned timelines |
+| **Get Ahead** | % of school work pre-done per class, next 7 / 14 / 30 days. Only counts `category: "school"` events with a `linkedClassId` |
+| **Projects** | Mod Schedule (real Mount Vernon period/lunch schedule), routine templates, projects & ventures, plus a side rail: School config, Theme, Classes, Circle |
+| **Plans** | Freeform notes — ideas, meeting talking points, "unannounced" plans |
+| **Empire** | Ventures with status + monthly revenue history → MRR, lifetime, mini chart |
 | **Goals** | Week / semester / year / identity statements |
-| **Achievements** | ~40 earnable + Davis's own custom ones |
-| **Insights** | XP trend, effort by category, **routine-day vs no-routine-day screentime mirror** |
-| **Levels** | 20-level ladder (Inquirer → Davis) with quadratic XP curve |
-| **Customize** | Tabs / ranks / custom achievements / custom theme / **Pages & widgets** builder |
-| **(dynamic)** | Any tab Davis or you have added via `moremeAgent.tabs.add` |
+| **Screens** | Sessions, urge log, budget, OS-level tracking + siren-when-disabled |
+| **Progress → Achievements** | 48 built-in earnable achievements + Davis's own custom ones |
+| **Progress → Levels** | 10-level ladder (Initiate → Dude Perfect, the site's original tier names) with quadratic XP curve. A capstone card appears at max level |
+| **Progress → Insights** | 30-day XP trend, completion rate, best streak, effort by category, routine-day vs no-routine-day screentime mirror |
+| **Customize** | Tabs, ranks, custom achievements, custom theme, quotes, Pages & widgets builder |
+| **(dynamic)** | Any tab added via `moremeAgent.tabs.add` |
 
 ## 3 · The agent surface — `window.moremeAgent`
 
-Installed on the renderer at boot. Read it. Mutate it. Everything persists and syncs.
+Installed on the renderer at boot. Read it. Mutate it. Everything persists and syncs. There is **no bridge, no NT5/Hermes remote control** — that was removed along with NT5's AI-mode switch; this is a plain in-page API (`agentApi.ts`) with no `wire` root.
 
 ### Read
 
@@ -95,8 +100,10 @@ moremeAgent.achievements.remove(id);
 
 ### Ranks
 
+10 levels (1..10). Default names are Mount Vernon's own site's original ladder: Initiate, Worker, Hard Worker, Dedicated Worker, Gymnast, Dedicated Gymnast, Athlete, Dedicated Athlete, Unstoppable, Dude Perfect.
+
 ```js
-moremeAgent.ranks.set(level, name);   // 1..20
+moremeAgent.ranks.set(level, name);   // 1..10
 moremeAgent.ranks.resetAll();
 ```
 
@@ -109,17 +116,32 @@ moremeAgent.theme.clearCustom();
 moremeAgent.theme.useCustom(true | false);
 ```
 
+`"papatui"` (espresso/sand/teal) is the default. `"dp"` = Dude Perfect (turquoise on navy). `"sports"` = scoreboard gold/red.
+
+### Quotes
+
+```js
+moremeAgent.quotes.add(text, by);
+moremeAgent.quotes.remove(id);
+```
+
+Quotes are entirely user-supplied — nothing is pre-seeded. Banner/widget hide when empty.
+
 ## 4 · State you should know about (high-impact)
 
-- **`s.events`** — all CalEvents (recurring routines + one-off). Categories: `routine | class | school | iproject | business | venture | project | arg | meeting | travel | announcement | fitness | personal`.
+- **`s.events`** — all CalEvents (recurring routines + one-off). Categories: `routine | class | school | business | venture | project | meeting | travel | announcement | fitness | personal`. (No `iproject`, no `arg` — both removed as not-currently-relevant fiction/scope.)
 - **`s.completions`** — keyed `${eventId}::${YYYY-MM-DD}` → unlock timestamp.
+- **`s.schoolMods`** — `SchoolMod[]`, the real Mount Vernon Mod schedule (4 mods/year). Each mod has per-weekday `SchoolBlock[]` — the 9:30–10:00 special block is auto-filled (Mon Clubs, Tue Advisory, Wed Chapel, Thu Clubs, Fri Flex), periods and the lunch-slot class are entered manually as Davis learns the real rotation. A period block can carry `linkedClassId` to tie it to a real `Class` so its work counts toward Get Ahead. Lunch A/B is computed from room floor (N/S + 1 or 3 → B Lunch); a subject starting "GTD" gets "GTD Lunch" instead.
+- **`s.classes`** — `Class[]`. `Class.period` (optional) is a *separate* weekly-meeting generator (`clsperiod-<id>` events) from Mod Schedule — both exist; Mod Schedule is the real, detailed source, `Class.period` is a quick fallback when you don't need the full Mod detail. Don't apply both for the same class or you'll get duplicate calendar events.
+- **`s.fitnessSessions`** — logged workouts (kind/what/minutes/distance), separate from fitness-category CalEvents.
+- **`s.touches`** — Circle relationship-touch log (`logTouch(personId, note)`), drives `lastTouch`/"next event with" on Circle cards.
 - **`s.screenSessions`** — manual + tracked screen sessions.
 - **`s.screen`** — base/bonus/cap budget; `windowStart`/`windowEnd` pre-commit window.
 - **`s.urges`** — every urge logged with `resolution: "resisted" | "later" | "did-it"`.
-- **`s.customization`** — your own surface (tabs, ranks, achievements, widgets, theme).
-- **`s.school`** — `{ grade9Year: 2026, path: "Inquiry" }`. Derives the grade live.
-- **`s.ventures`** — Meteor Enterprises is seeded; add more here.
-- **`s.unlockedAchievements`** — built-in achievement unlocks by id.
+- **`s.customization`** — Davis's own surface (tabs, ranks, achievements, widgets, theme, quotes).
+- **`s.school`** — `{ grade9Year, path }`. Derives the grade live.
+- **`s.ventures`** — empty until Davis adds a real one. Nothing seeded.
+- **`s.unlockedAchievements`** — built-in achievement unlocks by id, recomputed from real activity every render.
 
 For everything else, read the source of truth at `apps/desktop/src/moreme/types.ts`.
 
@@ -140,9 +162,10 @@ MoreMe was built on three honest principles. Don't violate them, no matter what'
 
 ### When asked to add features or change UI
 
-- Use `moremeAgent` only. Never edit source. The app's whole point is that you mutate state, not the binary.
+- **Prefer `moremeAgent`** for anything that's really "Davis's own data" — a personal tab, a widget, a custom achievement, a theme tweak, a rank rename. That's what the agent surface is for, and it's instant, reversible, and doesn't need a build.
+- **Editing the actual source** (`apps/desktop/src/moreme/*`) is fair game, and is how this app has actually been built and extended — new tabs, new data model fields, new views. If the ask is a real product feature (not just "Davis's own customization"), read `CLAUDE.md`'s workflow: commit on the working branch, `tsc --noEmit`, full `npm run build`, verify in an actual running browser, then push and merge direct to `main` (no review gate). Never fabricate data — real values or an honest "needs setup" empty state.
 - Build small. A new tab with one stat + one counter + one checklist is more honest than a giant dashboard.
-- Mirror the lore: stat sources are CamelCase'd; counters can track real things ("Pushups today"); links can point at iProject work; quote widgets pull from the daily rotation.
+- Mirror reality, not lore: stat sources are CamelCase'd; counters can track real things ("Pushups today"); quote widgets pull from Davis's own quote rotation. Don't invent presets for things that are really freeform (e.g. a hobby, a project "kind") — Davis has explicitly said interests shouldn't be baked in as dropdown options even when real.
 - Default to `theme.set("sports")` for workouts, `"papatui"` for reset/rest days, `"dp"` for the standard build.
 
 ## 6 · Useful recipes
@@ -150,7 +173,7 @@ MoreMe was built on three honest principles. Don't violate them, no matter what'
 ### "Set me up a Workouts tab."
 
 ```js
-const t = moremeAgent.tabs.add({ label: "Workouts", icon: "🏋️" });
+const t = moremeAgent.tabs.add({ label: "Workouts", icon: "◆" });
 moremeAgent.widgets.add(t, { kind: "quote",     title: "Get up" });
 moremeAgent.widgets.add(t, { kind: "stat",      title: "XP today", source: "xp.total", format: "number" });
 moremeAgent.widgets.add(t, { kind: "counter",   title: "Pushups",  value: 0, step: 10 });
@@ -158,6 +181,8 @@ moremeAgent.widgets.add(t, { kind: "counter",   title: "Pullups",  value: 0, ste
 moremeAgent.widgets.add(t, { kind: "checklist", title: "Today's lift",
   items: [{ id: "a", text: "Squat 3×5", done: false }, { id: "b", text: "Bench 3×5", done: false }, { id: "c", text: "Row 3×8", done: false }] });
 ```
+
+(Note: real workouts are better logged through Today's Fitness card / `logFitnessSession` in the store, which feeds the fitness achievement track — this tab is for the dashboard view, not a substitute for logging.)
 
 ### "Drop the day's screen stat on Today."
 
@@ -178,10 +203,8 @@ moremeAgent.achievements.claim(<id>);
 
 ```js
 ["Grom", "Paddler", "Standing Up", "Reading Sets", "Bottom Turn",
- "Carving", "Cutback", "Snap", "Air", "Tube Rider",
- "Pipeline", "Macking", "Big Wave", "Charger", "Local",
- "Waterman", "Free Surfer", "Comp Tour", "World Title", "Davis"
-].forEach((name, i) => moremeAgent.ranks.set(i + 1, name));
+ "Carving", "Cutback", "Snap", "Air", "Dude Perfect"
+].forEach((name, i) => moremeAgent.ranks.set(i + 1, name));  // 10 levels
 ```
 
 ### "Sports theme + stadium-light background."
@@ -197,11 +220,12 @@ moremeAgent.theme.setCustom({
 
 ## 7 · Hard limits
 
-- **Never** invent grade level, school year, path. Read them from state via `state().school` and `xp.streak` etc.
+- **Never** invent grade level, school year, path, class schedule, or bell times. Read them from state (`state().school`, `state().schoolMods`) and never guess a Mount Vernon period time that hasn't actually been entered.
 - **Never** pretend you can OS-control the machine. OS-level tracking already lives in `electron/tracking.ts`; you mutate state, not processes.
 - **Never** generate fake achievement unlocks. `unlockedAchievements` is recomputed from real activity. Use **custom achievements** for things Davis claims manually.
 - **Never** disable the siren. The siren-when-tracking-is-off is the deal Davis made with themselves. If Davis asks you to silence it without enabling tracking, say no.
 - **Never** moralize. Sentences like "you should really…" or "try to…" are out. Reflect the number; suggest a recipe; let Davis decide.
+- **Never** add emojis to the UI — geometric marks only (◆ ◈ › ◇ ▲ ✦ ❖).
 
 ## 8 · Where the code lives
 
@@ -211,4 +235,5 @@ moremeAgent.theme.setCustom({
 - Widget renderers · `apps/desktop/src/moreme/widgets.tsx`
 - Customize builder · `apps/desktop/src/moreme/customize.tsx`
 - Tab routing · `apps/desktop/src/moreme/ui.tsx`
+- Mod/period schedule · `apps/desktop/src/moreme/school.tsx`
 - Tracking · `apps/desktop/electron/tracking.ts`

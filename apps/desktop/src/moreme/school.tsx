@@ -32,6 +32,7 @@ export function SchoolModsCard({ s }: { s: State }) {
       <div style={{ fontSize: 11, color: T.inkTiny, marginBottom: 10, lineHeight: 1.5 }}>
         4 Mods a year. Periods rotate order day to day, so build each weekday's real blocks as you learn them —
         nothing here is guessed. The 9:30–10:00 special block is filled in automatically per weekday.
+        Link a period to a Class (Projects → Classes) and its assignments show up under Get Ahead.
       </div>
       {s.schoolMods.length === 0 && (
         <div style={{ fontSize: 12, color: T.inkTiny, fontStyle: "italic", marginBottom: 10 }}>No mods added yet.</div>
@@ -68,7 +69,7 @@ function SchoolModRow({ m, s, open, onToggle }: { m: SchoolMod; s: State; open: 
             <Field label="Ends"><input type="date" value={m.endDate} onChange={(e) => upsertSchoolMod({ ...m, endDate: e.target.value })} /></Field>
           </div>
 
-          {WEEKDAYS.map((w) => <DayEditor key={w.d} modId={m.id} weekday={w.d} label={w.label} blocks={m.days[w.d] ?? []} />)}
+          {WEEKDAYS.map((w) => <DayEditor key={w.d} modId={m.id} weekday={w.d} label={w.label} blocks={m.days[w.d] ?? []} s={s} />)}
 
           <div style={{ display: "flex", gap: 6 }}>
             <button className="mm-btn mm-btn-primary" style={{ flex: 1 }} onClick={() => generateSchoolModEvents(m.id)}>{applied ? "Update calendar" : "Add to calendar"}</button>
@@ -81,7 +82,7 @@ function SchoolModRow({ m, s, open, onToggle }: { m: SchoolMod; s: State; open: 
   );
 }
 
-function DayEditor({ modId, weekday, label, blocks }: { modId: string; weekday: number; label: string; blocks: SchoolBlock[] }) {
+function DayEditor({ modId, weekday, label, blocks, s }: { modId: string; weekday: number; label: string; blocks: SchoolBlock[]; s: State }) {
   const [showAdd, setShowAdd] = useState(false);
   const [showLunch, setShowLunch] = useState(false);
   const sorted = [...blocks].sort((a, b) => a.start.localeCompare(b.start));
@@ -89,26 +90,28 @@ function DayEditor({ modId, weekday, label, blocks }: { modId: string; weekday: 
     <div style={{ padding: 8, background: T.sunk, borderRadius: 8 }}>
       <div style={{ fontSize: 10, letterSpacing: ".08em", textTransform: "uppercase", color: T.inkTiny, marginBottom: 6 }}>{label}</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 6 }}>
-        {sorted.map((b) => <BlockRow key={b.id} modId={modId} weekday={weekday} b={b} />)}
+        {sorted.map((b) => <BlockRow key={b.id} modId={modId} weekday={weekday} b={b} s={s} />)}
       </div>
       <div style={{ display: "flex", gap: 6 }}>
         <button className="mm-btn" style={{ padding: "3px 8px", fontSize: 11 }} onClick={() => setShowAdd((v) => !v)}>+ Period</button>
         <button className="mm-btn" style={{ padding: "3px 8px", fontSize: 11 }} onClick={() => setShowLunch((v) => !v)}>Set lunch-slot class</button>
       </div>
-      {showAdd && <AddPeriodForm modId={modId} weekday={weekday} onDone={() => setShowAdd(false)} />}
-      {showLunch && <LunchForm modId={modId} weekday={weekday} onDone={() => setShowLunch(false)} />}
+      {showAdd && <AddPeriodForm modId={modId} weekday={weekday} s={s} onDone={() => setShowAdd(false)} />}
+      {showLunch && <LunchForm modId={modId} weekday={weekday} s={s} onDone={() => setShowLunch(false)} />}
     </div>
   );
 }
 
-function BlockRow({ modId, weekday, b }: { modId: string; weekday: number; b: SchoolBlock }) {
+function BlockRow({ modId, weekday, b, s }: { modId: string; weekday: number; b: SchoolBlock; s: State }) {
   const tone = b.kind === "special" ? T.cool : b.kind === "lunch" ? "#4ADE80" : T.mint;
+  const cls = b.linkedClassId ? s.classes.find((c) => c.id === b.linkedClassId) : undefined;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, borderLeft: `3px solid ${tone}`, paddingLeft: 8 }}>
       <span style={{ width: 92, color: T.inkTiny, fontFamily: "ui-monospace, monospace", fontSize: 10 }}>{b.start}–{b.end}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <b>{b.label}</b>
         {(b.room || b.teacher) && <span style={{ color: T.inkTiny }}> · {[b.room, b.teacher].filter(Boolean).join(" · ")}</span>}
+        {cls && <span className="mm-pill" style={{ marginLeft: 6, background: T.mint, color: T.bg, fontSize: 9 }}>◆ {cls.name}</span>}
       </div>
       {b.kind === "period" && (
         <input placeholder="room" value={b.room ?? ""} onChange={(e) => updateSchoolBlock(modId, weekday, b.id, { room: e.target.value })} style={{ width: 60, fontSize: 11, padding: "2px 6px" }} />
@@ -118,15 +121,25 @@ function BlockRow({ modId, weekday, b }: { modId: string; weekday: number; b: Sc
   );
 }
 
-function AddPeriodForm({ modId, weekday, onDone }: { modId: string; weekday: number; onDone: () => void }) {
+function ClassPicker({ s, value, onChange }: { s: State; value: string; onChange: (v: string) => void }) {
+  return (
+    <select value={value} onChange={(e) => onChange(e.target.value)} style={{ width: 130 }} title="Link to a Class so this counts toward Get Ahead">
+      <option value="">No class link</option>
+      {s.classes.map((c) => <option key={c.id} value={c.id}>{c.name || "(untitled)"}</option>)}
+    </select>
+  );
+}
+
+function AddPeriodForm({ modId, weekday, s, onDone }: { modId: string; weekday: number; s: State; onDone: () => void }) {
   const [subject, setSubject] = useState("");
   const [room, setRoom] = useState("");
   const [teacher, setTeacher] = useState("");
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
+  const [classId, setClassId] = useState("");
   function save() {
     if (!subject.trim() || !start || !end) return;
-    addSchoolBlock(modId, weekday, { kind: "period", label: subject.trim(), room: room.trim() || undefined, teacher: teacher.trim() || undefined, start, end });
+    addSchoolBlock(modId, weekday, { kind: "period", label: subject.trim(), room: room.trim() || undefined, teacher: teacher.trim() || undefined, start, end, linkedClassId: classId || undefined });
     onDone();
   }
   return (
@@ -140,18 +153,25 @@ function AddPeriodForm({ modId, weekday, onDone }: { modId: string; weekday: num
         <input type="time" value={start} onChange={(e) => setStart(e.target.value)} />
         <input type="time" value={end} onChange={(e) => setEnd(e.target.value)} />
       </div>
+      <div className="mm-row">
+        <ClassPicker s={s} value={classId} onChange={setClassId} />
+        <div style={{ fontSize: 10, color: T.inkTiny, flex: 1, alignSelf: "center" }}>
+          Link to Get Ahead's class list — optional, only if you've added it in Projects → Classes.
+        </div>
+      </div>
       <button className="mm-btn mm-btn-primary" onClick={save}>Add</button>
     </div>
   );
 }
 
-function LunchForm({ modId, weekday, onDone }: { modId: string; weekday: number; onDone: () => void }) {
+function LunchForm({ modId, weekday, s, onDone }: { modId: string; weekday: number; s: State; onDone: () => void }) {
   const [subject, setSubject] = useState("");
   const [room, setRoom] = useState("");
   const [teacher, setTeacher] = useState("");
+  const [classId, setClassId] = useState("");
   function save() {
     if (!subject.trim()) return;
-    setLunchSlot(modId, weekday, subject, room, teacher);
+    setLunchSlot(modId, weekday, subject, room, teacher, classId || undefined);
     onDone();
   }
   return (
@@ -165,6 +185,7 @@ function LunchForm({ modId, weekday, onDone }: { modId: string; weekday: number;
         <input placeholder="Room" value={room} onChange={(e) => setRoom(e.target.value)} style={{ width: 70 }} />
       </div>
       <input placeholder="Teacher (optional)" value={teacher} onChange={(e) => setTeacher(e.target.value)} />
+      <ClassPicker s={s} value={classId} onChange={setClassId} />
       <button className="mm-btn mm-btn-primary" onClick={save}>Set</button>
     </div>
   );

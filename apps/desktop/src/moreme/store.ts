@@ -205,11 +205,12 @@ export function lunchKindForRoom(room?: string): "A" | "B" {
 // the class's room and inserts both the class portion and the Lunch block
 // in the correct order, replacing any existing lunch pair for that day.
 // A period literally labeled "GTD" gets "GTD Lunch" instead of A/B.
-export function setLunchSlot(modId: string, weekday: number, subject: string, room: string, teacher?: string) {
+export function setLunchSlot(modId: string, weekday: number, subject: string, room: string, teacher?: string, linkedClassId?: string) {
   const isGtd = /^gtd\b/i.test(subject.trim());
   const kind = lunchKindForRoom(room);
   const classBlock: SchoolBlock = {
     id: uid(), kind: "period", label: subject.trim() || "Class", room: room.trim() || undefined, teacher: teacher?.trim() || undefined,
+    linkedClassId: linkedClassId || undefined,
     start: kind === "B" ? "11:15" : "11:50",
     end: kind === "B" ? "12:20" : "12:55",
   };
@@ -279,7 +280,8 @@ export function generateSchoolModEvents(modId: string) {
           id: `${prefix}${weekday}-${b.id}`,
           title: b.label, category: b.kind === "lunch" ? "personal" : "class",
           date: m.startDate, until: m.endDate, allDay: false, start: b.start, end: b.end,
-          location: b.room, people: [], checklist: [], priority: "normal", visibility: "visible",
+          location: b.room, people: [], linkedClassId: b.kind === "period" ? b.linkedClassId : undefined,
+          checklist: [], priority: "normal", visibility: "visible",
           recurrence: { kind: "weekly", days: [weekday] }, reminders: [],
           xp: b.kind === "period" ? 5 : 0, status: "planned", createdAt: Date.now(),
         });

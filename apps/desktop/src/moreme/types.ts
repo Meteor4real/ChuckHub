@@ -347,6 +347,7 @@ export type SchoolBlock = {
   room?: string;         // e.g. "N2", "S1", "HQ1", "HQ2", "B", "MAC", "Blackbox"
   start: string;         // HH:MM
   end: string;           // HH:MM
+  linkedClassId?: string; // period blocks only — anchors this block's events to Get Ahead
 };
 // weekday: 1=Mon .. 5=Fri (matches CalEvent recurrence day numbering)
 export type SchoolMod = {
