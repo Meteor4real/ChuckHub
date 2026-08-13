@@ -9,7 +9,7 @@ import type {
   ScreenSession, ScreenSettings, State, StatSource, UrgeLog, UrgeResolution,
   Venture, VentureStatus, Widget,
 } from "./types";
-import { FITNESS_KIND_LABEL, MAX_LEVEL, RANK_NAMES, cumulativeXp } from "./types";
+import { DEFAULT_XP_BY_CATEGORY, FITNESS_KIND_LABEL, MAX_LEVEL, RANK_NAMES, cumulativeXp } from "./types";
 import { setCustomThemeResolver } from "./styles";
 
 // Tell styles.ts how to fetch the user's custom palette out of state. This
@@ -319,7 +319,6 @@ function seedScreenSettings(): ScreenSettings {
     bonusPerRoutineMinutes: 20,    // +20 per routine you complete today
     capBudgetMinutes: 360,         // 6h ceiling, even with every routine done
     awardXpPerUrgeResisted: 25,    // resisting is real work; XP it
-    // No default window — pre-commit one when you're ready.
   };
 }
 
@@ -401,6 +400,7 @@ export function loadState(): State {
         rewards: p.rewards && p.rewards.length === MAX_LEVEL ? p.rewards : d.rewards,
         unlockedAchievements: p.unlockedAchievements ?? {},
         startedAt: p.startedAt ?? Date.now(),
+        parentCode: p.parentCode,
       };
     } else cache = seedState();
   } catch { cache = seedState(); }
@@ -547,7 +547,7 @@ export function streakInfo(s: State = loadState()): { current: number; best: num
 export const blankEvent = (date: string): CalEvent => ({
   id: uid(), title: "", category: "personal", date, allDay: false,
   start: "09:00", end: "10:00", checklist: [], priority: "normal",
-  visibility: "visible", recurrence: { kind: "none" }, reminders: [], xp: 10,
+  visibility: "visible", recurrence: { kind: "none" }, reminders: [], xp: DEFAULT_XP_BY_CATEGORY.personal,
   status: "planned", createdAt: Date.now(),
 });
 export function upsertEvent(e: CalEvent) {
@@ -1095,6 +1095,27 @@ export function setScreenSettings(patch: Partial<ScreenSettings>) {
   updateState((s) => ({ ...s, screen: { ...s.screen, ...patch } }));
 }
 
+// ── Parent code ─────────────────────────────────────────────────────────
+// A 4-digit code a parent holds, gating screen-budget numbers and adding
+// level rewards. Not real security (it's local state) — it's a friction
+// point so a kid can't quietly self-buff, and a promise the parent can
+// reset without the kid's cooperation.
+export function hasParentCode(s: State = loadState()): boolean {
+  return !!s.parentCode;
+}
+export function checkParentCode(code: string, s: State = loadState()): boolean {
+  return !!s.parentCode && s.parentCode === code;
+}
+// Set a new code. If one is already set, `currentCode` must match it first
+// (a parent resets it themselves — the whole point). Returns false on a
+// wrong/missing current code, true on success.
+export function setParentCode(newCode: string, currentCode?: string): boolean {
+  const s = loadState();
+  if (s.parentCode && s.parentCode !== currentCode) return false;
+  updateState((st) => ({ ...st, parentCode: newCode }));
+  return true;
+}
+
 // Minutes for a single session — explicit > computed-from-times > running.
 export function computeSessionMinutes(x: ScreenSession, now: number = Date.now()): number {
   if (x.minutes != null) return Math.max(0, Math.round(x.minutes));
@@ -1131,15 +1152,6 @@ export function earnedBudgetOn(date: string, s: State = loadState()): Budget {
   const bonus = done * s.screen.bonusPerRoutineMinutes;
   const total = Math.min(s.screen.capBudgetMinutes, base + bonus);
   return { base, bonus, total, routinesDone: done, routinesPossible: possible };
-}
-
-// Pre-committed screens window — handles overnight ranges (e.g. 22:00→02:00).
-export function isInWindow(s: State = loadState(), at: Date = new Date()): boolean | null {
-  const { windowStart, windowEnd } = s.screen;
-  if (!windowStart || !windowEnd) return null;
-  const m = at.getHours() * 60 + at.getMinutes();
-  const a = toMin(windowStart), b = toMin(windowEnd);
-  return a <= b ? m >= a && m <= b : m >= a || m <= b;
 }
 
 export function startScreenSession(category: ScreenCategory, what: string, note?: string): ScreenSession {
@@ -1647,7 +1659,6 @@ type Aggregates = {
   underBudgetStreak: number;       // longest run of consecutive under-budget days
   urgesLogged: number;
   urgesResisted: number;
-  daysAllSessionsInWindow: number; // days with ≥1 session, ALL inside pre-committed window
   routineFirstDays: number;        // days morning routine completed before first session
   earnedItDays: number;            // days with ≥1 routine done AND under budget
   // ── school integrity ──────────────────────────────────────────────────
@@ -1765,19 +1776,12 @@ function aggregate(s: State): Aggregates {
   const screenDates = new Set<string>();
   for (const x of s.screenSessions) screenDates.add(x.date);
   const sortedScreenDates = [...screenDates].sort();
-  let daysUnderBudget = 0, daysAllSessionsInWindow = 0, routineFirstDays = 0, earnedItDays = 0;
+  let daysUnderBudget = 0, routineFirstDays = 0, earnedItDays = 0;
   for (const d of sortedScreenDates) {
     const used = screenMinutesOn(d, s);
     const budget = earnedBudgetOn(d, s);
     if (used <= budget.total) daysUnderBudget++;
     if (budget.routinesDone > 0 && used <= budget.total) earnedItDays++;
-    // window: must have a configured window AND every session of that day must
-    // have started within it
-    if (s.screen.windowStart && s.screen.windowEnd) {
-      const sess = s.screenSessions.filter((x) => x.date === d);
-      const allIn = sess.length > 0 && sess.every((x) => isInWindow(s, new Date(x.startedAt)) === true);
-      if (allIn) daysAllSessionsInWindow++;
-    }
     // routine before phone: any morning routine (semantic — starts before
     // 10:00) done that day, with its completion ts before the first
     // screen-session minute of the day
@@ -1827,7 +1831,7 @@ function aggregate(s: State): Aggregates {
     screenSessionsLogged: s.screenSessions.length,
     daysUnderBudget, underBudgetStreak,
     urgesLogged: s.urges.length, urgesResisted,
-    daysAllSessionsInWindow, routineFirstDays, earnedItDays,
+    routineFirstDays, earnedItDays,
     schoolPrepared, schoolAllYours, schoolHonestlyLogged,
     fitnessCount: (byCategory.fitness ?? 0) + s.fitnessSessions.length, fitnessDaysTotal, fitnessStreak, longFitnessDone,
   };
@@ -1889,7 +1893,6 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: "screen-discipline-30", title: "Thirty Days Of Self Control", desc: "Thirty days under budget, total.", category: "discipline", progress: (a) => [a.daysUnderBudget, 30] },
   { id: "felt-it", title: "Caught Myself", desc: "Log your first urge. Catching the urge IS the win.", category: "discipline", progress: (a) => [Math.min(a.urgesLogged, 1), 1] },
   { id: "ten-resisted", title: "Ten Times I Didn't Cave", desc: "Resist ten urges (pick a replacement instead).", category: "discipline", progress: (a) => [a.urgesResisted, 10] },
-  { id: "kept-window", title: "Stayed In My Lane", desc: "Seven days where every screen session started inside your pre-committed window.", category: "discipline", progress: (a) => [a.daysAllSessionsInWindow, 7] },
   { id: "routine-first-5", title: "Routine Before Phone", desc: "Five days where the morning routine was done before any screens.", category: "discipline", progress: (a) => [a.routineFirstDays, 5] },
 
   // School integrity — honest self-mirror

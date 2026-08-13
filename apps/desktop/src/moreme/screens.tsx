@@ -18,11 +18,12 @@ import { SCREEN_CATEGORIES, SCREEN_CATEGORY_LABEL } from "./types";
 import type { Replacement, ScreenCategory, ScreenSession, State, UrgeResolution } from "./types";
 import {
   activeScreenSession, addReplacement, computeSessionMinutes, earnedBudgetOn,
-  isInWindow, loadState, logScreenSession, logUrge, removeReplacement,
+  loadState, logScreenSession, logUrge, removeReplacement,
   removeScreenSession, removeUrge, screenMinutesOn, screenSessionsOn,
   setScreenSettings, startScreenSession, stopScreenSession, subscribeState,
   today, updateReplacement, urgesOn,
 } from "./store";
+import { ParentGate } from "./parentGate";
 
 // "1h 23m" / "47m" — never a bare integer in UI; it's about the read.
 export function fmtMin(min: number): string {
@@ -49,15 +50,12 @@ export function ScreenCardToday({ s, onOpenUrge, onOpenLog }: {
   const active = activeScreenSession(s);
   const urgeCount = urgesOn(date, s).length;
   const resistedToday = urgesOn(date, s).filter((u) => u.resolution === "resisted").length;
-  const winNow = isInWindow(s);
 
   return (
     <div className="mm-card" style={{ padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
         <div style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: T.inkTiny }}>Screens today</div>
         <div style={{ flex: 1 }} />
-        {winNow === false && <span className="mm-pill" style={{ background: "#FFD23E22", color: "#FFD23E" }}>Outside window</span>}
-        {winNow === true && <span className="mm-pill" style={{ background: T.mint + "22", color: T.mint }}>In window</span>}
       </div>
 
       {/* Numbers row */}
@@ -349,38 +347,26 @@ export function UrgeModal({ s, onClose }: { s: State; onClose: () => void }) {
 function ScreenSettingsCard({ s }: { s: State }) {
   return (
     <Section title="Settings · earn the screens">
-      <div className="mm-row" style={{ alignItems: "flex-end", flexWrap: "wrap" }}>
-        <Field label="Base daily budget (min)">
-          <input type="number" min={0} max={720} value={s.screen.baseBudgetMinutes}
-            onChange={(e) => setScreenSettings({ baseBudgetMinutes: clamp(+e.target.value, 0, 720) })} style={{ width: 100 }} />
-        </Field>
-        <Field label="Bonus per routine (min)">
-          <input type="number" min={0} max={120} value={s.screen.bonusPerRoutineMinutes}
-            onChange={(e) => setScreenSettings({ bonusPerRoutineMinutes: clamp(+e.target.value, 0, 120) })} style={{ width: 100 }} />
-        </Field>
-        <Field label="Ceiling (max even with bonuses)">
-          <input type="number" min={30} max={960} value={s.screen.capBudgetMinutes}
-            onChange={(e) => setScreenSettings({ capBudgetMinutes: clamp(+e.target.value, 30, 960) })} style={{ width: 100 }} />
-        </Field>
-        <Field label="XP per urge resisted">
-          <input type="number" min={0} max={200} value={s.screen.awardXpPerUrgeResisted}
-            onChange={(e) => setScreenSettings({ awardXpPerUrgeResisted: clamp(+e.target.value, 0, 200) })} style={{ width: 80 }} />
-        </Field>
-      </div>
-      <div className="mm-row" style={{ alignItems: "flex-end", marginTop: 6, flexWrap: "wrap" }}>
-        <Field label="Pre-committed window starts">
-          <input type="time" value={s.screen.windowStart ?? ""} onChange={(e) => setScreenSettings({ windowStart: e.target.value || undefined })} />
-        </Field>
-        <Field label="…and ends">
-          <input type="time" value={s.screen.windowEnd ?? ""} onChange={(e) => setScreenSettings({ windowEnd: e.target.value || undefined })} />
-        </Field>
-        {(s.screen.windowStart && s.screen.windowEnd) && (
-          <button className="mm-btn" onClick={() => setScreenSettings({ windowStart: undefined, windowEnd: undefined })}>Clear window</button>
-        )}
-      </div>
-      <div style={{ fontSize: 11, color: T.inkTiny, marginTop: 6 }}>
-        Pre-commit a window when you're calm. Future-you will thank present-you.
-      </div>
+      <ParentGate s={s}>
+        <div className="mm-row" style={{ alignItems: "flex-end", flexWrap: "wrap" }}>
+          <Field label="Base daily budget (min)">
+            <input type="number" min={0} max={720} value={s.screen.baseBudgetMinutes}
+              onChange={(e) => setScreenSettings({ baseBudgetMinutes: clamp(+e.target.value, 0, 720) })} style={{ width: 100 }} />
+          </Field>
+          <Field label="Bonus per routine (min)">
+            <input type="number" min={0} max={120} value={s.screen.bonusPerRoutineMinutes}
+              onChange={(e) => setScreenSettings({ bonusPerRoutineMinutes: clamp(+e.target.value, 0, 120) })} style={{ width: 100 }} />
+          </Field>
+          <Field label="Ceiling (max even with bonuses)">
+            <input type="number" min={30} max={960} value={s.screen.capBudgetMinutes}
+              onChange={(e) => setScreenSettings({ capBudgetMinutes: clamp(+e.target.value, 30, 960) })} style={{ width: 100 }} />
+          </Field>
+          <Field label="XP per urge resisted">
+            <input type="number" min={0} max={200} value={s.screen.awardXpPerUrgeResisted}
+              onChange={(e) => setScreenSettings({ awardXpPerUrgeResisted: clamp(+e.target.value, 0, 200) })} style={{ width: 80 }} />
+          </Field>
+        </div>
+      </ParentGate>
     </Section>
   );
 }

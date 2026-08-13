@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { T } from "./styles";
 import {
-  CATEGORY_META, CATEGORY_ORDER, HELP_KINDS, HELP_KIND_LABEL, MAX_LEVEL, RANK_NAMES, cumulativeXp, levelStep,
+  CATEGORY_META, CATEGORY_ORDER, DEFAULT_XP_BY_CATEGORY, HELP_KINDS, HELP_KIND_LABEL, MAX_LEVEL, RANK_NAMES, cumulativeXp, levelStep,
 } from "./types";
 import type {
   CalEvent, Category, ChecklistItem, Class, Goal, HelpKind, InboxItem, Priority,
@@ -861,7 +861,7 @@ function EventEditor({ s, draft, onClose, onSaved }: { s: State; draft: CalEvent
           </Field>
 
           <Field label="Category">
-            <select value={e.category} onChange={(ev) => set("category", ev.target.value as Category)}>
+            <select value={e.category} onChange={(ev) => { const c = ev.target.value as Category; setE((p) => ({ ...p, category: c, xp: DEFAULT_XP_BY_CATEGORY[c] })); }}>
               {CATEGORY_ORDER.map((c) => <option key={c} value={c}>{CATEGORY_META[c].label}</option>)}
             </select>
           </Field>
@@ -890,7 +890,9 @@ function EventEditor({ s, draft, onClose, onSaved }: { s: State; draft: CalEvent
                 ))}
               </div>
             </Field>
-            <Field label="XP reward"><input type="number" min={0} max={500} value={e.xp} onChange={(ev) => set("xp", Math.max(0, Number(ev.target.value) || 0))} style={{ width: 90 }} /></Field>
+            <Field label="XP reward">
+              <div style={{ padding: "6px 10px", fontSize: 13, color: T.inkSoft }} title="Fixed by category — not user-editable">{e.xp} XP</div>
+            </Field>
             <Field label="Visibility">
               <div className="mm-seg">
                 {(["visible", "hidden"] as Visibility[]).map((v) => (

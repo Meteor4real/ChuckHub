@@ -150,8 +150,8 @@ export type DistractionLog = { id: string; date: string; note: string; ts: numbe
 // Built for honest awareness, not nags. The system reflects, never lectures.
 // Sessions are logged (quick-add or live timer). Daily budget = base +
 // bonus×routines-done-today (you EARN screens by doing the routines you'd
-// otherwise skip). Optional pre-committed window for "I only play 4–9pm."
-// Urges are tracked because resisting them IS the win — not zero screentime.
+// otherwise skip). Urges are tracked because resisting them IS the win —
+// not zero screentime.
 
 export type ScreenCategory = "gaming" | "social" | "video" | "browsing" | "creative" | "other";
 export const SCREEN_CATEGORIES: ScreenCategory[] = ["gaming", "social", "video", "browsing", "creative", "other"];
@@ -209,8 +209,6 @@ export type ScreenSettings = {
   baseBudgetMinutes: number;      // base daily budget
   bonusPerRoutineMinutes: number; // unlocked per routine you complete that day
   capBudgetMinutes: number;       // ceiling even with bonuses (so it doesn't run away)
-  windowStart?: string;           // HH:MM — pre-committed "screens only after this"
-  windowEnd?: string;             // HH:MM — pre-committed "screens off by this"
   awardXpPerUrgeResisted: number; // XP credit for an urge you logged + resisted
 };
 
@@ -371,6 +369,10 @@ export type State = {
   rewards: LevelReward[];                        // user-set reward text per level
   unlockedAchievements: Record<string, number>;  // id -> unlocked ts
   startedAt: number;
+  // A 4-digit code a parent sets. Gates screen-budget numbers (base/bonus/
+  // ceiling/XP-per-urge) and adding level rewards — never punishments, never
+  // logging. undefined = no code set yet, nothing is locked.
+  parentCode?: string;
 };
 
 // ── Level economy: fewer levels, much heavier XP per level ────────────────
@@ -427,3 +429,10 @@ export const CATEGORY_ORDER: Category[] = [
   "routine", "class", "school", "business", "venture",
   "project", "meeting", "travel", "announcement", "fitness", "personal",
 ];
+
+// Fixed XP per category — not user-editable. Keeps the economy honest:
+// you can't just dial up how much an event is "worth" to yourself.
+export const DEFAULT_XP_BY_CATEGORY: Record<Category, number> = {
+  routine: 15, class: 5, school: 25, business: 20, venture: 20,
+  project: 20, meeting: 10, travel: 10, announcement: 5, fitness: 25, personal: 10,
+};
