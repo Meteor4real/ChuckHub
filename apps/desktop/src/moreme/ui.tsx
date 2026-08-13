@@ -9,7 +9,7 @@ import {
 } from "./types";
 import type {
   CalEvent, Category, ChecklistItem, Class, Goal, HelpKind, InboxItem, Person, Priority,
-  Project, ProjectKind, Recurrence, SchoolPath, State, Visibility,
+  Project, Recurrence, SchoolPath, State, Visibility,
 } from "./types";
 import {
   ACHIEVEMENTS, achievementProgress, blankClass, blankEvent, blankProject,
@@ -1280,9 +1280,7 @@ function ProjectCard({ p }: { p: Project }) {
     <div className="mm-card" style={{ padding: 16, opacity: p.status === "done" ? 0.75 : 1 }}>
       <div className="mm-row" style={{ alignItems: "center" }}>
         <input value={p.name} onChange={(e) => upsertProject({ ...p, name: e.target.value })} style={{ flex: 1, fontSize: 15, fontWeight: 600 }} />
-        <select value={p.kind} onChange={(e) => upsertProject({ ...p, kind: e.target.value as ProjectKind })}>
-          {(["mod", "venture", "school", "other"] as ProjectKind[]).map((k) => <option key={k} value={k}>{k}</option>)}
-        </select>
+        <input value={p.kind} placeholder="Kind (optional)" onChange={(e) => upsertProject({ ...p, kind: e.target.value })} style={{ width: 110 }} />
         <select value={p.status} onChange={(e) => upsertProject({ ...p, status: e.target.value as Project["status"] })}>
           {(["active", "paused", "done"] as Project["status"][]).map((k) => <option key={k} value={k}>{k}</option>)}
         </select>

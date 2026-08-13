@@ -102,13 +102,14 @@ export type Note = {
   updatedAt: number;
 };
 
-export type ProjectKind = "mod" | "venture" | "school" | "other";
 export type ProjectStatus = "active" | "paused" | "done";
 
 export type Project = {
   id: string;
   name: string;
-  kind: ProjectKind;
+  // Free text, not a preset list — the app doesn't assume what kind of
+  // projects you run. Leave it blank if it's not worth categorizing.
+  kind: string;
   status: ProjectStatus;
   notes?: string;
   deadline?: string;            // YYYY-MM-DD

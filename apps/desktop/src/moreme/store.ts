@@ -5,7 +5,7 @@
 import type {
   CalEvent, Category, Class, ClassPeriod, CustomAchievement, CustomTheme,
   Customization, DistractionLog, DynamicTab, FitnessKind, FitnessSession, Goal, Goals, InboxItem, LevelReward,
-  Note, Person, Project, ProjectKind, Recurrence, Replacement, School, SchoolPath, ScreenCategory,
+  Note, Person, Project, Recurrence, Replacement, School, SchoolPath, ScreenCategory,
   ScreenSession, ScreenSettings, State, StatSource, Touch, UrgeLog, UrgeResolution,
   Venture, VentureStatus, Widget,
 } from "./types";
@@ -445,7 +445,7 @@ export function revealEvent(id: string) {
 }
 
 // ── projects ──────────────────────────────────────────────────────────────
-export const blankProject = (kind: ProjectKind = "other"): Project => ({
+export const blankProject = (kind = ""): Project => ({
   id: uid(), name: "", kind, status: "active", milestones: [],
 });
 export function upsertProject(p: Project) {
@@ -776,7 +776,7 @@ export function inboxToEventDraft(item: InboxItem): CalEvent {
   return { ...blankEvent(today()), title: item.text, allDay: true };
 }
 export function inboxToProject(item: InboxItem) {
-  upsertProject({ ...blankProject("other"), name: item.text });
+  upsertProject({ ...blankProject(), name: item.text });
   removeInbox(item.id);
 }
 export function inboxToGoal(item: InboxItem, bucket: keyof Goals) {
