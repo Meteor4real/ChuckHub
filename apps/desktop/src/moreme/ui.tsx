@@ -1113,7 +1113,7 @@ function ThemeCard() {
   );
 }
 function BackgroundCard() {
-  const bg = (window.hub as { bg?: { get(): Promise<{ minimizeToTray: boolean; runOnStartup: boolean }>; set(p: Partial<{ minimizeToTray: boolean; runOnStartup: boolean }>): Promise<{ minimizeToTray: boolean; runOnStartup: boolean }> } }).bg;
+  const bg = (window.hub as { bg?: { get(): Promise<{ minimizeToTray: boolean; runOnStartup: boolean }>; set(p: Partial<{ minimizeToTray: boolean; runOnStartup: boolean }>): Promise<{ minimizeToTray: boolean; runOnStartup: boolean }> } } | undefined)?.bg;
   const [prefs, setPrefs] = useState<{ minimizeToTray: boolean; runOnStartup: boolean } | null>(null);
   useEffect(() => { if (bg) void bg.get().then(setPrefs); }, [bg]);
   if (!bg) return null;
@@ -1125,7 +1125,7 @@ function BackgroundCard() {
     <div className="mm-card" style={{ padding: 16 }}>
       <div className="serif" style={{ fontSize: 16, marginBottom: 4 }}>Background</div>
       <div style={{ fontSize: 11, color: T.inkTiny, marginBottom: 10 }}>
-        Keep MoreMe syncing, reminding, and running the wire even when the window's closed.
+        Keep MoreMe syncing and reminding even when the window's closed.
       </div>
       <Toggle on={!!prefs?.minimizeToTray} disabled={!prefs} onClick={() => toggle("minimizeToTray")} label="Closing hides to tray (keeps running)" />
       <Toggle on={!!prefs?.runOnStartup} disabled={!prefs} onClick={() => toggle("runOnStartup")} label="Launch on system startup" />

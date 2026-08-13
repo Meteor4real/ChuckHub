@@ -18,11 +18,6 @@ import {
   updateCustomAchievement, updateDynamicTab, updateWidget,
 } from "./store";
 import { setTheme, refreshTheme, type ThemeName } from "./styles";
-import {
-  clearWireArticles, fileExternalArticle, getWireArticles, runRealWorldOnce,
-  type ExternalArticleInput, type WireArticle,
-} from "../services/nt5Wire";
-import { loadTopics } from "../services/nt5Topics";
 import type { CustomAchievement, CustomTheme, State, Widget } from "./types";
 
 function uid(p: string): string { return p + Math.random().toString(36).slice(2, 9); }
@@ -104,22 +99,6 @@ export const moremeAgent = {
     add(text: string, by: string) { addQuote(text, by); },
     remove(id: string) { removeQuote(id); },
   },
-
-  // NT5 wire — how an external agent RUNS the news network when the AI
-  // master switch is "external": read the desk, pull real headlines, and
-  // file anchor-written articles of any shape.
-  wire: {
-    /** Current wire articles, newest first. */
-    articles(): WireArticle[] { return getWireArticles(); },
-    /** The user's topic desk (what they've asked to be covered). */
-    topics() { return loadTopics(); },
-    /** Pull fresh real headlines for every enabled topic (no model involved in external mode — files honest snippets). */
-    pullReal() { return runRealWorldOnce(3); },
-    /** File one article. kind: brief|article|broadcast|blog|social|ticker. */
-    file(a: ExternalArticleInput) { return fileExternalArticle(a); },
-    /** Wipe the wire. */
-    clear() { clearWireArticles(); },
-  },
 };
 
 declare global {
@@ -130,7 +109,7 @@ declare global {
 // The localhost bridge (electron/bridge.ts) forwards {path, args} calls
 // here. Only these roots are callable from outside — anything else is
 // refused. `subscribe` is deliberately absent (no callbacks over HTTP).
-const BRIDGE_ROOTS = new Set(["state", "tabs", "widgets", "ranks", "achievements", "theme", "quotes", "wire"]);
+const BRIDGE_ROOTS = new Set(["state", "tabs", "widgets", "ranks", "achievements", "theme", "quotes"]);
 
 function dispatchBridgeCall(pathStr: string, args: unknown[]): unknown {
   const parts = pathStr.split(".").filter(Boolean);
