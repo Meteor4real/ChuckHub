@@ -7,18 +7,16 @@
 // Example, in the renderer dev console:
 //   moremeAgent.tabs.add({ label: "Workouts", icon: "◆" });  // geometric marks only — NO emojis in the UI
 //   moremeAgent.widgets.add("today", { kind: "counter", title: "Pushups", value: 0, step: 1 });
-//   moremeAgent.theme.set("sports");
 
 import {
   addCustomAchievement, addDynamicTab, addQuote, addWidget, blankWidget,
-  claimCustomAchievement, clearCustomTheme, loadState, moveDynamicTab,
+  claimCustomAchievement, loadState, moveDynamicTab,
   moveWidget, removeCustomAchievement, removeDynamicTab, removeQuote, removeWidget,
-  resetAllRanks, setCustomTheme, setRank, setTabLabel, setUseCustomTheme,
+  resetAllRanks, setRank, setTabLabel,
   subscribeState, toggleTabHidden, unclaimCustomAchievement,
   updateCustomAchievement, updateDynamicTab, updateWidget,
 } from "./store";
-import { setTheme, refreshTheme, type ThemeName } from "./styles";
-import type { CustomAchievement, CustomTheme, State, Widget } from "./types";
+import type { CustomAchievement, State, Widget } from "./types";
 
 function uid(p: string): string { return p + Math.random().toString(36).slice(2, 9); }
 
@@ -83,16 +81,6 @@ export const moremeAgent = {
     claim(id: string) { claimCustomAchievement(id); },
     unclaim(id: string) { unclaimCustomAchievement(id); },
     remove(id: string) { removeCustomAchievement(id); },
-  },
-
-  theme: {
-    /** Switch to a preset or custom theme. */
-    set(name: ThemeName) { setTheme(name); },
-    /** Save a custom palette and switch to it. */
-    setCustom(palette: CustomTheme) { setCustomTheme(palette); refreshTheme(); },
-    /** Clear the saved custom palette and revert to the default. */
-    clearCustom() { clearCustomTheme(); refreshTheme(); },
-    useCustom(on: boolean) { setUseCustomTheme(on); refreshTheme(); },
   },
 
   quotes: {

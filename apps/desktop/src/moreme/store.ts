@@ -3,21 +3,13 @@
 // economy, conflict detection, and rule-based (earnable) achievements.
 
 import type {
-  CalEvent, Category, Class, ClassPeriod, CustomAchievement, CustomTheme,
+  CalEvent, Category, Class, ClassPeriod, CustomAchievement,
   Customization, DistractionLog, DynamicTab, FitnessKind, FitnessSession, Goal, Goals, InboxItem, LevelReward,
   Note, Project, Recurrence, Replacement, School, SchoolBlock, SchoolMod, SchoolPath, ScreenCategory,
   ScreenSession, ScreenSettings, State, StatSource, UrgeLog, UrgeResolution,
   Venture, VentureStatus, Widget,
 } from "./types";
 import { DEFAULT_XP_BY_CATEGORY, FITNESS_KIND_LABEL, MAX_LEVEL, RANK_NAMES, cumulativeXp } from "./types";
-import { setCustomThemeResolver } from "./styles";
-
-// Tell styles.ts how to fetch the user's custom palette out of state. This
-// avoids styles.ts having to import the store (which would cycle). Called
-// at module-load so initTheme() sees the resolver on first paint.
-setCustomThemeResolver(() => {
-  try { return loadState().customization.customTheme ?? null; } catch { return null; }
-});
 
 const KEY = "nchub.moreme.v12";
 
@@ -33,6 +25,8 @@ export const iso = (d: Date) => {
 export const today = () => iso(new Date());
 export const dow = (date: string) => new Date(date + "T00:00:00").getDay();
 export const toMin = (hhmm: string) => { const [h, m] = hhmm.split(":").map(Number); return h * 60 + m; };
+export const fromMin = (min: number) => `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
+export const shiftTime = (hhmm: string, deltaMin: number) => fromMin(toMin(hhmm) + deltaMin);
 export const fmtTime = (hhmm?: string) => {
   if (!hhmm) return "";
   const [h, m] = hhmm.split(":").map(Number);
@@ -208,7 +202,19 @@ function realMod1(): SchoolMod {
     2: [P2("08:15", "09:25"), special(2, "Mr. Dale", "HQ1 1"), P3("10:05", "11:10"), lunch("A", "11:15", "11:45"), P4("11:50", "12:55"), P5("13:00", "14:05"), P1("14:10", "15:15")],
     3: [P3("08:15", "09:25"), special(3), P4("10:05", "11:10"), lunch("A", "11:15", "11:45"), P5("11:50", "12:55"), P1("13:00", "14:05"), P2("14:10", "15:15")],
     4: [P4("08:15", "09:25"), special(4), P5("10:05", "11:10"), P1("11:15", "12:20"), lunch("B", "12:25", "12:55"), P2("13:00", "14:05"), P3("14:10", "15:15")],
-    5: [P5("08:15", "09:25"), special(5), P1("10:05", "11:10"), lunch("A", "11:15", "11:45"), P2("11:50", "12:55"), P3("13:00", "14:05"), P4("14:10", "15:15")],
+    // Friday: GTD is chronologically the 3rd period of the day, so it
+    // splits around lunch (40 min GTD / 30 min lunch / 40 min GTD) instead
+    // of sitting wholly before/after it like every other subject. Best-
+    // effort clock alignment from the given durations — P3/P4 shifted 5 min
+    // later than the other weekdays to fit after GTD's second half; worth
+    // double-checking against the real bell schedule.
+    5: [
+      P5("08:15", "09:25"), special(5), P1("10:05", "11:10"),
+      P2("11:15", "11:55"),
+      { id: uid(), kind: "lunch", label: "GTD Lunch", start: "11:55", end: "12:25" },
+      P2("12:25", "13:05"),
+      P3("13:05", "14:10"), P4("14:15", "15:20"),
+    ],
   };
   for (const d of WEEKDAY_ORDER) days[d].sort((a, b) => a.start.localeCompare(b.start));
   return { id: uid(), number: 1, label: "Module 1", startDate: "2026-08-12", endDate: "2026-10-08", advisor: "Tyler Dale", days };
@@ -239,36 +245,55 @@ export function lunchKindForRoom(room?: string): "A" | "B" {
 }
 
 // Insert a lunch-slot class into a day's blocks: computes A/B Lunch from
-// the class's room and inserts both the class portion and the Lunch block
-// in the correct order, replacing any existing lunch pair for that day.
-// Real Module 1 shows GTD landing in this slot labeled plain "A Lunch" like
-// any other period — no separate "GTD Lunch" naming, despite the original
-// description implying one. Always just A/B Lunch.
+// the class's room and inserts the class portion + Lunch block in the
+// correct order, replacing any earlier lunch-slot assignment for that day
+// (tracked by the "lunchslot-" id prefix, not by time — GTD's split shape
+// below doesn't land on the plain A/B times so a time-window filter can't
+// find it).
+//
+// GTD is a real exception: when GTD lands in this slot it doesn't sit
+// wholly before or after lunch like every other subject — it splits around
+// it, 40 min GTD / 30 min lunch / 40 min GTD. Anchored at the same lunch
+// start/end the room's A/B rule would otherwise use.
 export function setLunchSlot(modId: string, weekday: number, subject: string, room: string, teacher?: string, linkedClassId?: string) {
   const kind = lunchKindForRoom(room);
-  const classBlock: SchoolBlock = {
-    id: uid(), kind: "period", label: subject.trim() || "Class", room: room.trim() || undefined, teacher: teacher?.trim() || undefined,
-    linkedClassId: linkedClassId || undefined,
-    start: kind === "B" ? "11:15" : "11:50",
-    end: kind === "B" ? "12:20" : "12:55",
-  };
-  const lunchBlock: SchoolBlock = {
-    id: uid(), kind: "lunch", label: `${kind} Lunch`,
-    start: kind === "B" ? "12:25" : "11:15",
-    end: kind === "B" ? "12:55" : "11:45",
-  };
+  const isGtd = /^gtd\b/i.test(subject.trim());
+  const lunchStart = kind === "B" ? "12:25" : "11:15";
+  const lunchEnd = kind === "B" ? "12:55" : "11:45";
+
+  let newBlocks: SchoolBlock[];
+  if (isGtd) {
+    const part1Start = shiftTime(lunchStart, -40);
+    const part2End = shiftTime(lunchEnd, 40);
+    const gtdBlock = (start: string, end: string): SchoolBlock => ({
+      id: `lunchslot-${uid()}`, kind: "period", label: subject.trim(), room: room.trim() || undefined,
+      teacher: teacher?.trim() || undefined, linkedClassId: linkedClassId || undefined, start, end,
+    });
+    newBlocks = [
+      gtdBlock(part1Start, lunchStart),
+      { id: `lunchslot-${uid()}`, kind: "lunch", label: "GTD Lunch", start: lunchStart, end: lunchEnd },
+      gtdBlock(lunchEnd, part2End),
+    ];
+  } else {
+    newBlocks = [
+      {
+        id: `lunchslot-${uid()}`, kind: "period", label: subject.trim() || "Class", room: room.trim() || undefined,
+        teacher: teacher?.trim() || undefined, linkedClassId: linkedClassId || undefined,
+        start: kind === "B" ? "11:15" : "11:50", end: kind === "B" ? "12:20" : "12:55",
+      },
+      { id: `lunchslot-${uid()}`, kind: "lunch", label: `${kind} Lunch`, start: lunchStart, end: lunchEnd },
+    ];
+  }
+
   updateState((s) => ({
     ...s,
     schoolMods: s.schoolMods.map((m) => {
       if (m.id !== modId) return m;
-      const rest = (m.days[weekday] ?? []).filter((b) => b.kind !== "lunch" && !(b.kind === "period" && isLunchAdjacentTime(b)));
-      const day = [...rest, classBlock, lunchBlock].sort((a, b) => a.start.localeCompare(b.start));
+      const rest = (m.days[weekday] ?? []).filter((b) => !b.id.startsWith("lunchslot-"));
+      const day = [...rest, ...newBlocks].sort((a, b) => a.start.localeCompare(b.start));
       return { ...m, days: { ...m.days, [weekday]: day } };
     }),
   }));
-}
-function isLunchAdjacentTime(b: SchoolBlock): boolean {
-  return (b.start === "11:15" || b.start === "11:50") && (b.end === "12:20" || b.end === "12:55");
 }
 
 export function addSchoolBlock(modId: string, weekday: number, block: Omit<SchoolBlock, "id">) {
@@ -400,8 +425,6 @@ function seedCustomization(): Customization {
     hiddenTabs: [],
     customRanks: Array.from({ length: MAX_LEVEL }, () => undefined),
     customAchievements: [],
-    customTheme: undefined,
-    useCustomTheme: false,
     quotes: [],
     dynamicTabs: [],
     widgets: {},
@@ -1356,8 +1379,6 @@ function mergeCustomization(d: Customization, p?: Partial<Customization>): Custo
     hiddenTabs: p.hiddenTabs ?? d.hiddenTabs,
     customRanks: ranks,
     customAchievements: p.customAchievements ?? d.customAchievements,
-    customTheme: p.customTheme ?? d.customTheme,
-    useCustomTheme: !!p.useCustomTheme,
     quotes: Array.isArray(p.quotes) ? p.quotes : d.quotes,
     dynamicTabs: Array.isArray(p.dynamicTabs) ? p.dynamicTabs : d.dynamicTabs,
     widgets: p.widgets && typeof p.widgets === "object" ? p.widgets : d.widgets,
@@ -1489,24 +1510,6 @@ export function unclaimCustomAchievement(id: string) {
       ),
     },
   }));
-}
-
-// Custom theme — user-defined palette. setCustomTheme also flips the theme
-// preference to "custom" so it applies immediately.
-export function setCustomTheme(p: CustomTheme) {
-  updateState((s) => ({
-    ...s,
-    customization: { ...s.customization, customTheme: p, useCustomTheme: true },
-  }));
-}
-export function clearCustomTheme() {
-  updateState((s) => ({
-    ...s,
-    customization: { ...s.customization, customTheme: undefined, useCustomTheme: false },
-  }));
-}
-export function setUseCustomTheme(on: boolean) {
-  updateState((s) => ({ ...s, customization: { ...s.customization, useCustomTheme: on } }));
 }
 
 // ── Dynamic UI (the agent API) ─────────────────────────────────────────────

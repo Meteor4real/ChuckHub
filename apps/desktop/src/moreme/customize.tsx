@@ -1,18 +1,16 @@
-// MoreMe — Customize. Rename tabs, hide tabs, override the 20 rank names,
-// add your own achievements (claim them manually for XP), and define a
-// custom theme palette. Everything persists with the rest of state.
+// MoreMe — Customize. Rename tabs, hide tabs, override the rank names, add
+// your own achievements (claim them manually for XP). One fixed Papatui
+// look — no theme picker.
 
 import { useState } from "react";
-import { T, setTheme, refreshTheme, currentThemeName, PALETTES, THEME_META, type ThemeName, type Palette } from "./styles";
-import { loadPrefs, savePrefs } from "../uiPrefs";
-import { sfxSuccess } from "../services/sfx";
+import { T } from "./styles";
 import { MAX_LEVEL, RANK_NAMES, WIDGET_KINDS } from "./types";
 import type { CustomAchievement, State, Widget } from "./types";
 import {
   addCustomAchievement, addDynamicTab, addQuote, addWidget, blankCustomAchievement, blankWidget,
-  claimCustomAchievement, clearCustomTheme, isTabHidden, moveDynamicTab, moveWidget,
+  claimCustomAchievement, isTabHidden, moveDynamicTab, moveWidget,
   rankFor, removeCustomAchievement, removeDynamicTab, removeQuote, resetAllRanks, resetTabLabel,
-  setCustomTheme, setRank, setTabLabel, setUseCustomTheme, toggleTabHidden,
+  setRank, setTabLabel, toggleTabHidden,
   unclaimCustomAchievement, updateCustomAchievement, updateDynamicTab, levelInfo,
 } from "./store";
 import { WidgetEditor } from "./widgets";
@@ -46,13 +44,12 @@ export function CustomizeView({ s }: { s: State }) {
           <PagesAndWidgetsCard s={s} />
           <CustomAchievementsCard s={s} />
           <RanksCard s={s} />
-          <CustomThemeCard s={s} />
         </div>
         {/* Side rail — quick toggles and short lists. */}
         <div style={{ flex: "1 1 340px", minWidth: 300, display: "flex", flexDirection: "column", gap: 16 }}>
           <TabsCard s={s} />
           <QuotesCard s={s} />
-          <FeedbackCard />
+          <MusicCard />
         </div>
       </div>
       <div style={{ fontSize: 11, color: T.inkTiny, fontStyle: "italic", padding: "16px 0 20px" }}>
@@ -62,15 +59,14 @@ export function CustomizeView({ s }: { s: State }) {
   );
 }
 
-// ── feedback: the feel layer ───────────────────────────────────────────
-function FeedbackCard() {
-  const [prefs, setPrefsState] = useState(loadPrefs());
-  const toggle = (on: boolean) => { setPrefsState(savePrefs({ sfxEnabled: on })); if (on) sfxSuccess(); };
+// ── music: no interface sound effects, but real music while you work is
+// encouraged — one click out to Spotify or YouTube. ──────────────────────
+function MusicCard() {
   return (
-    <Section title="Feedback" sub="Procedural interface sounds — a tick on press, a rising pair when something's done, a chime on unlocks. Synthesized on the fly, nothing ambient, nothing on a loop.">
-      <div className="mm-seg" style={{ alignSelf: "flex-start" }}>
-        <button className={prefs.sfxEnabled ? "on" : ""} onClick={() => toggle(true)}>Sounds on</button>
-        <button className={!prefs.sfxEnabled ? "on" : ""} onClick={() => toggle(false)}>Off</button>
+    <Section title="Music" sub="No interface sound effects here. Real music while you work is a different thing — put on your own.">
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <a className="mm-btn" href="https://open.spotify.com" target="_blank" rel="noreferrer">Open Spotify</a>
+        <a className="mm-btn" href="https://music.youtube.com" target="_blank" rel="noreferrer">Open YouTube Music</a>
       </div>
     </Section>
   );
@@ -233,89 +229,6 @@ function CustomAchievementRow({ a }: { a: CustomAchievement }) {
   );
 }
 
-const FIELDS: { key: keyof Palette; label: string }[] = [
-  { key: "bg",       label: "Background" },
-  { key: "elev",     label: "Cards" },
-  { key: "sunk",     label: "Inputs" },
-  { key: "ink",      label: "Text" },
-  { key: "inkSoft",  label: "Text (soft)" },
-  { key: "inkTiny",  label: "Text (mute)" },
-  { key: "line",     label: "Lines" },
-  { key: "mint",     label: "Accent" },
-  { key: "mintDeep", label: "Accent deep" },
-  { key: "mintHi",   label: "Accent hi" },
-  { key: "warn",     label: "Warning" },
-  { key: "cool",     label: "Cool / link" },
-];
-
-function CustomThemeCard({ s }: { s: State }) {
-  const seedPalette: Palette = s.customization.customTheme ?? PALETTES.dp;
-  const [draft, setDraft] = useState<Palette>(seedPalette);
-  const set = (k: keyof Palette, v: string) => setDraft((d) => ({ ...d, [k]: v }));
-  // Save the palette AND switch to it. refreshTheme() alone re-applies the
-  // theme name still in localStorage (dp/papatui/…), so the button looked
-  // like it did nothing — setTheme("custom") is what actually flips it.
-  const apply = () => { setCustomTheme(draft); setTheme("custom"); };
-  const isActive = currentThemeName() === "custom" && s.customization.useCustomTheme;
-  return (
-    <Section title="Custom theme" sub="Paint your own palette. Apply to switch the whole app to it.">
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 8 }}>
-        {FIELDS.map((f) => (
-          <div key={f.key} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <input type="color" value={draft[f.key]} onChange={(e) => set(f.key, e.target.value)} style={{ width: 32, height: 32, padding: 0, border: "none", background: "transparent" }} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 10, color: T.inkTiny, letterSpacing: ".06em", textTransform: "uppercase" }}>{f.label}</div>
-              <input value={draft[f.key]} onChange={(e) => set(f.key, e.target.value)} style={{ fontSize: 11, fontFamily: "ui-monospace, monospace" }} />
-            </div>
-          </div>
-        ))}
-      </div>
-      <div style={{ marginTop: 8 }}>
-        <div style={{ fontSize: 10, color: T.inkTiny, letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 4 }}>Hero image URL (optional)</div>
-        <input value={draft.heroImage ?? ""} placeholder="https://… — paste an image URL; leave blank for none"
-          onChange={(e) => setDraft((d) => ({ ...d, heroImage: e.target.value || undefined }))}
-          style={{ fontFamily: "ui-monospace, monospace", fontSize: 11 }} />
-        <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 10, color: T.inkTiny }}>Quick picks (Unsplash):</span>
-          {[
-            { label: "Court", url: "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&w=1600&q=70" },
-            { label: "Track", url: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&w=1600&q=70" },
-            { label: "Ocean", url: "https://images.unsplash.com/photo-1505228395891-9a51e7e86bf6?auto=format&w=1600&q=70" },
-            { label: "Peaks", url: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&w=1600&q=70" },
-            { label: "Coffee", url: "https://images.unsplash.com/photo-1453928582365-b6ad33cbcf64?auto=format&w=1600&q=70" },
-          ].map((p) => (
-            <button key={p.label} className="mm-tab" onClick={() => setDraft((d) => ({ ...d, heroImage: p.url }))}>{p.label}</button>
-          ))}
-          {draft.heroImage && <button className="mm-tab" onClick={() => setDraft((d) => ({ ...d, heroImage: undefined }))}>Clear</button>}
-        </div>
-      </div>
-      <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-        <button className="mm-btn mm-btn-primary" onClick={apply}>Apply as theme</button>
-        <button className="mm-btn" onClick={() => setDraft({ ...PALETTES.dp })}>Reset to DP</button>
-        <button className="mm-btn" onClick={() => setDraft({ ...PALETTES.papatui })}>Reset to Papatui</button>
-        <button className="mm-btn" onClick={() => setDraft({ ...PALETTES.sports })}>Reset to Sports</button>
-        {s.customization.customTheme && (
-          <button className="mm-btn mm-btn-danger" onClick={() => { clearCustomTheme(); refreshTheme(); }}>Clear saved custom</button>
-        )}
-        <div style={{ flex: 1 }} />
-        {isActive && <span className="mm-pill" style={{ background: T.mint, color: T.bg }}>Active</span>}
-      </div>
-      <div style={{ fontSize: 11, color: T.inkTiny, marginTop: 4 }}>
-        Pick from {(Object.keys(THEME_META) as ThemeName[]).filter((n) => n !== "custom").length + 1} themes in <b>Projects → Theme</b>; Custom unlocks once you Apply one here.
-      </div>
-      <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
-        <button className="mm-btn" onClick={() => { setTheme("dp"); }}>Try DP</button>
-        <button className="mm-btn" onClick={() => { setTheme("papatui"); }}>Try Papatui</button>
-        <button className="mm-btn" onClick={() => { setTheme("sports"); }}>Try Sports</button>
-        <button className="mm-btn" onClick={() => { setUseCustomTheme(true); setTheme("custom"); }}>Try Custom</button>
-      </div>
-      <div style={{ fontSize: 10, color: T.inkTiny, fontStyle: "italic", marginTop: 12, paddingTop: 10, borderTop: `1px dashed ${T.line}`, display: "flex", alignItems: "center", gap: 6 }}>
-        <span aria-hidden="true">◆</span>
-        Built fellow-learner style — NetworkChuck energy, none of the dead Hub.
-      </div>
-    </Section>
-  );
-}
 
 // ── Pages & widgets — the runtime UI builder ──────────────────────────────
 // Compose dynamic tabs + drop widgets onto any tab (built-in or dynamic).

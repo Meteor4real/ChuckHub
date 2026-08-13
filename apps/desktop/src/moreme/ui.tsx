@@ -22,7 +22,6 @@ import {
   upsertClass, upsertEvent, upsertProject, xpForDate,
 } from "./store";
 import { DayView, WeekView, shiftWeek } from "./timeline";
-import { sfxChime, sfxClick, sfxError, sfxNav, sfxSuccess } from "../services/sfx";
 import { GetAheadView } from "./getahead";
 import { EmpireView } from "./empire";
 import { InsightsView } from "./insights";
@@ -39,7 +38,6 @@ import { generateClassPeriods, clearClassPeriods, setClassPeriod } from "./store
 import { ROUTINE_TEMPLATES, applyRoutineTemplate, removeRoutineTemplate, routineTemplateApplied, type RoutineTemplateId } from "./store";
 import { addDays } from "./store";
 import { pullOnce, pushOnce, subscribeSync, type SyncStatus } from "./sync";
-import { THEME_META, currentThemeName, heroImageUrl, setTheme, subscribeTheme, type ThemeName } from "./styles";
 import { quoteOfDay } from "./quotes";
 import { makePrintHandler } from "./print";
 
@@ -83,9 +81,6 @@ export function MoreMeUI({ onSignOut }: { onSignOut?: () => void }) {
   const [pendingInboxId, setPendingInboxId] = useState<string | null>(null);
   const openEditor = (e: CalEvent, inboxId?: string) => { setEditing(e); setPendingInboxId(inboxId ?? null); };
   const [review, setReview] = useState(false);
-  // Force a re-render of every component using `T.*` when the theme flips.
-  const [, bumpTheme] = useState(0);
-  useEffect(() => subscribeTheme(() => bumpTheme((n) => n + 1)), []);
 
   const dyn = s.customization.dynamicTabs;
   const tabIdStr = String(tab);
@@ -98,7 +93,7 @@ export function MoreMeUI({ onSignOut }: { onSignOut?: () => void }) {
 
   return (
     <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: "196px 1fr", position: "relative" }}>
-      <SideNav s={s} tab={tab} onTab={setTab} onReview={() => setReview(true)} onSignOut={onSignOut} />
+      <SideNav s={s} tab={tab} onTab={setTab} onSignOut={onSignOut} />
 
       <div style={{ display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0 }}>
         <CaptureBar />
@@ -108,7 +103,7 @@ export function MoreMeUI({ onSignOut }: { onSignOut?: () => void }) {
               {widgetsHere.map((w) => <WidgetView key={w.id} s={s} tabId={tabIdStr} w={w} />)}
             </div>
           )}
-          {tab === "today" && <TodayView s={s} onEdit={openEditor} />}
+          {tab === "today" && <TodayView s={s} onEdit={openEditor} onReview={() => setReview(true)} />}
           {tab === "ahead" && <GetAheadView s={s} onEdit={openEditor} />}
           {tab === "calendar" && <CalendarView s={s} onEdit={openEditor} />}
           {tab === "screens" && <ScreensView s={s} />}
@@ -171,7 +166,7 @@ function SegmentHub({ s, segments, render }: {
 }
 
 // ── sidebar: identity, grouped nav, progress, controls ────────────────────
-function SideNav({ s, tab, onTab, onReview, onSignOut }: { s: State; tab: Tab; onTab: (t: Tab) => void; onReview: () => void; onSignOut?: () => void }) {
+function SideNav({ s, tab, onTab, onSignOut }: { s: State; tab: Tab; onTab: (t: Tab) => void; onSignOut?: () => void }) {
   const lv = levelInfo(s);
   const { current } = streakInfo(s);
   const tx = xpForDate(today(), s);
@@ -192,7 +187,7 @@ function SideNav({ s, tab, onTab, onReview, onSignOut }: { s: State; tab: Tab; o
     return (
       <button
         key={id}
-        onClick={() => { sfxNav(); onTab(id as Tab); }}
+        onClick={() => onTab(id as Tab)}
         style={{
           display: "flex", alignItems: "center", width: "100%",
           padding: "7px 10px", borderRadius: 8, border: "none", cursor: "pointer",
@@ -278,6 +273,27 @@ function DDDBanner() {
   );
 }
 
+// The mindset + the mission, spelled out where the day actually happens —
+// not just a tiny footer line. DDD is the discipline; F.L.O.W. is what
+// doing the work looks like when it's real.
+function MissionBanner() {
+  return (
+    <div
+      className="mm-no-print"
+      style={{
+        display: "flex", gap: 18, flexWrap: "wrap", alignItems: "center",
+        padding: "8px 14px", marginBottom: 16, borderRadius: 10,
+        border: `1px solid ${T.line}`, background: T.sunk,
+        fontSize: 11, color: T.inkTiny, position: "relative", zIndex: 1,
+      }}
+    >
+      <span><b style={{ color: T.mint }}>DDD</b> — {DDD_QUOTE} <span style={{ opacity: 0.7 }}>— {DDD_WHO}</span></span>
+      <span style={{ opacity: 0.4 }}>·</span>
+      <span><b style={{ color: T.cool }}>F.L.O.W.</b> — Full-Length Optimal Work. One thing, zero context-switching.</span>
+    </div>
+  );
+}
+
 // The MoreMe mark — sun + peaks + barbell, same geometry as the app icon.
 export function MoreMeMark({ size = 28 }: { size?: number }) {
   return (
@@ -310,7 +326,7 @@ function DynamicTabView({ s, tabId }: { s: State; tabId: string }) {
 // ── GTD quick capture: dump anything from anywhere, triage later ──────────
 function CaptureBar() {
   const [v, setV] = useState("");
-  const fire = () => { if (v.trim()) { captureInbox(v); sfxClick(); setV(""); } };
+  const fire = () => { if (v.trim()) { captureInbox(v); setV(""); } };
   return (
     <div style={{ display: "flex", gap: 8, padding: "8px 18px", borderBottom: `1px solid ${T.line}`, background: T.sunk }}>
       <input
@@ -376,7 +392,7 @@ function ReminderToasts({ s, onOpen }: { s: State; onOpen: (e: CalEvent) => void
               {fmtTime(t.e.start)}{t.e.location ? ` · ${t.e.location}` : ""}
             </div>
             <div style={{ display: "flex", gap: 6 }}>
-              <button className="mm-btn mm-btn-primary" style={{ padding: "3px 10px", fontSize: 11 }} onClick={() => { toggleDone(t.e.id, t.date); sfxSuccess(); setActive((c) => c.filter((x) => x.key !== t.key)); }}>Done +{t.e.xp} XP</button>
+              <button className="mm-btn mm-btn-primary" style={{ padding: "3px 10px", fontSize: 11 }} onClick={() => { toggleDone(t.e.id, t.date); setActive((c) => c.filter((x) => x.key !== t.key)); }}>Done +{t.e.xp} XP</button>
               <button className="mm-btn" style={{ padding: "3px 10px", fontSize: 11 }} onClick={() => { onOpen(t.e); setActive((c) => c.filter((x) => x.key !== t.key)); }}>Open</button>
               <button className="mm-btn" style={{ padding: "3px 10px", fontSize: 11 }} onClick={() => setActive((c) => c.filter((x) => x.key !== t.key))}>Dismiss</button>
             </div>
@@ -415,7 +431,6 @@ function RewardToasts({ s }: { s: State }) {
     prevUnlocked.current = unlocked;
     prevLevel.current = level;
     if (fresh.length) {
-      sfxChime(); // the reward moment SOUNDS like one
       setToasts((cur) => [...cur, ...fresh]);
       // Self-dismiss after 6s — a moment, not a chore to close.
       for (const t of fresh) {
@@ -479,7 +494,7 @@ function EventRow({ e, date, s, onEdit }: { e: CalEvent; date: string; s: State;
       <button
         className="mm-donebtn"
         data-done={done}
-        onClick={() => { if (!done) sfxSuccess(); else sfxClick(); toggleDone(e.id, date); }}
+        onClick={() => toggleDone(e.id, date)}
         title={done ? "Mark not done" : "Complete (+XP)"}
         style={{ width: 22, height: 22, flex: "none", borderRadius: 6, border: `2px solid ${meta.color}`, background: done ? meta.color : "transparent", color: T.bg, cursor: "pointer", fontSize: 13, lineHeight: 1 }}
       >{done ? "✓" : ""}</button>
@@ -508,7 +523,7 @@ function EventRow({ e, date, s, onEdit }: { e: CalEvent; date: string; s: State;
 }
 
 // ── Today ─────────────────────────────────────────────────────────────────
-function TodayView({ s, onEdit }: { s: State; onEdit: (e: CalEvent) => void }) {
+function TodayView({ s, onEdit, onReview }: { s: State; onEdit: (e: CalEvent) => void; onReview: () => void }) {
   const date = today();
   const evs = eventsOnDate(date, s);
   const routines = evs.filter((e) => e.category === "routine");
@@ -522,30 +537,18 @@ function TodayView({ s, onEdit }: { s: State; onEdit: (e: CalEvent) => void }) {
   const print = makePrintHandler(() => printRef.current);
   const quote = quoteOfDay(date, s.customization.quotes);
 
-  const hero = heroImageUrl();
-
   return (
     <div ref={printRef} style={{ maxWidth: 1400, margin: "0 auto", position: "relative" }}>
-      {/* Decorative backdrop — theme's hero image, very faint. Fixed
-          position absolutely behind the content; img.onerror hides it so
-          a broken URL doesn't leave a placeholder. */}
-      {hero && (
-        <img
-          src={hero}
-          alt=""
-          aria-hidden="true"
-          className="mm-no-print"
-          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.07, zIndex: 0, pointerEvents: "none", borderRadius: 14 }}
-        />
-      )}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, position: "relative", zIndex: 1, marginBottom: 16 }}>
         <div className="serif" style={{ fontSize: 20 }}>{new Date(date + "T00:00:00").toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}</div>
         <div className="mm-no-print" style={{ display: "flex", gap: 6 }}>
+          <button className="mm-btn" onClick={onReview}>Weekly Review</button>
           <button className="mm-btn" onClick={print} title="Print today">⎙ Print</button>
           <button className="mm-btn mm-btn-primary" onClick={() => onEdit({ ...blankEvent(date) })}>+ New item</button>
         </div>
       </div>
+
+      <MissionBanner />
 
       <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-start", position: "relative", zIndex: 1 }}>
         {/* Main column — the day's actual work. */}
@@ -841,9 +844,8 @@ function EventEditor({ s, draft, onClose, onSaved }: { s: State; draft: CalEvent
   if (!e.allDay && e.start && e.end && e.end <= e.start) problems.push("End time must be after the start time.");
 
   function save() {
-    if (problems.length) { sfxError(); return; }
+    if (problems.length) return;
     upsertEvent({ ...e, title: e.title.trim() || CATEGORY_META[e.category].label });
-    sfxSuccess();
     onSaved?.();
     onClose();
   }
@@ -1105,43 +1107,8 @@ function ProjectsView({ s }: { s: State }) {
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <SchoolCard s={s} />
-        <ThemeCard />
         <BackgroundCard />
         <ClassesCard s={s} />
-      </div>
-    </div>
-  );
-}
-function ThemeCard() {
-  const [name, setName] = useState<ThemeName>(currentThemeName);
-  return (
-    <div className="mm-card" style={{ padding: 16 }}>
-      <div className="serif" style={{ fontSize: 16, marginBottom: 4 }}>Theme</div>
-      <div style={{ fontSize: 11, color: T.inkTiny, marginBottom: 10 }}>
-        Switch the whole app's palette. Saves the second you pick.
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {(Object.keys(THEME_META) as ThemeName[]).map((k) => {
-          const meta = THEME_META[k];
-          const on = name === k;
-          return (
-            <button
-              key={k}
-              onClick={() => { setName(k); setTheme(k); }}
-              className="mm-action"
-              style={{ borderColor: on ? T.mint : undefined, background: on ? T.mint + "0d" : undefined, cursor: "pointer" }}
-            >
-              <span style={{ display: "inline-flex", gap: 0, borderRadius: 6, overflow: "hidden", flex: "none", boxShadow: `0 0 0 1px ${T.line}` }}>
-                {meta.swatch.map((c) => <span key={c} style={{ width: 14, height: 22, background: c, display: "inline-block" }} />)}
-              </span>
-              <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
-                <b style={{ fontSize: 13 }}>{meta.label}</b>
-                <div style={{ fontSize: 11, color: T.inkTiny }}>{meta.note}</div>
-              </div>
-              {on && <span className="mm-pill" style={{ background: T.mint, color: T.bg }}>Active</span>}
-            </button>
-          );
-        })}
       </div>
     </div>
   );

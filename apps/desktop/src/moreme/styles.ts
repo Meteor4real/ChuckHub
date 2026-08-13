@@ -1,132 +1,31 @@
-// MoreMe theme tokens. Two palettes you can switch at runtime:
-//   dp       — Dude Perfect: turquoise on deep navy + panda black/white.
-//   papatui  — The Rock's Papatui: warm Polynesian earth (sand/cream, deep
-//              teal-green, bronze, espresso black). Interpreted from the
-//              brand's documented earthy identity (no public hex guide).
-//
-// `T` is a LIVE object: setTheme() reassigns its fields in place, so every
-// component that reads `T.mint` (incl. `T.mint + "55"` alpha math) picks up
-// the new palette on the next render. The class-based CSS is rebuilt from
-// `T` via buildMMStyle(); the desktop chrome follows via root CSS vars.
-
-export type ThemeName = "dp" | "papatui" | "sports" | "custom";
+// MoreMe theme tokens. One fixed palette — Papatui: The Rock's brand, warm
+// Polynesian earth (sand/cream, deep teal-green, bronze, espresso black).
+// Interpreted from the brand's documented earthy identity and real product
+// line names (Sandalwood Suede, Cedar Sport) — Papatui has never published
+// an official hex/design-system guide, confirmed via direct research.
+// No theme switching, no decorative hero-image backdrop (it read as clutter
+// behind the Today text) — just this one look, everywhere.
 
 export type Palette = {
   bg: string; elev: string; sunk: string;
   ink: string; inkSoft: string; inkTiny: string; line: string;
   mint: string; mintDeep: string; mintHi: string;  // primary accent family
   warn: string; cool: string;
-  // Optional decorative hero image — shown as a faint backdrop on Today.
-  // External URL by design (so we don't ship copyrighted photos); set "" or
-  // omit to render no backdrop. CustomTheme exposes this as a user field.
-  heroImage?: string;
 };
 
-// Hero image cycles per theme — resolved at READ time by heroImageUrl()
-// (not baked into the palette at module load), so an app left running for
-// days still rotates at midnight. All Unsplash, no shipped assets.
-const THEME_HEROES: Record<Exclude<ThemeName, "custom">, string[]> = {
-  dp: [
-    "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&w=1600&q=70",   // court
-    "https://images.unsplash.com/photo-1518614368389-1f9b9c8c2b15?auto=format&w=1600&q=70", // arena lights
-    "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&w=1600&q=70", // ball + hoop
-  ],
-  papatui: [
-    "https://images.unsplash.com/photo-1505228395891-9a51e7e86bf6?auto=format&w=1600&q=70", // ocean
-    "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&w=1600&q=70", // beach
-    "https://images.unsplash.com/photo-1571260899304-425eee4c7efc?auto=format&w=1600&q=70", // palm grove
-  ],
-  sports: [
-    "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&w=1600&q=70", // track lights
-    "https://images.unsplash.com/photo-1535131749006-b7f58c99034b?auto=format&w=1600&q=70", // stadium
-    "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&w=1600&q=70",   // gym
-  ],
-};
-function dailyPick<T>(list: T[], salt: string): T {
-  // Hash salt + YYYY-MM-DD → stable index for the day. The salt (theme name)
-  // de-lockstops the themes so they don't all sit on the same slot index.
-  const d = new Date();
-  const key = `${salt}:${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-  let h = 0;
-  for (let i = 0; i < key.length; i++) h = ((h << 5) - h + key.charCodeAt(i)) | 0;
-  return list[Math.abs(h) % list.length];
-}
-
-const DP_PALETTE: Palette = {
-  bg: "#0C1422", elev: "#16223A", sunk: "#080E1A",
-  ink: "#FFFFFF", inkSoft: "#A6B6CC", inkTiny: "#5E6E86", line: "#233247",
-  mint: "#3EFBB7", mintDeep: "#15D6A0", mintHi: "#8BFFDD",
-  warn: "#FF5C5F", cool: "#1E90FF",
-};
 const PAPATUI_PALETTE: Palette = {
   bg: "#19140F", elev: "#241C15", sunk: "#0F0B08",
   ink: "#F4EAD9", inkSoft: "#C8B59B", inkTiny: "#8A7355", line: "#3A2E22",
   mint: "#2FA98A", mintDeep: "#1E7D66", mintHi: "#5CCBB0",
   warn: "#D9603B", cool: "#C9A24B",
 };
-// Sports — high-contrast scoreboard / SportsCenter look. Carbon black, ESPN
-// red, athletic gold. Designed for clean number displays.
-const SPORTS_PALETTE: Palette = {
-  bg: "#06080B", elev: "#101317", sunk: "#02040A",
-  ink: "#FFFFFF", inkSoft: "#B5BFCC", inkTiny: "#5E6675", line: "#1F252D",
-  mint: "#FFB400", mintDeep: "#D99100", mintHi: "#FFCD3C",  // gold accent
-  warn: "#E1153B",                                         // ESPN red
-  cool: "#1FA9FF",
-};
-export const PALETTES: Record<ThemeName, Palette> = {
-  dp: DP_PALETTE,
-  papatui: PAPATUI_PALETTE,
-  sports: SPORTS_PALETTE,
-  // "custom" never reads from PALETTES — the resolver fetches the user's
-  // palette from state — but the type contract needs a value here. We
-  // mirror Papatui (the app default) as a fallback for safety (if the
-  // resolver is somehow unregistered, this keeps the UI usable).
-  custom: PAPATUI_PALETTE,
-};
 
-export const THEME_META: Record<ThemeName, { label: string; note: string; swatch: string[] }> = {
-  dp:      { label: "Dude Perfect", note: "Turquoise on navy. Panda energy.",         swatch: ["#3EFBB7", "#0C1422", "#1E90FF"] },
-  papatui: { label: "Papatui",      note: "Warm Polynesian earth. The Rock.",         swatch: ["#2FA98A", "#19140F", "#C9A24B"] },
-  sports:  { label: "Sports",       note: "Scoreboard high-contrast. Gold + ESPN red.", swatch: ["#FFB400", "#06080B", "#E1153B"] },
-  custom:  { label: "Custom",       note: "Your palette. Set the colors yourself.",    swatch: ["#888888", "#000000", "#CCCCCC"] },
-};
-
-// The live token object every component imports.
-// Papatui is the default look — the owner's pick for the app's identity.
-export const T: Palette = { ...PALETTES.papatui };
-
-// Active hero image (decorative backdrop). Resolved at read time: custom
-// themes use their own explicit heroImage; built-in themes rotate through
-// their pool by day, so a long-running app still changes backdrop at
-// midnight (components re-render at least once a day via the reminder tick).
-export function heroImageUrl(): string {
-  const name = currentThemeName();
-  if (name === "custom") return T.heroImage && T.heroImage.trim() ? T.heroImage.trim() : "";
-  const pool = THEME_HEROES[name];
-  return pool && pool.length ? dailyPick(pool, name) : "";
-}
-
-const KEY = "nchub.moreme.theme.v1";
-const subs = new Set<() => void>();
-
-// A pluggable hook so the store can supply the user's custom palette
-// without styles.ts having to import the store (which would cycle).
-let customResolver: (() => Palette | null) = () => null;
-export function setCustomThemeResolver(fn: () => Palette | null) {
-  customResolver = fn;
-}
-
-export function currentThemeName(): ThemeName {
-  try {
-    const n = localStorage.getItem(KEY);
-    if (n === "dp" || n === "papatui" || n === "sports" || n === "custom") return n;
-  } catch { /* ignore */ }
-  return "papatui";
-}
+// The token object every component imports.
+export const T: Palette = { ...PAPATUI_PALETTE };
 
 // Push the palette onto the desktop chrome's CSS vars so the topbar / login
-// shell follow the MoreMe theme too. The token names (--red etc.) are legacy
-// aliases; only the values matter.
+// shell match too. The token names (--red etc.) are legacy aliases; only
+// the values matter.
 function applyRootVars(p: Palette) {
   const r = document.documentElement.style;
   r.setProperty("--bg", p.bg);
@@ -140,28 +39,8 @@ function applyRootVars(p: Palette) {
   r.setProperty("--glow", p.mint);
 }
 
-export function setTheme(name: ThemeName) {
-  // "custom" pulls from the store via the resolver; falls back to dp if
-  // the user has the toggle on but hasn't actually defined one yet.
-  const next = name === "custom" ? (customResolver() ?? PALETTES.papatui) : PALETTES[name];
-  Object.assign(T, next);
-  try { localStorage.setItem(KEY, name); } catch { /* ignore */ }
-  applyRootVars(T);
-  subs.forEach((fn) => fn());
-}
-export function refreshTheme() {
-  // Re-apply the active theme — for when the user edits their custom palette
-  // and we need a live update without changing the name.
-  setTheme(currentThemeName());
-}
-export function subscribeTheme(fn: () => void): () => void {
-  subs.add(fn); return () => subs.delete(fn);
-}
-// Call once on boot so the persisted choice is live before first paint.
+// Call once on boot so the CSS vars are live before first paint.
 export function initTheme() {
-  const name = currentThemeName();
-  const pal = name === "custom" ? (customResolver() ?? PALETTES.papatui) : PALETTES[name];
-  Object.assign(T, pal);
   applyRootVars(T);
 }
 

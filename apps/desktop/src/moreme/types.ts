@@ -213,15 +213,9 @@ export type ScreenSettings = {
 };
 
 // ── Customization ──────────────────────────────────────────────────────────
-// Lets the user rename tabs, hide ones they don't use, override the 20 rank
-// names, add their own achievements, and define a third theme palette.
-export type CustomTheme = {
-  bg: string; elev: string; sunk: string;
-  ink: string; inkSoft: string; inkTiny: string; line: string;
-  mint: string; mintDeep: string; mintHi: string;
-  warn: string; cool: string;
-  heroImage?: string;  // optional URL — shown as a faint backdrop on Today
-};
+// Lets the user rename tabs, hide ones they don't use, override the rank
+// names, and add their own achievements. No theme picker — Papatui is the
+// one look.
 export type CustomAchievement = {
   id: string;
   title: string;
@@ -236,8 +230,6 @@ export type Customization = {
   hiddenTabs: string[];                   // tabIds hidden from the tab row
   customRanks: (string | undefined)[];   // length 10; undefined = use RANK_NAMES default
   customAchievements: CustomAchievement[];
-  customTheme?: CustomTheme;             // when set, "custom" theme becomes selectable
-  useCustomTheme: boolean;               // toggle for the picker
   // User-supplied quote bank — the Today banner + quote widget rotate one
   // per day. Empty by default (no seeded quotes); managed in Customize.
   quotes: UserQuote[];
