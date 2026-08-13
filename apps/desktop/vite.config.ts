@@ -11,8 +11,7 @@ export default defineConfig({
         vite: {
           build: {
             rollupOptions: {
-              // native pty — keep external, load at runtime.
-              external: ["@homebridge/node-pty-prebuilt-multiarch", "electron"],
+              external: ["electron"],
             },
           },
         },

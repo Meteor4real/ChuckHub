@@ -28,7 +28,7 @@ export function PlansView({ s }: { s: State }) {
         <div className="mm-card" style={{ padding: 24, textAlign: "center", borderStyle: "dashed", marginBottom: 12 }}>
           <div className="serif" style={{ fontSize: 17, marginBottom: 6 }}>No plans yet</div>
           <div style={{ fontSize: 12, color: T.inkSoft, lineHeight: 1.55, maxWidth: 460, margin: "0 auto 14px" }}>
-            Plans is the reference bucket — ideas, ARG plotting, meeting talking points, the things you're not ready to schedule. Pin the important ones, mark the secret ones unannounced.
+            Plans is the reference bucket — ideas, meeting talking points, the things you're not ready to schedule. Pin the important ones, mark the secret ones unannounced.
           </div>
           <button className="mm-btn mm-btn-primary" onClick={() => { const n = blankNote(); upsertNote(n); setOpenId(n.id); }}>+ Write your first plan</button>
         </div>

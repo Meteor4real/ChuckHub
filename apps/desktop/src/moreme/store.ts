@@ -1529,7 +1529,6 @@ type Aggregates = {
   futureSchoolDone7: number;       // school events in next 7 days that are done
   futureSchoolDone30: number;
   longFlowDone: boolean;           // a single event >=180min completed in one sitting (F.L.O.W.)
-  argDone: number;
   meetingPrepDone: number;         // meetings completed with all checklist done
   polymathMax: number;             // max distinct categories completed in one day
   ventureDone: number;
@@ -1620,7 +1619,7 @@ function aggregate(s: State): Aggregates {
 
   const t = today();
   let futureSchoolDone7 = 0, futureSchoolDone30 = 0;
-  let longFlowDone = false, argDone = 0, meetingPrepDone = 0, ventureDone = 0;
+  let longFlowDone = false, meetingPrepDone = 0, ventureDone = 0;
   let longFitnessDone = s.fitnessSessions.some((x) => x.minutes >= 45);
   let eventsLinkedToPeople = 0;
   for (const e of s.events) {
@@ -1636,7 +1635,6 @@ function aggregate(s: State): Aggregates {
     // in one sitting, whatever category it's on — not tied to one program.
     if (e.start && e.end && toMin(e.end) - toMin(e.start) >= 180) longFlowDone = true;
     if (e.category === "fitness" && e.start && e.end && toMin(e.end) - toMin(e.start) >= 45) longFitnessDone = true;
-    if (e.category === "arg") argDone++;
     if (e.category === "meeting" && e.checklist.length && e.checklist.every((c) => c.done)) meetingPrepDone++;
     if (e.category === "venture" || e.category === "business") ventureDone++;
   }
@@ -1727,7 +1725,7 @@ function aggregate(s: State): Aggregates {
 
   return {
     completionCount, byCategory, routineCounts, aheadCompletions,
-    futureSchoolDone7, futureSchoolDone30, longFlowDone, argDone,
+    futureSchoolDone7, futureSchoolDone30, longFlowDone,
     meetingPrepDone, polymathMax, ventureDone, morningRoutineDone, bedRoutineDone,
     quietDays, quietStreak,
     milestonesDone, projectsDone, eventsLinkedToPeople, totalEvents: s.events.length,
@@ -1766,7 +1764,6 @@ export const ACHIEVEMENTS: AchievementDef[] = [
 
   // Build — what you make, ship, and run
   { id: "flow-marathon", title: "I'ma Do A Minecraf", desc: "F.L.O.W. — Full-Length Optimal Work: one thing, zero context-switching, 3+ hours in a single sitting. Log one on anything.", category: "build", progress: (a) => [a.longFlowDone ? 1 : 0, 1] },
-  { id: "arg-architect", title: "Puppet Master", desc: "Complete 3 ARG items.", category: "build", progress: (a) => [a.argDone, 3] },
   { id: "investor", title: "Walked In With A Plan For Once", desc: "Complete a meeting with its prep checklist fully done.", category: "build", progress: (a) => [a.meetingPrepDone, 1] },
   { id: "ship-it", title: "It's Actually Done", desc: "Complete a project.", category: "build", progress: (a) => [a.projectsDone, 1] },
   { id: "trilogy", title: "Threepeat", desc: "Complete 3 projects.", category: "build", progress: (a) => [a.projectsDone, 3] },

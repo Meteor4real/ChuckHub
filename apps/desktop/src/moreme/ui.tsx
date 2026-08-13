@@ -1281,7 +1281,7 @@ function ProjectCard({ p }: { p: Project }) {
       <div className="mm-row" style={{ alignItems: "center" }}>
         <input value={p.name} onChange={(e) => upsertProject({ ...p, name: e.target.value })} style={{ flex: 1, fontSize: 15, fontWeight: 600 }} />
         <select value={p.kind} onChange={(e) => upsertProject({ ...p, kind: e.target.value as ProjectKind })}>
-          {(["arg", "mod", "venture", "school", "other"] as ProjectKind[]).map((k) => <option key={k} value={k}>{k}</option>)}
+          {(["mod", "venture", "school", "other"] as ProjectKind[]).map((k) => <option key={k} value={k}>{k}</option>)}
         </select>
         <select value={p.status} onChange={(e) => upsertProject({ ...p, status: e.target.value as Project["status"] })}>
           {(["active", "paused", "done"] as Project["status"][]).map((k) => <option key={k} value={k}>{k}</option>)}

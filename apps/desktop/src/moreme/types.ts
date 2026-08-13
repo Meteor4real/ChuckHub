@@ -1,10 +1,10 @@
 // MoreMe — types for the calendar-first rebuild.
 //
 // Everything schedulable is a CalEvent: recurring routine habits, school
-// classes, business meetings, ARG stages, travel, and "announcements"
-// (which can be hidden until you're ready to reveal them). XP is earned per
-// completed occurrence; completing milestones and projects adds bonus XP.
-// No modes, no focus blocks, no strikes, no session breaks.
+// classes, business meetings, travel, and "announcements" (which can be
+// hidden until you're ready to reveal them). XP is earned per completed
+// occurrence; completing milestones and projects adds bonus XP. No modes,
+// no focus blocks, no strikes, no session breaks.
 
 export type Category =
   | "routine"      // recurring habit (morning routine, bedtime, movement)
@@ -13,7 +13,6 @@ export type Category =
   | "business"     // running your companies
   | "venture"      // a specific business / venture activity
   | "project"      // personal build / mod work
-  | "arg"          // Cosmos Crew ARG release/stage
   | "meeting"      // a scheduled meeting
   | "travel"       // trips, the helicopter, logistics
   | "announcement" // something you plan to reveal to the school
@@ -103,7 +102,7 @@ export type Note = {
   updatedAt: number;
 };
 
-export type ProjectKind = "arg" | "mod" | "venture" | "school" | "other";
+export type ProjectKind = "mod" | "venture" | "school" | "other";
 export type ProjectStatus = "active" | "paused" | "done";
 
 export type Project = {
@@ -394,7 +393,6 @@ export const CATEGORY_META: Record<Category, { label: string; color: string; gly
   business:     { label: "Business",     color: "#FFB23E", glyph: "$" },
   venture:      { label: "Venture",      color: "#FF8A3E", glyph: "▲" },
   project:      { label: "Project",      color: "#A855F7", glyph: "◆" },
-  arg:          { label: "ARG",          color: "#E0529C", glyph: "✦" },
   meeting:      { label: "Meeting",      color: "#FF5577", glyph: "●" },
   travel:       { label: "Travel",       color: "#22D3EE", glyph: "✈" },
   announcement: { label: "Announcement", color: "#FFD23E", glyph: "❖" },
@@ -406,5 +404,5 @@ export const CATEGORY_META: Record<Category, { label: string; color: string; gly
 
 export const CATEGORY_ORDER: Category[] = [
   "routine", "class", "school", "business", "venture",
-  "project", "arg", "meeting", "travel", "announcement", "fitness", "personal",
+  "project", "meeting", "travel", "announcement", "fitness", "personal",
 ];
