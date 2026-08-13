@@ -151,7 +151,7 @@ function TabsCard({ s }: { s: State }) {
 function RanksCard({ s }: { s: State }) {
   const lv = levelInfo(s).level;
   return (
-    <Section title="Rank names" sub={`Override any of the 20 rank names. Yours appear in the header at the matching level.`}>
+    <Section title="Rank names" sub={`Override any of the ${MAX_LEVEL} rank names. Yours appear in the header at the matching level.`}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 6 }}>
         {Array.from({ length: MAX_LEVEL }, (_, i) => i + 1).map((level) => {
           const def = RANK_NAMES[level - 1] ?? "";
