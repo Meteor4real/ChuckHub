@@ -43,7 +43,6 @@ export type CalEvent = {
   start?: string;               // "HH:MM"
   end?: string;                 // "HH:MM"
   location?: string;
-  people: string[];             // Person ids
   linkedProjectId?: string;
   linkedClassId?: string;       // for category="school" or "class" — anchors Get Ahead
   checklist: ChecklistItem[];
@@ -82,7 +81,7 @@ export type ClassPeriod = { days: number[]; start: string; end: string };  // da
 export type Class = {
   id: string;
   name: string;        // "World History", "Algebra II", etc.
-  teacher?: string;    // Person id
+  teacher?: string;    // freeform name
   color?: string;      // optional accent override
   room?: string;       // where it meets
   period?: ClassPeriod; // weekly meeting pattern (drives the timetable generator)
@@ -116,19 +115,6 @@ export type Project = {
   milestones: ChecklistItem[];
   completedAt?: number;         // set when status flips to done (project XP bonus)
 };
-
-export type Person = {
-  id: string;
-  name: string;
-  role: string;                 // "Friend", "Teacher", "Principal", "Investor"…
-  notes?: string;
-  lastTouch?: number;           // ms — last time you logged an interaction
-};
-
-// A logged interaction with someone in your Circle — the thing that makes
-// it more than a name tag. "Touch" = any real contact: a call, a favor, a
-// catch-up, not necessarily a scheduled meeting.
-export type Touch = { id: string; personId: string; note?: string; ts: number };
 
 // A business / venture you run. Tracked separately from Projects so the
 // Empire view can sum monthly revenue and show health at a glance.
@@ -372,7 +358,6 @@ export type State = {
   ventures: Venture[];
   inbox: InboxItem[];
   notes: Note[];
-  people: Person[];
   classes: Class[];
   goals: Goals;
   distractions: DistractionLog[];
@@ -381,9 +366,8 @@ export type State = {
   urges: UrgeLog[];
   replacements: Replacement[];
   screen: ScreenSettings;
-  // Fitness logging + Circle touches — see the types above.
+  // Fitness logging — see the types above.
   fitnessSessions: FitnessSession[];
-  touches: Touch[];
   rewards: LevelReward[];                        // user-set reward text per level
   unlockedAchievements: Record<string, number>;  // id -> unlocked ts
   startedAt: number;

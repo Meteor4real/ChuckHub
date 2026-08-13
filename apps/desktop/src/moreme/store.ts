@@ -5,8 +5,8 @@
 import type {
   CalEvent, Category, Class, ClassPeriod, CustomAchievement, CustomTheme,
   Customization, DistractionLog, DynamicTab, FitnessKind, FitnessSession, Goal, Goals, InboxItem, LevelReward,
-  Note, Person, Project, Recurrence, Replacement, School, SchoolBlock, SchoolMod, SchoolPath, ScreenCategory,
-  ScreenSession, ScreenSettings, State, StatSource, Touch, UrgeLog, UrgeResolution,
+  Note, Project, Recurrence, Replacement, School, SchoolBlock, SchoolMod, SchoolPath, ScreenCategory,
+  ScreenSession, ScreenSettings, State, StatSource, UrgeLog, UrgeResolution,
   Venture, VentureStatus, Widget,
 } from "./types";
 import { FITNESS_KIND_LABEL, MAX_LEVEL, RANK_NAMES, cumulativeXp } from "./types";
@@ -52,10 +52,6 @@ export const monthLabel = (y: number, m: number) =>
 // the only thing seeded — that's the user's actual reality, not fiction.
 // Empty state surfaces in each tab guide the user through adding what they
 // actually use.
-
-function seedPeople(): Person[] {
-  return [];
-}
 
 function seedClasses(): Class[] {
   return [];
@@ -280,7 +276,7 @@ export function generateSchoolModEvents(modId: string) {
           id: `${prefix}${weekday}-${b.id}`,
           title: b.label, category: b.kind === "lunch" ? "personal" : "class",
           date: m.startDate, until: m.endDate, allDay: false, start: b.start, end: b.end,
-          location: b.room, people: [], linkedClassId: b.kind === "period" ? b.linkedClassId : undefined,
+          location: b.room, linkedClassId: b.kind === "period" ? b.linkedClassId : undefined,
           checklist: [], priority: "normal", visibility: "visible",
           recurrence: { kind: "weekly", days: [weekday] }, reminders: [],
           xp: b.kind === "period" ? 5 : 0, status: "planned", createdAt: Date.now(),
@@ -342,7 +338,6 @@ function seedState(): State {
     projects: [],
     ventures: seedVentures(),
     inbox: [],
-    people: seedPeople(),
     classes: seedClasses(),
     goals: seedGoals(),
     distractions: [],
@@ -351,7 +346,6 @@ function seedState(): State {
     replacements: seedReplacements(),
     screen: seedScreenSettings(),
     fitnessSessions: [],
-    touches: [],
     customization: seedCustomization(),
     rewards: Array.from({ length: MAX_LEVEL }, (_, i) => ({ level: i + 1, reward: "" })),
     unlockedAchievements: {},
@@ -394,7 +388,6 @@ export function loadState(): State {
         ventures: p.ventures ?? d.ventures,
         inbox: p.inbox ?? [],
         notes: p.notes ?? [],
-        people: p.people ?? d.people,
         classes: p.classes ?? d.classes,
         goals: { ...d.goals, ...(p.goals ?? {}) },
         distractions: p.distractions ?? [],
@@ -403,7 +396,6 @@ export function loadState(): State {
         replacements: p.replacements ?? d.replacements,
         screen: { ...d.screen, ...(p.screen ?? {}) },
         fitnessSessions: p.fitnessSessions ?? [],
-        touches: p.touches ?? [],
         // Customization (v11+) — back-fill cleanly for existing installs.
         customization: mergeCustomization(d.customization, p.customization),
         rewards: p.rewards && p.rewards.length === MAX_LEVEL ? p.rewards : d.rewards,
@@ -554,7 +546,7 @@ export function streakInfo(s: State = loadState()): { current: number; best: num
 // ── event CRUD ──────────────────────────────────────────────────────────────
 export const blankEvent = (date: string): CalEvent => ({
   id: uid(), title: "", category: "personal", date, allDay: false,
-  start: "09:00", end: "10:00", people: [], checklist: [], priority: "normal",
+  start: "09:00", end: "10:00", checklist: [], priority: "normal",
   visibility: "visible", recurrence: { kind: "none" }, reminders: [], xp: 10,
   status: "planned", createdAt: Date.now(),
 });
@@ -654,7 +646,6 @@ export function generateClassPeriods(classId: string) {
       start: c.period.start,
       end: c.period.end,
       location: c.room,
-      people: c.teacher ? [c.teacher] : [],
       linkedClassId: classId,
       checklist: [],
       priority: "normal",
@@ -761,7 +752,7 @@ export function applyRoutineTemplate(tmpl: RoutineTemplateId, startDate: string,
         id, title: item.title, category: item.category, date: startDate,
         until: def.bounded ? untilDate : undefined,
         allDay: false, start: item.start, end: item.end,
-        people: [], checklist: existing?.checklist ?? item.checklist.map((t) => ({ id: uid(), text: t, done: false })),
+        checklist: existing?.checklist ?? item.checklist.map((t) => ({ id: uid(), text: t, done: false })),
         priority: "normal", visibility: "visible", recurrence: item.recurrence,
         reminders: [], xp: item.category === "fitness" ? 25 : 15,
         status: "planned", createdAt: existing?.createdAt ?? Date.now(),
@@ -1274,50 +1265,6 @@ export function removeReplacement(id: string) {
   updateState((s) => ({ ...s, replacements: s.replacements.filter((r) => r.id !== id) }));
 }
 
-// ── people ──────────────────────────────────────────────────────────────
-export function upsertPerson(p: Person) {
-  updateState((s) => ({
-    ...s,
-    people: s.people.some((x) => x.id === p.id) ? s.people.map((x) => (x.id === p.id ? p : x)) : [...s.people, p],
-  }));
-}
-export function removePerson(id: string) {
-  updateState((s) => ({
-    ...s,
-    people: s.people.filter((p) => p.id !== id),
-    touches: s.touches.filter((t) => t.personId !== id),
-  }));
-}
-
-// Log a real interaction with someone — a call, a favor, a catch-up. Stamps
-// their lastTouch so Circle can show "3d ago" instead of just a name tag.
-export function logTouch(personId: string, note?: string) {
-  const ts = Date.now();
-  updateState((s) => ({
-    ...s,
-    touches: [...s.touches, { id: uid(), personId, note: note?.trim() || undefined, ts }],
-    people: s.people.map((p) => (p.id === personId ? { ...p, lastTouch: ts } : p)),
-  }));
-}
-export function touchesFor(personId: string, s: State = loadState()): Touch[] {
-  return s.touches.filter((t) => t.personId === personId).sort((a, b) => b.ts - a.ts);
-}
-// Next scheduled event that has this person tagged, today or in the next
-// 90 days (covers one-offs and any recurrence pattern without needing
-// separate recurrence math — reuses the same occursOn every calendar view does).
-export function nextEventWith(personId: string, s: State = loadState()): { e: CalEvent; date: string } | null {
-  const withPerson = s.events.filter((e) => e.people.includes(personId));
-  if (!withPerson.length) return null;
-  let d = today();
-  for (let i = 0; i < 90; i++) {
-    for (const e of withPerson) {
-      if (occursOn(e, d)) return { e, date: d };
-    }
-    d = addDays(d, 1);
-  }
-  return null;
-}
-
 // ── goals / distractions / rewards ──────────────────────────────────────────
 export function setGoals(goals: Goals) { updateState((s) => ({ ...s, goals })); }
 export function logDistraction(note: string) {
@@ -1686,7 +1633,6 @@ type Aggregates = {
   quietStreak: number;
   milestonesDone: number;
   projectsDone: number;
-  eventsLinkedToPeople: number;
   totalEvents: number;
   announcementsRevealed: number;
   streakCurrent: number;
@@ -1766,9 +1712,7 @@ function aggregate(s: State): Aggregates {
   let futureSchoolDone7 = 0, futureSchoolDone30 = 0;
   let longFlowDone = false, meetingPrepDone = 0, ventureDone = 0;
   let longFitnessDone = s.fitnessSessions.some((x) => x.minutes >= 45);
-  let eventsLinkedToPeople = 0;
   for (const e of s.events) {
-    if (e.people.length) eventsLinkedToPeople++;
     // single-occurrence completion checks
     const done = isDone(e, e.date, s);
     if (!done) continue;
@@ -1873,7 +1817,7 @@ function aggregate(s: State): Aggregates {
     futureSchoolDone7, futureSchoolDone30, longFlowDone,
     meetingPrepDone, polymathMax, ventureDone, morningRoutineDone, bedRoutineDone,
     quietDays, quietStreak,
-    milestonesDone, projectsDone, eventsLinkedToPeople, totalEvents: s.events.length,
+    milestonesDone, projectsDone, totalEvents: s.events.length,
     // "Revealed" means it actually went hidden -> visible via revealEvent
     // (revealedAt stamp), not just "was created visible like every event".
     announcementsRevealed: s.events.filter((e) => e.category === "announcement" && e.visibility === "visible" && !!e.revealedAt).length,
@@ -1919,7 +1863,6 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: "empire", title: "Multiple Streams (Actually)", desc: "Run 3 live or scaling ventures at once.", category: "build", progress: (a) => [a.liveVentures, 3] },
 
   // Social — your reputation at school
-  { id: "people-person", title: "Knows Everyone For Real", desc: "Link 5 items to people in your circle.", category: "social", progress: (a) => [a.eventsLinkedToPeople, 5] },
   { id: "announcer", title: "Made It Official", desc: "Reveal a hidden announcement (create it unannounced, then make it visible).", category: "social", progress: (a) => [a.announcementsRevealed, 1] },
 
   // Level milestones — the rank ladder, big steps only

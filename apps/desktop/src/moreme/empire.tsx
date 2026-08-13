@@ -23,7 +23,7 @@ export function EmpireView({ s }: { s: State }) {
     <div style={{ maxWidth: 1300, margin: "0 auto" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
         <div>
-          <div className="serif" style={{ fontSize: 22, lineHeight: 1 }}>The Empire</div>
+          <div className="serif" style={{ fontSize: 22, lineHeight: 1 }}>Companies</div>
           <div style={{ fontSize: 11, color: T.inkTiny, letterSpacing: ".08em", textTransform: "uppercase", marginTop: 4 }}>
             Everything you build and run
           </div>
@@ -43,7 +43,7 @@ export function EmpireView({ s }: { s: State }) {
       {s.ventures.length === 0 ? (
         <EmptyState
           title="No ventures yet"
-          line="The Empire tracks every business you run — status, monthly revenue, next action. Add the first one and the dashboard starts filling in."
+          line="Companies tracks every business you run — status, monthly revenue, next action. Add the first one and the dashboard starts filling in."
           ctaLabel="Add your first venture"
           onCta={() => upsertVenture({ ...blankVenture(), name: "" })}
         />

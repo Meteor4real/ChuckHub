@@ -8,18 +8,18 @@ import {
   CATEGORY_META, CATEGORY_ORDER, HELP_KINDS, HELP_KIND_LABEL, MAX_LEVEL, RANK_NAMES, cumulativeXp, levelStep,
 } from "./types";
 import type {
-  CalEvent, Category, ChecklistItem, Class, Goal, HelpKind, InboxItem, Person, Priority,
+  CalEvent, Category, ChecklistItem, Class, Goal, HelpKind, InboxItem, Priority,
   Project, Recurrence, SchoolPath, State, Visibility,
 } from "./types";
 import {
   ACHIEVEMENTS, achievementProgress, blankClass, blankEvent, blankProject,
   captureInbox, conflictIds, dayComplete, distractionsOn, dueReminders,
   eventsOnDate, fmtTime, gradeLabel, gradeStatus, inboxToEventDraft,
-  inboxToGoal, inboxToProject, insights, iso, isDone, levelInfo, loadState, logDistraction, logTouch, monthLabel,
-  nextEventWith, removeClass, removeDistraction, removeEvent, removeInbox, removePerson,
+  inboxToGoal, inboxToProject, insights, iso, isDone, levelInfo, loadState, logDistraction, monthLabel,
+  removeClass, removeDistraction, removeEvent, removeInbox,
   removeProject, revealEvent, schoolYearLabel, setGoals, setReward, setSchool,
   streakInfo, subscribeState, today, toggleDone, uid, upcomingWithReminders,
-  upsertClass, upsertEvent, upsertPerson, upsertProject, xpForDate,
+  upsertClass, upsertEvent, upsertProject, xpForDate,
 } from "./store";
 import { DayView, WeekView, shiftWeek } from "./timeline";
 import { sfxChime, sfxClick, sfxError, sfxNav, sfxSuccess } from "../services/sfx";
@@ -53,7 +53,7 @@ type BuiltInTab = "today" | "ahead" | "calendar" | "screens" | "empire" | "proje
 type Tab = BuiltInTab | string;
 type CalMode = "month" | "week" | "day";
 const TAB_LABELS: Record<string, string> = {
-  today: "Today", ahead: "Get Ahead", calendar: "Calendar", screens: "Screens", empire: "Empire",
+  today: "Overview", ahead: "Get Ahead", calendar: "Calendar", screens: "Screens", empire: "Companies",
   projects: "Projects", plans: "Plans", goals: "Goals", achievements: "Achievements",
   insights: "Insights", levels: "Levels", progress: "Progress", customize: "Customize",
 };
@@ -185,14 +185,14 @@ function SideNav({ s, tab, onTab, onReview, onSignOut }: { s: State; tab: Tab; o
     status.kind === "alumnus" ? "Alumnus" : "In school";
   const dyn = s.customization.dynamicTabs;
 
-  const item = (id: string, glyph: string, label: string) => {
+  const item = (id: string, label: string) => {
     const active = tab === id;
     return (
       <button
         key={id}
         onClick={() => { sfxNav(); onTab(id as Tab); }}
         style={{
-          display: "flex", alignItems: "center", gap: 9, width: "100%",
+          display: "flex", alignItems: "center", width: "100%",
           padding: "7px 10px", borderRadius: 8, border: "none", cursor: "pointer",
           background: active ? T.mint + "1a" : "transparent",
           borderLeft: `2px solid ${active ? T.mint : "transparent"}`,
@@ -201,7 +201,6 @@ function SideNav({ s, tab, onTab, onReview, onSignOut }: { s: State; tab: Tab; o
           transition: "background .15s, color .15s",
         }}
       >
-        <span style={{ width: 14, textAlign: "center", color: active ? T.mint : T.inkTiny, fontSize: 12 }}>{glyph}</span>
         {label}
       </button>
     );
@@ -211,9 +210,9 @@ function SideNav({ s, tab, onTab, onReview, onSignOut }: { s: State; tab: Tab; o
     <aside style={{ display: "flex", flexDirection: "column", minHeight: 0, background: T.elev, borderRight: `1px solid ${T.line}` }}>
       {/* identity */}
       <div style={{ padding: "14px 14px 12px", borderBottom: `1px solid ${T.line}` }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-          <MoreMeMark size={30} />
-          <div className="mm-h1" style={{ fontSize: 20, lineHeight: 1, flex: 1 }}>MoreMe</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <MoreMeMark size={44} />
+          <div className="mm-h1" style={{ fontSize: 27, lineHeight: 1, flex: 1 }}>MoreMe</div>
           {onSignOut && (
             <button className="mm-btn" style={{ padding: "3px 7px", fontSize: 10, whiteSpace: "nowrap", flex: "none" }} onClick={onSignOut} title="Sign out">Sign out</button>
           )}
@@ -232,14 +231,14 @@ function SideNav({ s, tab, onTab, onReview, onSignOut }: { s: State; tab: Tab; o
           return (
             <div key={g.label} style={{ marginBottom: 8 }}>
               <div className="condensed" style={{ fontSize: 10, color: T.inkTiny, letterSpacing: ".18em", padding: "2px 10px 4px" }}>{g.label}</div>
-              {items.map((x) => item(x.id, x.glyph, tabLabel(x.id, TAB_LABELS[x.id], s)))}
+              {items.map((x) => item(x.id, tabLabel(x.id, TAB_LABELS[x.id], s)))}
             </div>
           );
         })}
         {dyn.length > 0 && (
           <div style={{ marginBottom: 8 }}>
             <div className="condensed" style={{ fontSize: 10, color: T.inkTiny, letterSpacing: ".18em", padding: "2px 10px 4px" }}>Yours</div>
-            {dyn.map((d) => item(d.id, d.icon || "◇", d.label))}
+            {dyn.map((d) => item(d.id, d.label))}
           </div>
         )}
       </div>
@@ -257,8 +256,7 @@ function SideNav({ s, tab, onTab, onReview, onSignOut }: { s: State; tab: Tab; o
             <span>{tx.earned}/{tx.possible} XP today</span>
           </div>
         </div>
-        <button className="mm-btn" style={{ width: "100%", padding: "6px 10px", fontSize: 11 }} onClick={onReview}>Weekly Review</button>
-        {item("customize", "❖", tabLabel("customize", "Customize", s))}
+        {item("customize", tabLabel("customize", "Customize", s))}
         <SyncPip />
         <DDDBanner />
       </div>
@@ -495,7 +493,6 @@ function EventRow({ e, date, s, onEdit }: { e: CalEvent; date: string; s: State;
           {!e.allDay && e.start ? ` · ${fmtTime(e.start)}${e.end ? "–" + fmtTime(e.end) : ""}` : e.allDay ? " · all day" : ""}
           {e.location ? ` · ${e.location}` : ""}
           {e.xp ? ` · ${e.xp} XP` : ""}
-          {e.people.length ? ` · ${e.people.map((id) => s.people.find((p) => p.id === id)?.name).filter(Boolean).join(", ")}` : ""}
         </div>
         {e.checklist.length > 0 && (
           <div style={{ fontSize: 11, color: T.inkSoft, marginTop: 3 }}>
@@ -646,7 +643,7 @@ function EmpirePulseCard({ s }: { s: State }) {
   const nextActions = s.ventures.filter((v) => v.nextAction?.trim()).slice(0, 2);
   return (
     <div className="mm-card" style={{ padding: 14 }}>
-      <div style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: T.inkTiny, marginBottom: 10 }}>Empire</div>
+      <div style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: T.inkTiny, marginBottom: 10 }}>Companies</div>
       <div style={{ display: "flex", gap: 18, marginBottom: nextActions.length ? 10 : 0 }}>
         <div>
           <div style={{ fontSize: 20, fontWeight: 800, color: T.mint, lineHeight: 1 }}>${Math.round(mrr).toLocaleString()}</div>
@@ -924,16 +921,6 @@ function EventEditor({ s, draft, onClose, onSaved }: { s: State; draft: CalEvent
             <Field label="Repeat until (optional)"><input type="date" value={e.until ?? ""} onChange={(ev) => set("until", ev.target.value || undefined)} /></Field>
           )}
 
-          <Field label="People">
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {s.people.map((p) => {
-                const on = e.people.includes(p.id);
-                return <button key={p.id} className={"mm-tab" + (on ? " active" : "")} onClick={() => set("people", on ? e.people.filter((x) => x !== p.id) : [...e.people, p.id])}>{p.name}</button>;
-              })}
-              {s.people.length === 0 && <Empty>Add people in Projects → Circle.</Empty>}
-            </div>
-          </Field>
-
           <div className="mm-row">
             <Field label="Link to project">
               <select value={e.linkedProjectId ?? ""} onChange={(ev) => set("linkedProjectId", ev.target.value || undefined)}>
@@ -1034,7 +1021,7 @@ function ChecklistEditor({ items, onChange }: { items: ChecklistItem[]; onChange
   );
 }
 
-// ── Projects + Circle ─────────────────────────────────────────────────────
+// ── Projects ────────────────────────────────────────────────────────────
 // ── Routine templates — the real weekday/weekend/beach/travel schedule
 // content, ported off the original site as opt-in one-click calendar
 // generators instead of a static reference page. Nothing here is auto-
@@ -1117,7 +1104,6 @@ function ProjectsView({ s }: { s: State }) {
         <ThemeCard />
         <BackgroundCard />
         <ClassesCard s={s} />
-        <CircleCard s={s} />
       </div>
     </div>
   );
@@ -1262,10 +1248,7 @@ function ClassPeriodEditor({ s, c }: { s: State; c: Class }) {
       </div>
       <div style={{ display: "flex", gap: 6 }}>
         <input placeholder="Room" value={c.room ?? ""} onChange={(e) => upsertClass({ ...c, room: e.target.value })} style={{ flex: 1 }} />
-        <select value={c.teacher ?? ""} onChange={(e) => upsertClass({ ...c, teacher: e.target.value || undefined })} style={{ width: 110 }}>
-          <option value="">Teacher</option>
-          {s.people.map((pp) => <option key={pp.id} value={pp.id}>{pp.name}</option>)}
-        </select>
+        <input placeholder="Teacher" value={c.teacher ?? ""} onChange={(e) => upsertClass({ ...c, teacher: e.target.value || undefined })} style={{ width: 110 }} />
       </div>
       <div style={{ display: "flex", gap: 6 }}>
         <button className="mm-btn mm-btn-primary" style={{ flex: 1 }} disabled={!p.days.length} onClick={() => generateClassPeriods(c.id)}>Add to calendar</button>
@@ -1294,62 +1277,6 @@ function ProjectCard({ p }: { p: Project }) {
     </div>
   );
 }
-function CircleCard({ s }: { s: State }) {
-  const [name, setName] = useState("");
-  const [role, setRole] = useState("");
-  return (
-    <div className="mm-card" style={{ padding: 16 }}>
-      <div className="serif" style={{ fontSize: 16, marginBottom: 10 }}>Circle</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 12 }}>
-        {s.people.map((p: Person) => <CircleRow key={p.id} p={p} s={s} />)}
-      </div>
-      <div style={{ display: "flex", gap: 6 }}>
-        <input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
-        <input placeholder="Role" value={role} onChange={(e) => setRole(e.target.value)} style={{ width: 90 }} />
-      </div>
-      <button className="mm-btn" style={{ marginTop: 8, width: "100%" }} onClick={() => { if (name.trim()) { upsertPerson({ id: uid(), name: name.trim(), role: role.trim() || "Contact" }); setName(""); setRole(""); } }}>Add person</button>
-    </div>
-  );
-}
-
-// Relative "how long ago" — the whole point of tracking lastTouch is a
-// glanceable "3d ago" instead of a raw date.
-function relTime(ts: number): string {
-  const days = Math.floor((Date.now() - ts) / 86_400_000);
-  if (days <= 0) return "today";
-  if (days === 1) return "1d ago";
-  if (days < 30) return `${days}d ago`;
-  const months = Math.floor(days / 30);
-  return months === 1 ? "1mo ago" : `${months}mo ago`;
-}
-
-function CircleRow({ p, s }: { p: Person; s: State }) {
-  const [note, setNote] = useState("");
-  const [logging, setLogging] = useState(false);
-  const next = nextEventWith(p.id, s);
-  return (
-    <div style={{ borderBottom: `1px solid ${T.line}`, paddingBottom: 8 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <input value={p.name} onChange={(e) => upsertPerson({ ...p, name: e.target.value })} style={{ flex: 1 }} />
-        <input value={p.role} onChange={(e) => upsertPerson({ ...p, role: e.target.value })} style={{ width: 96 }} />
-        <button className="mm-btn mm-btn-danger" style={{ padding: "4px 8px" }} onClick={() => removePerson(p.id)}>×</button>
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, fontSize: 10, color: T.inkTiny, flexWrap: "wrap" }}>
-        <span>{p.lastTouch ? `Last touch ${relTime(p.lastTouch)}` : "Never touched base"}</span>
-        {next && <span>· next: {next.e.title || CATEGORY_META[next.e.category].label} {next.date === today() ? "today" : new Date(next.date + "T00:00:00").toLocaleDateString(undefined, { weekday: "short" })}</span>}
-        <div style={{ flex: 1 }} />
-        <button className="mm-btn" style={{ padding: "2px 8px", fontSize: 10 }} onClick={() => setLogging((v) => !v)}>Log touch</button>
-      </div>
-      {logging && (
-        <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-          <input placeholder="What happened (optional)" value={note} onChange={(e) => setNote(e.target.value)} style={{ flex: 1, fontSize: 11 }} />
-          <button className="mm-btn mm-btn-primary" style={{ padding: "3px 8px", fontSize: 10 }} onClick={() => { logTouch(p.id, note); setNote(""); setLogging(false); }}>Save</button>
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ── Goals ───────────────────────────────────────────────────────────────────
 function GoalsView({ s }: { s: State }) {
   const cols: { key: keyof typeof s.goals; title: string }[] = [

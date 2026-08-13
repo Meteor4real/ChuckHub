@@ -18,11 +18,11 @@ import {
 import { WidgetEditor } from "./widgets";
 
 const TAB_DEFAULTS: { id: string; label: string }[] = [
-  { id: "today", label: "Today" },
+  { id: "today", label: "Overview" },
   { id: "ahead", label: "Get Ahead" },
   { id: "calendar", label: "Calendar" },
   { id: "screens", label: "Screens" },
-  { id: "empire", label: "Empire" },
+  { id: "empire", label: "Companies" },
   { id: "projects", label: "Projects" },
   { id: "plans", label: "Plans" },
   { id: "goals", label: "Goals" },
@@ -323,11 +323,11 @@ function CustomThemeCard({ s }: { s: State }) {
 // this UI is just the human-driven path.
 
 const BUILTIN_TAB_OPTIONS: { id: string; label: string }[] = [
-  { id: "today", label: "Today" },
+  { id: "today", label: "Overview" },
   { id: "ahead", label: "Get Ahead" },
   { id: "calendar", label: "Calendar" },
   { id: "screens", label: "Screens" },
-  { id: "empire", label: "Empire" },
+  { id: "empire", label: "Companies" },
   { id: "projects", label: "Projects" },
   { id: "plans", label: "Plans" },
   { id: "goals", label: "Goals" },
