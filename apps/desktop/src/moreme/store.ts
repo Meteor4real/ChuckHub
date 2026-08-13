@@ -1948,6 +1948,18 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: "honest-school", title: "Told The Truth About The Help", desc: "Mark a school item's help honestly (any value).", category: "school", progress: (a) => [Math.min(a.schoolHonestlyLogged, 1), 1] },
   { id: "all-yours-5", title: "All Me, Five Times", desc: "Five school items completed with help = 'none'.", category: "school", progress: (a) => [a.schoolAllYours, 5] },
 
+  // Special — the whole-system milestones, not tied to one track
+  { id: "hundred-days", title: "100 Days In", desc: "Been running MoreMe for 100 days. Still here.", category: "special", progress: (a, s) => [Math.min(Math.floor((Date.now() - s.startedAt) / 86_400_000), 100), 100] },
+  { id: "full-system", title: "Built The Whole Thing", desc: "Actually used every surface — a real Company, a logged workout, a real school Mod, and a Project all going at once.", category: "special", progress: (a, s) => {
+    const have = [
+      s.ventures.length > 0,
+      s.fitnessSessions.length > 0,
+      s.schoolMods.length > 0,
+      s.projects.length > 0,
+    ].filter(Boolean).length;
+    return [have, 4];
+  } },
+
 ];
 
 export function achievementProgress(s: State = loadState()): Record<string, { have: number; need: number; done: boolean }> {
