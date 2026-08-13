@@ -82,13 +82,16 @@ function schoolStartOn(year: number): Date { return new Date(year, SCHOOL_START_
 function schoolEndOn(year: number): Date { return new Date(year + 1, SCHOOL_END_MONTH, SCHOOL_END_DAY); }
 
 export type GradeStatus =
-  | { kind: "school"; grade: number }                          // in school, in grade
+  | { kind: "school"; grade: number }                          // in school, in grade, a Mod is actually running
+  | { kind: "break"; grade: number }                           // inside the academic year, but no Mod covers today
   | { kind: "summer"; lastGrade: number; goingInto: number }    // summer between two grades
   | { kind: "alumnus"; graduatedYear: number };                 // done, forever
 
 // Compute exactly where you are in your Mount Vernon arc right now. Summer
 // is a first-class state; graduation ends the journey in May/June, not in
-// the next August.
+// the next August. Within the academic-year window, "school" only holds if
+// an actual Mod (from the real Mod Schedule) covers today — otherwise it's
+// a break (Thanksgiving, winter break, etc.), not silently "in school."
 export function gradeStatus(s: State = loadState(), at = new Date()): GradeStatus {
   const lastSchoolEnd = schoolEndOn(s.school.grade9Year + 3); // end of Grade 12
   if (at > lastSchoolEnd) return { kind: "alumnus", graduatedYear: lastSchoolEnd.getFullYear() };
@@ -98,8 +101,16 @@ export function gradeStatus(s: State = loadState(), at = new Date()): GradeStatu
   const end = schoolEndOn(sy);
   const grade = 9 + (sy - s.school.grade9Year);
 
-  // Inside the school window of school year sy → in school, in `grade`.
-  if (at >= start && at <= end) return { kind: "school", grade };
+  // Inside the school window of school year sy → check whether a real Mod
+  // actually covers today; if mods are tracked but none does, it's a break.
+  if (at >= start && at <= end) {
+    if (s.schoolMods.length > 0) {
+      const d = iso(at);
+      const inMod = s.schoolMods.some((m) => d >= m.startDate && d <= m.endDate);
+      if (!inMod) return { kind: "break", grade };
+    }
+    return { kind: "school", grade };
+  }
 
   // Otherwise we're in summer. Summer between grade X and grade X+1:
   //   - if we're after May 28 of school year sy → just finished `grade`
@@ -117,7 +128,7 @@ export function gradeStatus(s: State = loadState(), at = new Date()): GradeStatu
 
 export function gradeNumber(s: State = loadState(), at = new Date()): number {
   const g = gradeStatus(s, at);
-  if (g.kind === "school") return g.grade;
+  if (g.kind === "school" || g.kind === "break") return g.grade;
   if (g.kind === "summer") return g.goingInto;  // best single-number answer in summer
   return 13;
 }
@@ -128,14 +139,14 @@ const withName = (n: number) => { const name = seniorName(n); return name ? ` ($
 export function gradeLabel(s: State = loadState(), at = new Date()): string {
   const g = gradeStatus(s, at);
   if (g.kind === "alumnus") return `Alumnus · Class of ${g.graduatedYear}`;
-  if (g.kind === "school")  return `Grade ${g.grade} · ${ordinal(g.grade)}${withName(g.grade)}`;
+  if (g.kind === "school" || g.kind === "break") return `Grade ${g.grade} · ${ordinal(g.grade)}${withName(g.grade)}`;
   return `Summer · Going into ${ordinal(g.goingInto)}${withName(g.goingInto)}`;
 }
 
 export function schoolYearLabel(s: State = loadState(), at = new Date()): string {
   const g = gradeStatus(s, at);
   if (g.kind === "alumnus") return `${g.graduatedYear - 1}–${String(g.graduatedYear).slice(2)}`;
-  if (g.kind === "school") { const sy = schoolYearStart(at); return `${sy}–${String(sy + 1).slice(2)}`; }
+  if (g.kind === "school" || g.kind === "break") { const sy = schoolYearStart(at); return `${sy}–${String(sy + 1).slice(2)}`; }
   // summer: the year just ended is the closer reference
   const sy = schoolYearStart(at);
   const next = sy + 1;
@@ -173,6 +184,36 @@ export function blankSchoolMod(number: number): SchoolMod {
   return { id: uid(), number, label: `Module ${number}`, startDate: today(), endDate: today(), advisor: "", days };
 }
 
+// Davis's real Grade 9 Module 1 schedule — Aug 12 to Oct 8, advisor Tyler
+// Dale. The 5 periods rotate order day to day (no fixed weekly grid); this
+// is the actual rotation as given, not a guess. Seeded once (fresh installs
+// via seedState, existing installs via a one-time loadState migration) so
+// it shows up without Davis re-typing 35 blocks by hand.
+function realMod1(): SchoolMod {
+  const per = (label: string, teacher: string, room: string, start: string, end: string): SchoolBlock =>
+    ({ id: uid(), kind: "period", label, teacher, room, start, end });
+  const special = (weekday: number, teacher?: string, room?: string): SchoolBlock =>
+    ({ id: uid(), kind: "special", label: SPECIAL_BLOCK_LABEL[weekday], start: SPECIAL_BLOCK_TIME.start, end: SPECIAL_BLOCK_TIME.end, teacher, room });
+  const lunch = (kind: "A" | "B", start: string, end: string): SchoolBlock =>
+    ({ id: uid(), kind: "lunch", label: `${kind} Lunch`, start, end });
+
+  const P1 = (start: string, end: string) => per("Period 1 · Cultivating Curiosity", "Harris", "S102", start, end);
+  const P2 = (start: string, end: string) => per("Period 2 · GTD", "Okeke", "HQ2 4", start, end);
+  const P3 = (start: string, end: string) => per("Period 3 · Academic Writing", "Deen", "S201", start, end);
+  const P4 = (start: string, end: string) => per("Period 4 · Health", "Martinez", "N206", start, end);
+  const P5 = (start: string, end: string) => per("Period 5 · Scientific Inquiry", "Paperno", "B205", start, end);
+
+  const days: Record<number, SchoolBlock[]> = {
+    1: [P1("08:15", "09:25"), special(1), P2("10:05", "11:10"), lunch("A", "11:15", "11:45"), P3("11:50", "12:55"), P4("13:00", "14:05"), P5("14:10", "15:15")],
+    2: [P2("08:15", "09:25"), special(2, "Mr. Dale", "HQ1 1"), P3("10:05", "11:10"), lunch("A", "11:15", "11:45"), P4("11:50", "12:55"), P5("13:00", "14:05"), P1("14:10", "15:15")],
+    3: [P3("08:15", "09:25"), special(3), P4("10:05", "11:10"), lunch("A", "11:15", "11:45"), P5("11:50", "12:55"), P1("13:00", "14:05"), P2("14:10", "15:15")],
+    4: [P4("08:15", "09:25"), special(4), P5("10:05", "11:10"), P1("11:15", "12:20"), lunch("B", "12:25", "12:55"), P2("13:00", "14:05"), P3("14:10", "15:15")],
+    5: [P5("08:15", "09:25"), special(5), P1("10:05", "11:10"), lunch("A", "11:15", "11:45"), P2("11:50", "12:55"), P3("13:00", "14:05"), P4("14:10", "15:15")],
+  };
+  for (const d of WEEKDAY_ORDER) days[d].sort((a, b) => a.start.localeCompare(b.start));
+  return { id: uid(), number: 1, label: "Module 1", startDate: "2026-08-12", endDate: "2026-10-08", advisor: "Tyler Dale", days };
+}
+
 export function upsertSchoolMod(m: SchoolMod) {
   updateState((s) => ({
     ...s,
@@ -200,9 +241,10 @@ export function lunchKindForRoom(room?: string): "A" | "B" {
 // Insert a lunch-slot class into a day's blocks: computes A/B Lunch from
 // the class's room and inserts both the class portion and the Lunch block
 // in the correct order, replacing any existing lunch pair for that day.
-// A period literally labeled "GTD" gets "GTD Lunch" instead of A/B.
+// Real Module 1 shows GTD landing in this slot labeled plain "A Lunch" like
+// any other period — no separate "GTD Lunch" naming, despite the original
+// description implying one. Always just A/B Lunch.
 export function setLunchSlot(modId: string, weekday: number, subject: string, room: string, teacher?: string, linkedClassId?: string) {
-  const isGtd = /^gtd\b/i.test(subject.trim());
   const kind = lunchKindForRoom(room);
   const classBlock: SchoolBlock = {
     id: uid(), kind: "period", label: subject.trim() || "Class", room: room.trim() || undefined, teacher: teacher?.trim() || undefined,
@@ -211,7 +253,7 @@ export function setLunchSlot(modId: string, weekday: number, subject: string, ro
     end: kind === "B" ? "12:20" : "12:55",
   };
   const lunchBlock: SchoolBlock = {
-    id: uid(), kind: "lunch", label: isGtd ? "GTD Lunch" : `${kind} Lunch`,
+    id: uid(), kind: "lunch", label: `${kind} Lunch`,
     start: kind === "B" ? "12:25" : "11:15",
     end: kind === "B" ? "12:55" : "11:45",
   };
@@ -331,7 +373,7 @@ function seedState(): State {
     schemaVersion: 12,
     notes: [],
     school: seedSchool(),
-    schoolMods: [],
+    schoolMods: [realMod1()],
     events: [],
     completions: {},
     projects: [],
@@ -380,7 +422,9 @@ export function loadState(): State {
       cache = {
         schemaVersion: 12,
         school: p.school ?? d.school,
-        schoolMods: p.schoolMods ?? [],
+        // undefined (field never existed on this install) -> seed the real
+        // Mod 1; an explicit [] (the user cleared it themselves) stays [].
+        schoolMods: p.schoolMods ?? d.schoolMods,
         events: p.events ?? d.events,
         completions: p.completions ?? {},
         projects: p.projects ?? d.projects,

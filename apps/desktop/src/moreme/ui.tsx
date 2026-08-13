@@ -179,10 +179,12 @@ function SideNav({ s, tab, onTab, onReview, onSignOut }: { s: State; tab: Tab; o
   const status = gradeStatus(s);
   const chipColor =
     status.kind === "summer"  ? "#FFD23E" :
-    status.kind === "alumnus" ? "#A855F7" : T.mint;
+    status.kind === "alumnus" ? "#A855F7" :
+    status.kind === "break"   ? "#FF8A3E" : T.mint;
   const chipText =
     status.kind === "summer"  ? "Summer" :
-    status.kind === "alumnus" ? "Alumnus" : "In school";
+    status.kind === "alumnus" ? "Alumnus" :
+    status.kind === "break"   ? "Break" : "In school";
   const dyn = s.customization.dynamicTabs;
 
   const item = (id: string, label: string) => {
