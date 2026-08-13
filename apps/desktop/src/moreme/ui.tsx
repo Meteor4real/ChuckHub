@@ -1037,11 +1037,11 @@ function RoutineTemplateCard({ id, s }: { id: RoutineTemplateId; s: State }) {
       )}
       <div className="mm-row" style={{ alignItems: "flex-end" }}>
         <Field label={def.bounded ? "Trip starts" : "Starting"}>
-          <input type="date" value={start} onChange={(e) => setStart(e.target.value)} style={{ width: 130 }} />
+          <input type="date" value={start} onChange={(e) => setStart(e.target.value)} style={{ width: 152 }} />
         </Field>
         {def.bounded && (
           <Field label="Trip ends">
-            <input type="date" value={until} onChange={(e) => setUntil(e.target.value)} style={{ width: 130 }} />
+            <input type="date" value={until} onChange={(e) => setUntil(e.target.value)} style={{ width: 152 }} />
           </Field>
         )}
         <button className="mm-btn mm-btn-primary" onClick={() => applyRoutineTemplate(id, start, def.bounded ? until : undefined)}>

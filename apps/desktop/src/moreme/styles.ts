@@ -226,7 +226,7 @@ body.reduce-motion .moreme-embed .mm-card-mint { animation: none; }
 .moreme-embed .mm-seg button { background: transparent; border: none; color: ${T.inkSoft}; padding: 6px 10px; font-size: 11px; cursor: pointer; }
 .moreme-embed .mm-seg button.on { background: ${T.mint}; color: ${T.bg}; font-weight: 700; }
 .moreme-embed .mm-conflict { border-color: ${T.warn} !important; box-shadow: 0 0 0 1px ${T.warn}55; }
-.moreme-embed .mm-ach { display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: 12px; border: 1px solid ${T.line}; background: ${T.sunk}; }
+.moreme-embed .mm-ach { display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: 12px; border: 1px solid ${T.line}; border-left: 3px solid var(--c, ${T.line}); background: ${T.sunk}; }
 .moreme-embed .mm-ach.unlocked { border-color: var(--c, ${T.mint}); background: var(--c, ${T.mint})0d; }
 .moreme-embed .mm-medal { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; font-size: 18px; flex: none; background: ${T.bg}; border: 1px solid ${T.line}; color: ${T.inkTiny}; }
 .moreme-embed .mm-ach.unlocked .mm-medal { background: var(--c, ${T.mint}); color: ${T.bg}; border-color: var(--c, ${T.mint}); }

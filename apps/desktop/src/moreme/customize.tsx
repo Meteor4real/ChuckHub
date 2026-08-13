@@ -200,22 +200,26 @@ function TabsCard({ s }: { s: State }) {
         const cur = s.customization.tabLabels[t.id] ?? "";
         const hidden = isTabHidden(t.id, s);
         return (
-          <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ width: 100, fontSize: 12, color: T.inkSoft }}>{t.label}</span>
-            <input
-              value={cur}
-              placeholder={`Override (default: ${t.label})`}
-              onChange={(e) => setTabLabel(t.id, e.target.value)}
-              style={{ flex: 1 }}
-            />
-            <button className="mm-btn" style={{ padding: "4px 8px" }} onClick={() => resetTabLabel(t.id)} title="Reset to default">↺</button>
-            <button
-              className="mm-btn"
-              style={{ padding: "4px 10px", color: hidden ? T.warn : undefined, borderColor: hidden ? T.warn + "55" : undefined }}
-              onClick={() => toggleTabHidden(t.id)}
-            >
-              {hidden ? "Hidden" : "Visible"}
-            </button>
+          <div key={t.id} style={{ display: "flex", flexDirection: "column", gap: 4, paddingBottom: 6, borderBottom: `1px solid ${T.line}` }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ flex: 1, fontSize: 12, color: T.inkSoft }}>{t.label}</span>
+              <button
+                className="mm-btn"
+                style={{ padding: "3px 10px", fontSize: 11, color: hidden ? T.warn : undefined, borderColor: hidden ? T.warn + "55" : undefined }}
+                onClick={() => toggleTabHidden(t.id)}
+              >
+                {hidden ? "Hidden" : "Visible"}
+              </button>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <input
+                value={cur}
+                placeholder={`Override (default: ${t.label})`}
+                onChange={(e) => setTabLabel(t.id, e.target.value)}
+                style={{ flex: 1, fontSize: 12 }}
+              />
+              <button className="mm-btn" style={{ padding: "3px 8px" }} onClick={() => resetTabLabel(t.id)} title="Reset to default">↺</button>
+            </div>
           </div>
         );
       })}
