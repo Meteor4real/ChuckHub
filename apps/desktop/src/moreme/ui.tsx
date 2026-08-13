@@ -31,6 +31,7 @@ import { PlansView } from "./plans";
 import { CustomizeView } from "./customize";
 import { ScreensView, ScreenCardToday, LogSessionModal, UrgeModal } from "./screens";
 import { FitnessCardToday, LogFitnessModal } from "./fitness";
+import { SchoolModsCard } from "./school";
 import { empireMRR, empireLifetime } from "./store";
 import { isTabHidden, rankFor, tabLabel } from "./store";
 import { WidgetView } from "./widgets";
@@ -1099,6 +1100,7 @@ function ProjectsView({ s }: { s: State }) {
   return (
     <div style={{ display: "grid", gap: 16, gridTemplateColumns: "minmax(0,1fr) 300px", alignItems: "start" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <SchoolModsCard s={s} />
         <RoutineTemplatesSection s={s} />
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>

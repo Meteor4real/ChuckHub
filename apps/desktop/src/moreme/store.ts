@@ -5,7 +5,7 @@
 import type {
   CalEvent, Category, Class, ClassPeriod, CustomAchievement, CustomTheme,
   Customization, DistractionLog, DynamicTab, FitnessKind, FitnessSession, Goal, Goals, InboxItem, LevelReward,
-  Note, Person, Project, Recurrence, Replacement, School, SchoolPath, ScreenCategory,
+  Note, Person, Project, Recurrence, Replacement, School, SchoolBlock, SchoolMod, SchoolPath, ScreenCategory,
   ScreenSession, ScreenSettings, State, StatSource, Touch, UrgeLog, UrgeResolution,
   Venture, VentureStatus, Widget,
 } from "./types";
@@ -156,6 +156,147 @@ export function setSchool(school: Partial<School>) {
   updateState((s) => ({ ...s, school: { ...s.school, ...school } }));
 }
 
+// ── school mod schedule ────────────────────────────────────────────────────
+// The fixed 30-min block every day carries, per weekday (1=Mon..5=Fri).
+// Same every mod — Mount Vernon's structure, not something that changes
+// term to term — so it's a constant, not a field you re-enter each mod.
+export const SPECIAL_BLOCK_LABEL: Record<number, string> = {
+  1: "Clubs", 2: "Advisory", 3: "Chapel", 4: "Clubs", 5: "Flex",
+};
+export const SPECIAL_BLOCK_TIME = { start: "09:30", end: "10:00" };
+const WEEKDAY_ORDER = [1, 2, 3, 4, 5];
+
+export function blankSchoolMod(number: number): SchoolMod {
+  const days: Record<number, SchoolBlock[]> = {};
+  for (const d of WEEKDAY_ORDER) {
+    days[d] = [{
+      id: uid(), kind: "special", label: SPECIAL_BLOCK_LABEL[d],
+      start: SPECIAL_BLOCK_TIME.start, end: SPECIAL_BLOCK_TIME.end,
+    }];
+  }
+  return { id: uid(), number, label: `Module ${number}`, startDate: today(), endDate: today(), advisor: "", days };
+}
+
+export function upsertSchoolMod(m: SchoolMod) {
+  updateState((s) => ({
+    ...s,
+    schoolMods: s.schoolMods.some((x) => x.id === m.id) ? s.schoolMods.map((x) => (x.id === m.id ? m : x)) : [...s.schoolMods, m],
+  }));
+}
+export function removeSchoolMod(id: string) {
+  updateState((s) => ({ ...s, schoolMods: s.schoolMods.filter((m) => m.id !== id) }));
+  removeSchoolModEvents(id);
+}
+
+// Room -> floor, per the real rule: "Letter(N/S) + Number(floor)". Anything
+// else (HQ1/HQ2/MAC/Blackbox/B building/blank) isn't a floor-1-or-3 room.
+export function roomFloor(room?: string): number | null {
+  const m = /^[NS]\s*(\d)/i.exec((room ?? "").trim());
+  return m ? parseInt(m[1], 10) : null;
+}
+// Floor 1 or 3 -> B Lunch (class first, then lunch). Everything else,
+// including unparseable rooms, -> A Lunch (lunch first, then class).
+export function lunchKindForRoom(room?: string): "A" | "B" {
+  const f = roomFloor(room);
+  return f === 1 || f === 3 ? "B" : "A";
+}
+
+// Insert a lunch-slot class into a day's blocks: computes A/B Lunch from
+// the class's room and inserts both the class portion and the Lunch block
+// in the correct order, replacing any existing lunch pair for that day.
+// A period literally labeled "GTD" gets "GTD Lunch" instead of A/B.
+export function setLunchSlot(modId: string, weekday: number, subject: string, room: string, teacher?: string) {
+  const isGtd = /^gtd\b/i.test(subject.trim());
+  const kind = lunchKindForRoom(room);
+  const classBlock: SchoolBlock = {
+    id: uid(), kind: "period", label: subject.trim() || "Class", room: room.trim() || undefined, teacher: teacher?.trim() || undefined,
+    start: kind === "B" ? "11:15" : "11:50",
+    end: kind === "B" ? "12:20" : "12:55",
+  };
+  const lunchBlock: SchoolBlock = {
+    id: uid(), kind: "lunch", label: isGtd ? "GTD Lunch" : `${kind} Lunch`,
+    start: kind === "B" ? "12:25" : "11:15",
+    end: kind === "B" ? "12:55" : "11:45",
+  };
+  updateState((s) => ({
+    ...s,
+    schoolMods: s.schoolMods.map((m) => {
+      if (m.id !== modId) return m;
+      const rest = (m.days[weekday] ?? []).filter((b) => b.kind !== "lunch" && !(b.kind === "period" && isLunchAdjacentTime(b)));
+      const day = [...rest, classBlock, lunchBlock].sort((a, b) => a.start.localeCompare(b.start));
+      return { ...m, days: { ...m.days, [weekday]: day } };
+    }),
+  }));
+}
+function isLunchAdjacentTime(b: SchoolBlock): boolean {
+  return (b.start === "11:15" || b.start === "11:50") && (b.end === "12:20" || b.end === "12:55");
+}
+
+export function addSchoolBlock(modId: string, weekday: number, block: Omit<SchoolBlock, "id">) {
+  updateState((s) => ({
+    ...s,
+    schoolMods: s.schoolMods.map((m) => {
+      if (m.id !== modId) return m;
+      const day = [...(m.days[weekday] ?? []), { ...block, id: uid() }].sort((a, b) => a.start.localeCompare(b.start));
+      return { ...m, days: { ...m.days, [weekday]: day } };
+    }),
+  }));
+}
+export function updateSchoolBlock(modId: string, weekday: number, blockId: string, patch: Partial<SchoolBlock>) {
+  updateState((s) => ({
+    ...s,
+    schoolMods: s.schoolMods.map((m) => {
+      if (m.id !== modId) return m;
+      const day = (m.days[weekday] ?? []).map((b) => (b.id === blockId ? { ...b, ...patch } : b)).sort((a, b) => a.start.localeCompare(b.start));
+      return { ...m, days: { ...m.days, [weekday]: day } };
+    }),
+  }));
+}
+export function removeSchoolBlock(modId: string, weekday: number, blockId: string) {
+  updateState((s) => ({
+    ...s,
+    schoolMods: s.schoolMods.map((m) => {
+      if (m.id !== modId) return m;
+      return { ...m, days: { ...m.days, [weekday]: (m.days[weekday] ?? []).filter((b) => b.id !== blockId) } };
+    }),
+  }));
+}
+
+// Lay a mod's blocks onto the calendar as recurring weekly events, one per
+// (weekday, block) pair, bounded to the mod's date range. Idempotent —
+// re-running (e.g. after editing blocks) replaces the same set.
+const schoolModEventPrefix = (modId: string) => `schoolmod-${modId}-`;
+export function generateSchoolModEvents(modId: string) {
+  updateState((s) => {
+    const m = s.schoolMods.find((x) => x.id === modId);
+    if (!m) return s;
+    const prefix = schoolModEventPrefix(modId);
+    const kept = s.events.filter((e) => !e.id.startsWith(prefix));
+    const generated: CalEvent[] = [];
+    for (const weekday of WEEKDAY_ORDER) {
+      for (const b of m.days[weekday] ?? []) {
+        generated.push({
+          id: `${prefix}${weekday}-${b.id}`,
+          title: b.label, category: b.kind === "lunch" ? "personal" : "class",
+          date: m.startDate, until: m.endDate, allDay: false, start: b.start, end: b.end,
+          location: b.room, people: [], checklist: [], priority: "normal", visibility: "visible",
+          recurrence: { kind: "weekly", days: [weekday] }, reminders: [],
+          xp: b.kind === "period" ? 5 : 0, status: "planned", createdAt: Date.now(),
+        });
+      }
+    }
+    return { ...s, events: [...kept, ...generated] };
+  });
+}
+export function removeSchoolModEvents(modId: string) {
+  const prefix = schoolModEventPrefix(modId);
+  updateState((s) => ({ ...s, events: s.events.filter((e) => !e.id.startsWith(prefix)) }));
+}
+export function schoolModEventsApplied(modId: string, s: State): boolean {
+  const prefix = schoolModEventPrefix(modId);
+  return s.events.some((e) => e.id.startsWith(prefix));
+}
+
 // No default routines — the user defines their own from the Calendar /
 // event editor. Blank canvas on first launch.
 function seedRoutines(_start: string): CalEvent[] {
@@ -193,6 +334,7 @@ function seedState(): State {
     schemaVersion: 12,
     notes: [],
     school: seedSchool(),
+    schoolMods: [],
     events: [],
     completions: {},
     projects: [],
@@ -243,6 +385,7 @@ export function loadState(): State {
       cache = {
         schemaVersion: 12,
         school: p.school ?? d.school,
+        schoolMods: p.schoolMods ?? [],
         events: p.events ?? d.events,
         completions: p.completions ?? {},
         projects: p.projects ?? d.projects,

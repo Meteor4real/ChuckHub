@@ -325,10 +325,45 @@ export type School = {
   path: SchoolPath;
 };
 
+// ── Mount Vernon Upper School mod schedule ─────────────────────────────────
+// The real structure: 4 "Mods" per year, each with its own 5 rotating
+// periods (P1-P5) whose ORDER changes day to day — there's no single fixed
+// weekly grid. A fixed 30-min special block sits at 9:30-10:00 every day
+// (which one depends on the weekday). Whichever period lands in the
+// lunch-adjacent slot on a given day splits around lunch based on that
+// period's room floor (1 or 3 -> B Lunch, everything else -> A Lunch; a
+// period literally named/labeled GTD gets "GTD Lunch" instead of A/B).
+//
+// Bell times beyond the special block and the lunch window aren't known
+// yet, so this models each weekday as a manually-built ordered list of
+// blocks (real times only, never guessed) rather than a fixed slot grid —
+// it can absorb the real rotation once you have it, one mod at a time.
+export type SchoolBlockKind = "period" | "special" | "lunch";
+export type SchoolBlock = {
+  id: string;
+  kind: SchoolBlockKind;
+  label: string;        // "P1", "Advisory", "A Lunch", the subject name…
+  teacher?: string;
+  room?: string;         // e.g. "N2", "S1", "HQ1", "HQ2", "B", "MAC", "Blackbox"
+  start: string;         // HH:MM
+  end: string;           // HH:MM
+};
+// weekday: 1=Mon .. 5=Fri (matches CalEvent recurrence day numbering)
+export type SchoolMod = {
+  id: string;
+  number: number;         // 1-4
+  label: string;          // "Module 1"
+  startDate: string;      // YYYY-MM-DD
+  endDate: string;        // YYYY-MM-DD
+  advisor?: string;
+  days: Record<number, SchoolBlock[]>;
+};
+
 export type State = {
   schemaVersion: 12;
   customization: Customization;
   school: School;
+  schoolMods: SchoolMod[];
   events: CalEvent[];
   // completions keyed by `${eventId}::${YYYY-MM-DD}` -> unlock timestamp.
   completions: Record<string, number>;
