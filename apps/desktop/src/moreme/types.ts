@@ -1,16 +1,15 @@
 // MoreMe — types for the calendar-first rebuild.
 //
 // Everything schedulable is a CalEvent: recurring routine habits, school
-// classes, iProject blocks, business meetings, ARG stages, travel, and
-// "announcements" (which can be hidden until you're ready to reveal them).
-// XP is earned per completed occurrence; completing milestones and projects
-// adds bonus XP. No modes, no focus blocks, no strikes, no session breaks.
+// classes, business meetings, ARG stages, travel, and "announcements"
+// (which can be hidden until you're ready to reveal them). XP is earned per
+// completed occurrence; completing milestones and projects adds bonus XP.
+// No modes, no focus blocks, no strikes, no session breaks.
 
 export type Category =
   | "routine"      // recurring habit (morning routine, bedtime, movement)
   | "class"        // a Mount Vernon class period
   | "school"       // homework / assignments / school work
-  | "iproject"     // independent project block (Mount Vernon iProject / "GTD")
   | "business"     // running your companies
   | "venture"      // a specific business / venture activity
   | "project"      // personal build / mod work
@@ -123,7 +122,13 @@ export type Person = {
   name: string;
   role: string;                 // "Friend", "Teacher", "Principal", "Investor"…
   notes?: string;
+  lastTouch?: number;           // ms — last time you logged an interaction
 };
+
+// A logged interaction with someone in your Circle — the thing that makes
+// it more than a name tag. "Touch" = any real contact: a call, a favor, a
+// catch-up, not necessarily a scheduled meeting.
+export type Touch = { id: string; personId: string; note?: string; ts: number };
 
 // A business / venture you run. Tracked separately from Projects so the
 // Empire view can sum monthly revenue and show health at a glance.
@@ -180,6 +185,26 @@ export type ScreenSession = {
   note?: string;
 };
 
+// ── Fitness logging ────────────────────────────────────────────────────────
+// The training half of the story, tracked with real numbers instead of a
+// bare checkbox. Same quick-log shape as Screens: log it after, or (later)
+// run a timer. Distance is optional — only cardio really uses it.
+export type FitnessKind = "cardio" | "strength" | "sport" | "flexibility" | "other";
+export const FITNESS_KINDS: FitnessKind[] = ["cardio", "strength", "sport", "flexibility", "other"];
+export const FITNESS_KIND_LABEL: Record<FitnessKind, string> = {
+  cardio: "Cardio", strength: "Strength", sport: "Sport", flexibility: "Flexibility", other: "Other",
+};
+export type FitnessSession = {
+  id: string;
+  date: string;          // YYYY-MM-DD
+  startedAt: number;     // ms
+  kind: FitnessKind;
+  what: string;          // free-text: "5k run", "Leg day", "Basketball"
+  minutes: number;
+  distanceMi?: number;   // optional — cardio mostly
+  details?: string;      // free-text: sets/reps/splits/whatever's worth noting
+};
+
 export type UrgeResolution = "resisted" | "later" | "did-it";  // honest
 export type UrgeLog = {
   id: string;
@@ -225,7 +250,7 @@ export type UserQuote = { id: string; text: string; by: string };
 export type Customization = {
   tabLabels: Record<string, string>;     // tabId -> override label ("" or absent = use default)
   hiddenTabs: string[];                   // tabIds hidden from the tab row
-  customRanks: (string | undefined)[];   // length 20; undefined = use RANK_NAMES default
+  customRanks: (string | undefined)[];   // length 10; undefined = use RANK_NAMES default
   customAchievements: CustomAchievement[];
   customTheme?: CustomTheme;             // when set, "custom" theme becomes selectable
   useCustomTheme: boolean;               // toggle for the picker
@@ -320,6 +345,9 @@ export type State = {
   urges: UrgeLog[];
   replacements: Replacement[];
   screen: ScreenSettings;
+  // Fitness logging + Circle touches — see the types above.
+  fitnessSessions: FitnessSession[];
+  touches: Touch[];
   rewards: LevelReward[];                        // user-set reward text per level
   unlockedAchievements: Record<string, number>;  // id -> unlocked ts
   startedAt: number;
@@ -363,7 +391,6 @@ export const CATEGORY_META: Record<Category, { label: string; color: string; gly
   routine:      { label: "Routine",      color: "#8b95a5", glyph: "◇" },
   class:        { label: "Class",        color: "#33B5FF", glyph: "▤" },
   school:       { label: "School Work",  color: "#3EA0FF", glyph: "✎" },
-  iproject:     { label: "iProject",     color: "#3EDBB5", glyph: "◈" },
   business:     { label: "Business",     color: "#FFB23E", glyph: "$" },
   venture:      { label: "Venture",      color: "#FF8A3E", glyph: "▲" },
   project:      { label: "Project",      color: "#A855F7", glyph: "◆" },
@@ -378,6 +405,6 @@ export const CATEGORY_META: Record<Category, { label: string; color: string; gly
 };
 
 export const CATEGORY_ORDER: Category[] = [
-  "routine", "class", "school", "iproject", "business", "venture",
+  "routine", "class", "school", "business", "venture",
   "project", "arg", "meeting", "travel", "announcement", "fitness", "personal",
 ];

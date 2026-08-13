@@ -15,8 +15,8 @@ import {
   ACHIEVEMENTS, achievementProgress, blankClass, blankEvent, blankProject,
   captureInbox, conflictIds, dayComplete, distractionsOn, dueReminders,
   eventsOnDate, fmtTime, gradeLabel, gradeStatus, inboxToEventDraft,
-  inboxToGoal, inboxToProject, iso, isDone, levelInfo, loadState, logDistraction, monthLabel,
-  removeClass, removeDistraction, removeEvent, removeInbox, removePerson,
+  inboxToGoal, inboxToProject, insights, iso, isDone, levelInfo, loadState, logDistraction, logTouch, monthLabel,
+  nextEventWith, removeClass, removeDistraction, removeEvent, removeInbox, removePerson,
   removeProject, revealEvent, schoolYearLabel, setGoals, setReward, setSchool,
   streakInfo, subscribeState, today, toggleDone, uid, upcomingWithReminders,
   upsertClass, upsertEvent, upsertPerson, upsertProject, xpForDate,
@@ -30,6 +30,8 @@ import { WeeklyReview } from "./review";
 import { PlansView } from "./plans";
 import { CustomizeView } from "./customize";
 import { ScreensView, ScreenCardToday, LogSessionModal, UrgeModal } from "./screens";
+import { FitnessCardToday, LogFitnessModal } from "./fitness";
+import { empireMRR, empireLifetime } from "./store";
 import { isTabHidden, rankFor, tabLabel } from "./store";
 import { WidgetView } from "./widgets";
 import { generateClassPeriods, clearClassPeriods, setClassPeriod } from "./store";
@@ -515,6 +517,7 @@ function TodayView({ s, onEdit }: { s: State; onEdit: (e: CalEvent) => void }) {
   const conflicts = conflictIds(date, s);
   const upcoming = upcomingWithReminders(s);
   const [screenModal, setScreenModal] = useState<"log" | "urge" | null>(null);
+  const [fitnessModal, setFitnessModal] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
   const print = makePrintHandler(() => printRef.current);
   const quote = quoteOfDay(date, s.customization.quotes);
@@ -618,12 +621,54 @@ function TodayView({ s, onEdit }: { s: State; onEdit: (e: CalEvent) => void }) {
             </div>
           )}
 
+          <EmpirePulseCard s={s} />
+          <FitnessCardToday s={s} onOpenLog={() => setFitnessModal(true)} />
           <ScreenCardToday s={s} onOpenLog={() => setScreenModal("log")} onOpenUrge={() => setScreenModal("urge")} />
         </div>
       </div>
 
       {screenModal === "log" && <LogSessionModal onClose={() => setScreenModal(null)} />}
       {screenModal === "urge" && <UrgeModal s={s} onClose={() => setScreenModal(null)} />}
+      {fitnessModal && <LogFitnessModal onClose={() => setFitnessModal(false)} />}
+    </div>
+  );
+}
+
+// The business side gets the same daily-pulse weight as routines/screens
+// instead of living only inside its own tab. Hidden until there's a venture
+// to report on — nothing to summarize otherwise.
+function EmpirePulseCard({ s }: { s: State }) {
+  if (s.ventures.length === 0) return null;
+  const mrr = empireMRR(s);
+  const lifetime = empireLifetime(s);
+  const live = s.ventures.filter((v) => v.status === "live" || v.status === "scaling");
+  const nextActions = s.ventures.filter((v) => v.nextAction?.trim()).slice(0, 2);
+  return (
+    <div className="mm-card" style={{ padding: 14 }}>
+      <div style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: T.inkTiny, marginBottom: 10 }}>Empire</div>
+      <div style={{ display: "flex", gap: 18, marginBottom: nextActions.length ? 10 : 0 }}>
+        <div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: T.mint, lineHeight: 1 }}>${Math.round(mrr).toLocaleString()}</div>
+          <div style={{ fontSize: 10, color: T.inkTiny, marginTop: 2 }}>MRR</div>
+        </div>
+        <div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: T.ink, lineHeight: 1 }}>${Math.round(lifetime).toLocaleString()}</div>
+          <div style={{ fontSize: 10, color: T.inkTiny, marginTop: 2 }}>lifetime</div>
+        </div>
+        <div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: T.ink, lineHeight: 1 }}>{live.length}</div>
+          <div style={{ fontSize: 10, color: T.inkTiny, marginTop: 2 }}>live</div>
+        </div>
+      </div>
+      {nextActions.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          {nextActions.map((v) => (
+            <div key={v.id} style={{ fontSize: 11, color: T.inkSoft }}>
+              <b style={{ color: T.ink }}>{v.name || "Venture"}</b> — {v.nextAction}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -822,12 +867,6 @@ function EventEditor({ s, draft, onClose, onSaved }: { s: State; draft: CalEvent
               {CATEGORY_ORDER.map((c) => <option key={c} value={c}>{CATEGORY_META[c].label}</option>)}
             </select>
           </Field>
-
-          {e.category === "iproject" && (
-            <div style={{ fontSize: 11, color: T.inkSoft, lineHeight: 1.5, padding: "8px 10px", background: T.sunk, borderRadius: 8, borderLeft: `3px solid ${T.mint}` }}>
-              F.L.O.W. — Full-Length Optimal Work. Not a timer, not a mode: one project, no tabs, no context-switching, for as long as it takes.
-            </div>
-          )}
 
           <div className="mm-row">
             <Field label="Date"><input type="date" value={e.date} onChange={(ev) => set("date", ev.target.value)} /></Field>
@@ -1261,20 +1300,52 @@ function CircleCard({ s }: { s: State }) {
   return (
     <div className="mm-card" style={{ padding: 16 }}>
       <div className="serif" style={{ fontSize: 16, marginBottom: 10 }}>Circle</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
-        {s.people.map((p: Person) => (
-          <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <input value={p.name} onChange={(e) => upsertPerson({ ...p, name: e.target.value })} style={{ flex: 1 }} />
-            <input value={p.role} onChange={(e) => upsertPerson({ ...p, role: e.target.value })} style={{ width: 96 }} />
-            <button className="mm-btn mm-btn-danger" style={{ padding: "4px 8px" }} onClick={() => removePerson(p.id)}>×</button>
-          </div>
-        ))}
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 12 }}>
+        {s.people.map((p: Person) => <CircleRow key={p.id} p={p} s={s} />)}
       </div>
       <div style={{ display: "flex", gap: 6 }}>
         <input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
         <input placeholder="Role" value={role} onChange={(e) => setRole(e.target.value)} style={{ width: 90 }} />
       </div>
       <button className="mm-btn" style={{ marginTop: 8, width: "100%" }} onClick={() => { if (name.trim()) { upsertPerson({ id: uid(), name: name.trim(), role: role.trim() || "Contact" }); setName(""); setRole(""); } }}>Add person</button>
+    </div>
+  );
+}
+
+// Relative "how long ago" — the whole point of tracking lastTouch is a
+// glanceable "3d ago" instead of a raw date.
+function relTime(ts: number): string {
+  const days = Math.floor((Date.now() - ts) / 86_400_000);
+  if (days <= 0) return "today";
+  if (days === 1) return "1d ago";
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  return months === 1 ? "1mo ago" : `${months}mo ago`;
+}
+
+function CircleRow({ p, s }: { p: Person; s: State }) {
+  const [note, setNote] = useState("");
+  const [logging, setLogging] = useState(false);
+  const next = nextEventWith(p.id, s);
+  return (
+    <div style={{ borderBottom: `1px solid ${T.line}`, paddingBottom: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <input value={p.name} onChange={(e) => upsertPerson({ ...p, name: e.target.value })} style={{ flex: 1 }} />
+        <input value={p.role} onChange={(e) => upsertPerson({ ...p, role: e.target.value })} style={{ width: 96 }} />
+        <button className="mm-btn mm-btn-danger" style={{ padding: "4px 8px" }} onClick={() => removePerson(p.id)}>×</button>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, fontSize: 10, color: T.inkTiny, flexWrap: "wrap" }}>
+        <span>{p.lastTouch ? `Last touch ${relTime(p.lastTouch)}` : "Never touched base"}</span>
+        {next && <span>· next: {next.e.title || CATEGORY_META[next.e.category].label} {next.date === today() ? "today" : new Date(next.date + "T00:00:00").toLocaleDateString(undefined, { weekday: "short" })}</span>}
+        <div style={{ flex: 1 }} />
+        <button className="mm-btn" style={{ padding: "2px 8px", fontSize: 10 }} onClick={() => setLogging((v) => !v)}>Log touch</button>
+      </div>
+      {logging && (
+        <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+          <input placeholder="What happened (optional)" value={note} onChange={(e) => setNote(e.target.value)} style={{ flex: 1, fontSize: 11 }} />
+          <button className="mm-btn mm-btn-primary" style={{ padding: "3px 8px", fontSize: 10 }} onClick={() => { logTouch(p.id, note); setNote(""); setLogging(false); }}>Save</button>
+        </div>
+      )}
     </div>
   );
 }
@@ -1397,6 +1468,7 @@ function LevelsView({ s }: { s: State }) {
       <div style={{ fontSize: 12, color: T.inkSoft, marginBottom: 16 }}>
         {MAX_LEVEL} levels on a steep curve — each level costs more than the last. Set a reward you'll actually give yourself at each one.
       </div>
+      {lv.isMax && <CapstoneCard s={s} />}
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {Array.from({ length: MAX_LEVEL }, (_, i) => i + 1).map((level) => {
           const reached = lv.level >= level;
@@ -1418,6 +1490,45 @@ function LevelsView({ s }: { s: State }) {
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+// The payoff for playing the whole ladder: a retrospective, not just a
+// bigger number. Shown once you've actually maxed out (Dude Perfect).
+function CapstoneCard({ s }: { s: State }) {
+  const lv = levelInfo(s);
+  const { best } = streakInfo(s);
+  const ins = insights(s);
+  const days = Math.max(1, Math.ceil((Date.now() - s.startedAt) / 86_400_000));
+  const unlockedCount = ACHIEVEMENTS.filter((a) => s.unlockedAchievements[a.id]).length;
+  const topCategory = ins.byCategory[0];
+  return (
+    <div className="mm-card-mint" style={{ padding: 20, marginBottom: 16 }}>
+      <div className="serif" style={{ fontSize: 20, color: T.mint, marginBottom: 4 }}>Dude Perfect.</div>
+      <div style={{ fontSize: 12, color: T.inkSoft, marginBottom: 14 }}>
+        {days} days in, {lv.total.toLocaleString()} total XP, and you topped the ladder. Here's what that actually took.
+      </div>
+      <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+        <div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: T.mint }}>{best}d</div>
+          <div style={{ fontSize: 10, color: T.inkTiny, marginTop: 2 }}>best streak</div>
+        </div>
+        <div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: T.ink }}>{unlockedCount}/{ACHIEVEMENTS.length}</div>
+          <div style={{ fontSize: 10, color: T.inkTiny, marginTop: 2 }}>achievements</div>
+        </div>
+        <div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: T.ink }}>{s.projects.filter((p) => p.status === "done").length}</div>
+          <div style={{ fontSize: 10, color: T.inkTiny, marginTop: 2 }}>projects shipped</div>
+        </div>
+        {topCategory && (
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: T.ink }}>{CATEGORY_META[topCategory.category].label}</div>
+            <div style={{ fontSize: 10, color: T.inkTiny, marginTop: 2 }}>where most of it went</div>
+          </div>
+        )}
       </div>
     </div>
   );

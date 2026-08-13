@@ -4,12 +4,12 @@
 
 import type {
   CalEvent, Category, Class, ClassPeriod, CustomAchievement, CustomTheme,
-  Customization, DistractionLog, DynamicTab, Goal, Goals, InboxItem, LevelReward,
+  Customization, DistractionLog, DynamicTab, FitnessKind, FitnessSession, Goal, Goals, InboxItem, LevelReward,
   Note, Person, Project, ProjectKind, Recurrence, Replacement, School, SchoolPath, ScreenCategory,
-  ScreenSession, ScreenSettings, State, StatSource, UrgeLog, UrgeResolution,
+  ScreenSession, ScreenSettings, State, StatSource, Touch, UrgeLog, UrgeResolution,
   Venture, VentureStatus, Widget,
 } from "./types";
-import { MAX_LEVEL, RANK_NAMES, cumulativeXp } from "./types";
+import { FITNESS_KIND_LABEL, MAX_LEVEL, RANK_NAMES, cumulativeXp } from "./types";
 import { setCustomThemeResolver } from "./styles";
 
 // Tell styles.ts how to fetch the user's custom palette out of state. This
@@ -206,6 +206,8 @@ function seedState(): State {
     urges: [],
     replacements: seedReplacements(),
     screen: seedScreenSettings(),
+    fitnessSessions: [],
+    touches: [],
     customization: seedCustomization(),
     rewards: Array.from({ length: MAX_LEVEL }, (_, i) => ({ level: i + 1, reward: "" })),
     unlockedAchievements: {},
@@ -255,6 +257,8 @@ export function loadState(): State {
         urges: p.urges ?? [],
         replacements: p.replacements ?? d.replacements,
         screen: { ...d.screen, ...(p.screen ?? {}) },
+        fitnessSessions: p.fitnessSessions ?? [],
+        touches: p.touches ?? [],
         // Customization (v11+) — back-fill cleanly for existing installs.
         customization: mergeCustomization(d.customization, p.customization),
         rewards: p.rewards && p.rewards.length === MAX_LEVEL ? p.rewards : d.rewards,
@@ -1056,6 +1060,32 @@ export function removeScreenSession(id: string) {
   refreshAchievements();
 }
 
+// ── fitness logging ────────────────────────────────────────────────────────
+// Real numbers, not a checkbox: what you did, how long, distance if it
+// applies. Same log-it-after shape as screens.
+export function fitnessSessionsOn(date: string, s: State = loadState()): FitnessSession[] {
+  return s.fitnessSessions.filter((x) => x.date === date).sort((a, b) => b.startedAt - a.startedAt);
+}
+export function fitnessMinutesOn(date: string, s: State = loadState()): number {
+  return fitnessSessionsOn(date, s).reduce((sum, x) => sum + x.minutes, 0);
+}
+export function logFitnessSession(kind: FitnessKind, what: string, minutes: number, opts?: { distanceMi?: number; details?: string; onDate?: string }): FitnessSession {
+  const date = opts?.onDate ?? today();
+  const x: FitnessSession = {
+    id: uid(), date, startedAt: Date.parse(date + "T12:00:00") || Date.now(),
+    kind, what: what.trim() || FITNESS_KIND_LABEL[kind], minutes: Math.max(0, Math.round(minutes)),
+    distanceMi: opts?.distanceMi && opts.distanceMi > 0 ? opts.distanceMi : undefined,
+    details: opts?.details?.trim() || undefined,
+  };
+  updateState((s) => ({ ...s, fitnessSessions: [...s.fitnessSessions, x] }));
+  refreshAchievements();
+  return x;
+}
+export function removeFitnessSession(id: string) {
+  updateState((s) => ({ ...s, fitnessSessions: s.fitnessSessions.filter((x) => x.id !== id) }));
+  refreshAchievements();
+}
+
 // First screen session time of a date (minutes since midnight) — drives the
 // "routine before phone" achievement.
 function firstSessionMinuteOn(date: string, s: State): number | null {
@@ -1107,7 +1137,40 @@ export function upsertPerson(p: Person) {
   }));
 }
 export function removePerson(id: string) {
-  updateState((s) => ({ ...s, people: s.people.filter((p) => p.id !== id) }));
+  updateState((s) => ({
+    ...s,
+    people: s.people.filter((p) => p.id !== id),
+    touches: s.touches.filter((t) => t.personId !== id),
+  }));
+}
+
+// Log a real interaction with someone — a call, a favor, a catch-up. Stamps
+// their lastTouch so Circle can show "3d ago" instead of just a name tag.
+export function logTouch(personId: string, note?: string) {
+  const ts = Date.now();
+  updateState((s) => ({
+    ...s,
+    touches: [...s.touches, { id: uid(), personId, note: note?.trim() || undefined, ts }],
+    people: s.people.map((p) => (p.id === personId ? { ...p, lastTouch: ts } : p)),
+  }));
+}
+export function touchesFor(personId: string, s: State = loadState()): Touch[] {
+  return s.touches.filter((t) => t.personId === personId).sort((a, b) => b.ts - a.ts);
+}
+// Next scheduled event that has this person tagged, today or in the next
+// 90 days (covers one-offs and any recurrence pattern without needing
+// separate recurrence math — reuses the same occursOn every calendar view does).
+export function nextEventWith(personId: string, s: State = loadState()): { e: CalEvent; date: string } | null {
+  const withPerson = s.events.filter((e) => e.people.includes(personId));
+  if (!withPerson.length) return null;
+  let d = today();
+  for (let i = 0; i < 90; i++) {
+    for (const e of withPerson) {
+      if (occursOn(e, d)) return { e, date: d };
+    }
+    d = addDays(d, 1);
+  }
+  return null;
 }
 
 // ── goals / distractions / rewards ──────────────────────────────────────────
@@ -1465,7 +1528,7 @@ type Aggregates = {
   aheadCompletions: number;        // completed an event before its date
   futureSchoolDone7: number;       // school events in next 7 days that are done
   futureSchoolDone30: number;
-  longIProjectDone: boolean;       // a >=180min iProject completed
+  longFlowDone: boolean;           // a single event >=180min completed in one sitting (F.L.O.W.)
   argDone: number;
   meetingPrepDone: number;         // meetings completed with all checklist done
   polymathMax: number;             // max distinct categories completed in one day
@@ -1532,7 +1595,11 @@ function aggregate(s: State): Aggregates {
   let completionCount = 0, aheadCompletions = 0;
   const perDayCats: Record<string, Set<string>> = {};
   const perDayCompletions: Record<string, number> = {};
-  const fitnessDates = new Set<string>();
+  // Fitness days start seeded from logged sessions (real numbers, not just a
+  // scheduled checkbox) — the completions loop below adds fitness-category
+  // CalEvent days on top, so both the routine templates and the fast logger
+  // feed the same achievement track.
+  const fitnessDates = new Set<string>(s.fitnessSessions.map((x) => x.date));
 
   let morningRoutineDone = 0, bedRoutineDone = 0;
   for (const [key, ts] of Object.entries(s.completions)) {
@@ -1553,19 +1620,21 @@ function aggregate(s: State): Aggregates {
 
   const t = today();
   let futureSchoolDone7 = 0, futureSchoolDone30 = 0;
-  let longIProjectDone = false, argDone = 0, meetingPrepDone = 0, ventureDone = 0;
-  let longFitnessDone = false;
+  let longFlowDone = false, argDone = 0, meetingPrepDone = 0, ventureDone = 0;
+  let longFitnessDone = s.fitnessSessions.some((x) => x.minutes >= 45);
   let eventsLinkedToPeople = 0;
   for (const e of s.events) {
     if (e.people.length) eventsLinkedToPeople++;
     // single-occurrence completion checks
     const done = isDone(e, e.date, s);
     if (!done) continue;
-    if ((e.category === "school" || e.category === "iproject") && e.date > t) {
+    if (e.category === "school" && e.date > t) {
       if (e.date <= addDays(t, 7)) futureSchoolDone7++;
       if (e.date <= addDays(t, 30)) futureSchoolDone30++;
     }
-    if (e.category === "iproject" && e.start && e.end && toMin(e.end) - toMin(e.start) >= 180) longIProjectDone = true;
+    // F.L.O.W. (Full-Length Optimal Work): any single event logged 3+ hours
+    // in one sitting, whatever category it's on — not tied to one program.
+    if (e.start && e.end && toMin(e.end) - toMin(e.start) >= 180) longFlowDone = true;
     if (e.category === "fitness" && e.start && e.end && toMin(e.end) - toMin(e.start) >= 45) longFitnessDone = true;
     if (e.category === "arg") argDone++;
     if (e.category === "meeting" && e.checklist.length && e.checklist.every((c) => c.done)) meetingPrepDone++;
@@ -1658,7 +1727,7 @@ function aggregate(s: State): Aggregates {
 
   return {
     completionCount, byCategory, routineCounts, aheadCompletions,
-    futureSchoolDone7, futureSchoolDone30, longIProjectDone, argDone,
+    futureSchoolDone7, futureSchoolDone30, longFlowDone, argDone,
     meetingPrepDone, polymathMax, ventureDone, morningRoutineDone, bedRoutineDone,
     quietDays, quietStreak,
     milestonesDone, projectsDone, eventsLinkedToPeople, totalEvents: s.events.length,
@@ -1673,7 +1742,7 @@ function aggregate(s: State): Aggregates {
     urgesLogged: s.urges.length, urgesResisted,
     daysAllSessionsInWindow, routineFirstDays, earnedItDays,
     schoolPrepared, schoolAllYours, schoolHonestlyLogged,
-    fitnessCount: byCategory.fitness ?? 0, fitnessDaysTotal, fitnessStreak, longFitnessDone,
+    fitnessCount: (byCategory.fitness ?? 0) + s.fitnessSessions.length, fitnessDaysTotal, fitnessStreak, longFitnessDone,
   };
 }
 
@@ -1696,7 +1765,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: "month-ahead", title: "Living In The Future", desc: "Complete 15 future school items inside the next month.", category: "school", progress: (a) => [a.futureSchoolDone30, 15] },
 
   // Build — what you make, ship, and run
-  { id: "iproject-marathon", title: "I'ma Do A Minecraf", desc: "F.L.O.W. — Full-Length Optimal Work: one project, zero context-switching, 3+ hours in a single sitting. Log one on iProject.", category: "build", progress: (a) => [a.longIProjectDone ? 1 : 0, 1] },
+  { id: "flow-marathon", title: "I'ma Do A Minecraf", desc: "F.L.O.W. — Full-Length Optimal Work: one thing, zero context-switching, 3+ hours in a single sitting. Log one on anything.", category: "build", progress: (a) => [a.longFlowDone ? 1 : 0, 1] },
   { id: "arg-architect", title: "Puppet Master", desc: "Complete 3 ARG items.", category: "build", progress: (a) => [a.argDone, 3] },
   { id: "investor", title: "Walked In With A Plan For Once", desc: "Complete a meeting with its prep checklist fully done.", category: "build", progress: (a) => [a.meetingPrepDone, 1] },
   { id: "ship-it", title: "It's Actually Done", desc: "Complete a project.", category: "build", progress: (a) => [a.projectsDone, 1] },
