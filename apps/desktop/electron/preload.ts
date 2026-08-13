@@ -55,19 +55,6 @@ const api = {
       ipcRenderer.invoke("tool:listDir", p),
   },
 
-  llm: {
-    status: (): Promise<{ ready: boolean; downloading: boolean; progress: number }> =>
-      ipcRenderer.invoke("llm:status"),
-    ensure: (): Promise<{ ok: boolean; error?: string }> => ipcRenderer.invoke("llm:ensure"),
-    chat: (system: string, prompt: string, opts?: { temperature?: number; maxTokens?: number }): Promise<{ ok: boolean; text?: string; error?: string }> =>
-      ipcRenderer.invoke("llm:chat", system, prompt, opts),
-    onProgress: (cb: (p: number) => void) => {
-      const fn = (_e: unknown, p: number) => cb(p);
-      ipcRenderer.on("llm:progress", fn);
-      return () => ipcRenderer.removeListener("llm:progress", fn);
-    },
-  },
-
   vault: {
     list: (): Promise<{ service: string; hasToken: boolean; baseUrl: string }[]> =>
       ipcRenderer.invoke("vault:list"),
@@ -93,27 +80,6 @@ const api = {
   // non-interactively in the background and return its output for the chat UI.
   agentRun: (cmd: string, prompt: string): Promise<{ ok: boolean; text?: string; error?: string }> =>
     ipcRenderer.invoke("agent:run", cmd, prompt),
-
-  // AI master switch + external-agent bridge. "builtin" = the bundled local
-  // model runs NT5. "external" = built-in generation is disabled and a
-  // localhost bridge lets an outside agent (Hermes) drive the app instead.
-  ai: {
-    get: (): Promise<{ mode: "builtin" | "external"; port: number; token: string; listening: boolean }> =>
-      ipcRenderer.invoke("ai:get"),
-    set: (mode: "builtin" | "external"): Promise<{ mode: "builtin" | "external"; port: number; token: string; listening: boolean }> =>
-      ipcRenderer.invoke("ai:set", mode),
-    regenToken: (): Promise<{ mode: "builtin" | "external"; port: number; token: string; listening: boolean }> =>
-      ipcRenderer.invoke("ai:regenToken"),
-  },
-  bridge: {
-    onInvoke: (cb: (msg: { id: string; path: string; args: unknown[] }) => void): (() => void) => {
-      const fn = (_e: unknown, msg: { id: string; path: string; args: unknown[] }) => cb(msg);
-      ipcRenderer.on("bridge:invoke", fn as (e: unknown, m: unknown) => void);
-      return () => ipcRenderer.removeListener("bridge:invoke", fn as (e: unknown, m: unknown) => void);
-    },
-    result: (msg: { id: string; ok: boolean; result?: unknown; error?: string }) =>
-      ipcRenderer.send("bridge:result", msg),
-  },
 
   bg: {
     get: (): Promise<{ minimizeToTray: boolean; runOnStartup: boolean }> => ipcRenderer.invoke("bg:get"),

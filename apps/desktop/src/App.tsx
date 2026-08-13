@@ -38,17 +38,13 @@ export function App() {
   return (
     <>
     <BootSplash />
+    {/* MoreMe's own sidebar is the app's only chrome now — no separate outer
+        topbar. Two "MoreMe" headers stacked on top of each other was a
+        leftover from the three-surface shell; sign-out lives in the
+        sidebar's identity row instead. */}
     <div className="shell" style={{ display: "flex", flexDirection: "column", height: "100vh", minHeight: 0 }}>
-      <header className="hub-topbar">
-        <div className="hub-brand mono">MoreMe</div>
-        <div style={{ flex: 1 }} />
-        <button className="hub-tab mono" onClick={logout} title="Sign out">
-          Sign out
-        </button>
-      </header>
-
       <main style={{ flex: 1, minHeight: 0, display: "flex" }}>
-        <MoreMe />
+        <MoreMe onSignOut={logout} />
       </main>
     </div>
     </>

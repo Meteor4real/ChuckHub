@@ -105,42 +105,11 @@ declare global {
   interface Window { moremeAgent: typeof moremeAgent }
 }
 
-// ── bridge dispatcher ──────────────────────────────────────────────────
-// The localhost bridge (electron/bridge.ts) forwards {path, args} calls
-// here. Only these roots are callable from outside — anything else is
-// refused. `subscribe` is deliberately absent (no callbacks over HTTP).
-const BRIDGE_ROOTS = new Set(["state", "tabs", "widgets", "ranks", "achievements", "theme", "quotes"]);
-
-function dispatchBridgeCall(pathStr: string, args: unknown[]): unknown {
-  const parts = pathStr.split(".").filter(Boolean);
-  if (!parts.length || !BRIDGE_ROOTS.has(parts[0])) {
-    throw new Error(`path not allowed: ${pathStr}`);
-  }
-  let node: unknown = moremeAgent;
-  for (let i = 0; i < parts.length; i++) {
-    node = (node as Record<string, unknown>)[parts[i]];
-    if (node === undefined) throw new Error(`unknown path: ${pathStr}`);
-  }
-  if (typeof node !== "function") throw new Error(`not callable: ${pathStr}`);
-  // Rebind to the parent namespace so `this` inside the API keeps working.
-  let parent: unknown = moremeAgent;
-  for (let i = 0; i < parts.length - 1; i++) parent = (parent as Record<string, unknown>)[parts[i]];
-  return (node as (...a: unknown[]) => unknown).apply(parent, args);
-}
-
-/** Install the agent API on `window` so external scripts can find it, and
- * wire up the bridge dispatcher so an external process can call it too. */
+/** Install the agent API on `window` so external scripts (or the dev
+ * console) can find it. The localhost bridge that used to forward remote
+ * calls into this dispatcher is gone along with NT5/Hermes — this is a
+ * plain in-page API now. */
 export function installAgentApi() {
   if (typeof window === "undefined") return;
   window.moremeAgent = moremeAgent;
-  try {
-    window.hub.bridge?.onInvoke(async ({ id, path, args }) => {
-      try {
-        const result = await Promise.resolve(dispatchBridgeCall(path, args));
-        window.hub.bridge.result({ id, ok: true, result });
-      } catch (e) {
-        window.hub.bridge.result({ id, ok: false, error: e instanceof Error ? e.message : String(e) });
-      }
-    });
-  } catch { /* bridge not available (web build) */ }
 }

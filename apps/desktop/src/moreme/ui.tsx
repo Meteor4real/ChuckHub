@@ -71,7 +71,7 @@ function useStore(): State {
   return s;
 }
 
-export function MoreMeUI() {
+export function MoreMeUI({ onSignOut }: { onSignOut?: () => void }) {
   const s = useStore();
   const [tab, setTab] = useState<Tab>("today");
   const [editing, setEditing] = useState<CalEvent | null>(null);
@@ -95,7 +95,7 @@ export function MoreMeUI() {
 
   return (
     <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: "196px 1fr", position: "relative" }}>
-      <SideNav s={s} tab={tab} onTab={setTab} onReview={() => setReview(true)} />
+      <SideNav s={s} tab={tab} onTab={setTab} onReview={() => setReview(true)} onSignOut={onSignOut} />
 
       <div style={{ display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0 }}>
         <CaptureBar />
@@ -168,7 +168,7 @@ function SegmentHub({ s, segments, render }: {
 }
 
 // ── sidebar: identity, grouped nav, progress, controls ────────────────────
-function SideNav({ s, tab, onTab, onReview }: { s: State; tab: Tab; onTab: (t: Tab) => void; onReview: () => void }) {
+function SideNav({ s, tab, onTab, onReview, onSignOut }: { s: State; tab: Tab; onTab: (t: Tab) => void; onReview: () => void; onSignOut?: () => void }) {
   const lv = levelInfo(s);
   const { current } = streakInfo(s);
   const tx = xpForDate(today(), s);
@@ -210,7 +210,10 @@ function SideNav({ s, tab, onTab, onReview }: { s: State; tab: Tab; onTab: (t: T
       <div style={{ padding: "14px 14px 12px", borderBottom: `1px solid ${T.line}` }}>
         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
           <MoreMeMark size={30} />
-          <div className="mm-h1" style={{ fontSize: 20, lineHeight: 1 }}>MoreMe</div>
+          <div className="mm-h1" style={{ fontSize: 20, lineHeight: 1, flex: 1 }}>MoreMe</div>
+          {onSignOut && (
+            <button className="mm-btn" style={{ padding: "3px 7px", fontSize: 10, whiteSpace: "nowrap", flex: "none" }} onClick={onSignOut} title="Sign out">Sign out</button>
+          )}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
           <span className="mm-pill" style={{ background: chipColor + "22", color: chipColor, border: `1px solid ${chipColor}55` }}>{chipText}</span>

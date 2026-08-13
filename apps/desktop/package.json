@@ -23,16 +23,13 @@
     "@homebridge/node-pty-prebuilt-multiarch": "^0.13.1",
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/xterm": "^5.5.0",
-    "node-llama-cpp": "^3.1.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "three": "^0.163.0"
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "@types/three": "^0.163.0",
     "@vitejs/plugin-react": "^4.3.1",
     "electron": "31.7.7",
     "electron-builder": "^24.13.3",
