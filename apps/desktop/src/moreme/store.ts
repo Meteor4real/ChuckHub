@@ -1712,10 +1712,10 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: "announcer", title: "Made It Official", desc: "Reveal a hidden announcement (create it unannounced, then make it visible).", category: "social", progress: (a) => [a.announcementsRevealed, 1] },
 
   // Level milestones — the rank ladder, big steps only
-  { id: "level-5", title: "Operator Status", desc: "Reach level 5 — Operator.", category: "level", progress: (a) => [a.level, 5] },
-  { id: "level-10", title: "Halfway There (Cue The Song)", desc: "Reach level 10 — Tycoon.", category: "level", progress: (a) => [a.level, 10] },
-  { id: "level-15", title: "Titan Energy", desc: "Reach level 15 — Titan.", category: "level", progress: (a) => [a.level, 15] },
-  { id: "level-20", title: "This Is Just Me Now", desc: "Reach level 20 — Davis.", category: "level", progress: (a) => [a.level, 20] },
+  { id: "level-3", title: "Hard Worker Status", desc: "Reach level 3 — Hard Worker.", category: "level", progress: (a) => [a.level, 3] },
+  { id: "level-5", title: "Halfway There (Cue The Song)", desc: "Reach level 5 — Gymnast. Halfway up the ladder.", category: "level", progress: (a) => [a.level, 5] },
+  { id: "level-8", title: "Almost There", desc: "Reach level 8 — Dedicated Athlete.", category: "level", progress: (a) => [a.level, 8] },
+  { id: "level-10", title: "Dude Perfect", desc: "Reach level 10 — the top of the ladder, on purpose.", category: "level", progress: (a) => [a.level, 10] },
 
   // Fitness — the training half of the story, not just the business half
   { id: "fitness-first", title: "I May Not Be A Threat, But I Still Sweat", desc: "Complete your first fitness session.", category: "fitness", progress: (a) => [Math.min(a.fitnessCount, 1), 1] },

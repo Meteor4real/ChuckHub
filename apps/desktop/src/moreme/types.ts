@@ -326,33 +326,24 @@ export type State = {
 };
 
 // ── Level economy: fewer levels, much heavier XP per level ────────────────
-// 20 levels on a quadratic per-level cost curve. Each level is a real haul.
-export const MAX_LEVEL = 20;
+// 10 levels on a quadratic per-level cost curve — matches the real tier
+// count from the original More_Me site (js/xp.js, first commit).
+export const MAX_LEVEL = 10;
 
-// Each level has a name — the climb from "showed up today" to "owns the
-// place." Mount Vernon-flavored for the Inquiry path + the businessman arc.
-// Level n ↔ RANK_NAMES[n-1].
+// The site's actual tier ladder, verbatim from its first commit ("The Davis
+// Website") — not the later Rookie..MVP rewrite, the original one, ending
+// in Dude Perfect on purpose. Level n ↔ RANK_NAMES[n-1].
 export const RANK_NAMES: readonly string[] = [
-  "Inquirer",        //  1 — showed up
-  "Always Ahead",    //  2 — finishes things early
-  "Maker",           //  3 — building stuff
-  "Founder",         //  4 — started a thing
-  "Operator",        //  5 — runs the thing
-  "Strategist",      //  6 — plays the long game
-  "Polymath",        //  7 — many fronts at once
-  "Architect",       //  8 — designs systems
-  "Magnate",         //  9 — moves real money
-  "Tycoon",          // 10 — halfway · serious money
-  "Mogul",           // 11
-  "Empire-Builder",  // 12
-  "Visionary",       // 13
-  "Powerhouse",      // 14
-  "Titan",           // 15
-  "Page Six",        // 16 — you're in the news
-  "Helipad Class",   // 17 — you arrive by helicopter
-  "Icon",            // 18
-  "Legend",          // 19
-  "Davis",           // 20 — the namesake. Top.
+  "Initiate",           //  1
+  "Worker",             //  2
+  "Hard Worker",        //  3
+  "Dedicated Worker",   //  4
+  "Gymnast",            //  5
+  "Dedicated Gymnast",  //  6
+  "Athlete",            //  7
+  "Dedicated Athlete",  //  8
+  "Unstoppable",        //  9
+  "Dude Perfect",       // 10 — the top, on purpose.
 ];
 
 // XP required to advance FROM level n TO level n+1.

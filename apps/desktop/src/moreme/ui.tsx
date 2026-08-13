@@ -1395,7 +1395,7 @@ function LevelsView({ s }: { s: State }) {
     <div style={{ maxWidth: 1300, margin: "0 auto" }}>
       <div className="serif" style={{ fontSize: 20, marginBottom: 6 }}>Level Track</div>
       <div style={{ fontSize: 12, color: T.inkSoft, marginBottom: 16 }}>
-        20 levels on a steep curve — each level costs more than the last. Set a reward you'll actually give yourself at each one.
+        {MAX_LEVEL} levels on a steep curve — each level costs more than the last. Set a reward you'll actually give yourself at each one.
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {Array.from({ length: MAX_LEVEL }, (_, i) => i + 1).map((level) => {
