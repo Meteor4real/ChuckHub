@@ -103,6 +103,16 @@ export type Note = {
 
 export type ProjectStatus = "active" | "paused" | "done";
 
+// Goals merged into Projects — same list, three optional tags instead of a
+// separate tab. All three are the user's own explicit fixed categories, not
+// an assumed preset list.
+export type GoalCategory = "Academic" | "Athletic" | "Digital";
+export const GOAL_CATEGORIES: GoalCategory[] = ["Academic", "Athletic", "Digital"];
+export type GoalSource = "Personal" | "School" | "Someone else";
+export const GOAL_SOURCES: GoalSource[] = ["Personal", "School", "Someone else"];
+export type GoalTimeframe = "Today" | "Week" | "Month" | "Mod" | "Semester" | "Year" | "Beyond";
+export const GOAL_TIMEFRAMES: GoalTimeframe[] = ["Today", "Week", "Month", "Mod", "Semester", "Year", "Beyond"];
+
 export type Project = {
   id: string;
   name: string;
@@ -114,6 +124,10 @@ export type Project = {
   deadline?: string;            // YYYY-MM-DD
   milestones: ChecklistItem[];
   completedAt?: number;         // set when status flips to done (project XP bonus)
+  // Optional goal tagging — set any/all to make a project also a goal.
+  category?: GoalCategory;
+  source?: GoalSource;
+  timeframe?: GoalTimeframe;
 };
 
 // A business / venture you run. Tracked separately from Projects so the
@@ -133,16 +147,8 @@ export type Venture = {
   createdAt: number;
 };
 
-// GTD quick-capture. Dump anything; triage later into an event/project/goal.
+// GTD quick-capture. Dump anything; triage later into an event/project.
 export type InboxItem = { id: string; text: string; ts: number };
-
-export type Goal = { id: string; text: string; done?: boolean };
-export type Goals = {
-  week: Goal[];
-  semester: Goal[];
-  year: Goal[];
-  identity: Goal[];
-};
 
 export type DistractionLog = { id: string; date: string; note: string; ts: number };
 
@@ -349,7 +355,6 @@ export type State = {
   inbox: InboxItem[];
   notes: Note[];
   classes: Class[];
-  goals: Goals;
   distractions: DistractionLog[];
   // Screen training surface — see the screen* types above.
   screenSessions: ScreenSession[];

@@ -7,7 +7,7 @@ import { T } from "./styles";
 import { CATEGORY_META } from "./types";
 import type { CalEvent, State } from "./types";
 import {
-  addDays, aheadTotal, eventsOnDate, isDone, removeInbox, setGoals, today, uid,
+  addDays, aheadTotal, blankProject, eventsOnDate, isDone, removeInbox, today, upsertProject,
 } from "./store";
 
 export function WeeklyReview({ s, onClose, onEdit }: { s: State; onClose: () => void; onEdit: (e: CalEvent) => void }) {
@@ -35,10 +35,11 @@ export function WeeklyReview({ s, onClose, onEdit }: { s: State; onClose: () => 
   // Projects needing a next action (active, with an undone milestone or none).
   const activeProjects = s.projects.filter((p) => p.status === "active");
 
+  const weekGoals = s.projects.filter((p) => p.timeframe === "Week");
   const [goal, setGoal] = useState("");
   function addGoal() {
     if (!goal.trim()) return;
-    setGoals({ ...s.goals, week: [...s.goals.week, { id: uid(), text: goal.trim() }] });
+    upsertProject({ ...blankProject(), name: goal.trim(), timeframe: "Week" });
     setGoal("");
   }
 
@@ -105,8 +106,8 @@ export function WeeklyReview({ s, onClose, onEdit }: { s: State; onClose: () => 
 
         <Step n={s.inbox.length > 0 ? 6 : 5} title="Lock this week's goals">
           <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 8 }}>
-            {s.goals.week.map((g) => (
-              <div key={g.id} style={{ fontSize: 12, color: g.done ? T.inkTiny : T.ink, textDecoration: g.done ? "line-through" : "none" }}>• {g.text}</div>
+            {weekGoals.map((g) => (
+              <div key={g.id} style={{ fontSize: 12, color: g.status === "done" ? T.inkTiny : T.ink, textDecoration: g.status === "done" ? "line-through" : "none" }}>• {g.name || "(untitled)"}</div>
             ))}
           </div>
           <div style={{ display: "flex", gap: 6 }}>

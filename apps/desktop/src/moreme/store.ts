@@ -4,7 +4,7 @@
 
 import type {
   CalEvent, Category, Class, ClassPeriod, CustomAchievement,
-  Customization, DistractionLog, DynamicTab, FitnessKind, FitnessSession, Goal, Goals, InboxItem, LevelReward,
+  Customization, DistractionLog, DynamicTab, FitnessKind, FitnessSession, GoalTimeframe, InboxItem, LevelReward,
   Note, Project, Recurrence, Replacement, School, SchoolBlock, SchoolMod, SchoolPath, ScreenCategory,
   ScreenSession, ScreenSettings, State, StatSource, UrgeLog, UrgeResolution,
   Venture, VentureStatus, Widget,
@@ -368,10 +368,6 @@ function seedRoutines(_start: string): CalEvent[] {
   return [];
 }
 
-function seedGoals(): Goals {
-  return { week: [], semester: [], year: [], identity: [] };
-}
-
 // No default replacement drawer — the user adds their own from
 // Screens → Settings. Empty drawer surfaces an "Add your first" CTA.
 function seedReplacements(): Replacement[] {
@@ -405,7 +401,6 @@ function seedState(): State {
     ventures: seedVentures(),
     inbox: [],
     classes: seedClasses(),
-    goals: seedGoals(),
     distractions: [],
     screenSessions: [],
     urges: [],
@@ -442,6 +437,23 @@ export function loadState(): State {
     if (raw) {
       const p = JSON.parse(raw) as Partial<State>;
       const d = seedState();
+      // One-time migration: Goals used to be their own week/semester/year/
+      // identity buckets; each Goal becomes a Project tagged with a
+      // timeframe. Reading the legacy shape off the raw parsed JSON since
+      // State no longer declares `goals` at all — once this runs, the field
+      // is gone from the next save and this branch never fires again.
+      const legacyGoals = (p as unknown as { goals?: Record<string, { id: string; text: string; done?: boolean }[]> }).goals;
+      let migratedProjects = p.projects ?? d.projects;
+      if (legacyGoals) {
+        const timeframeFor: Record<string, GoalTimeframe> = { week: "Week", semester: "Semester", year: "Year", identity: "Beyond" };
+        const fromGoals: Project[] = [];
+        for (const [bucket, list] of Object.entries(legacyGoals)) {
+          for (const g of list ?? []) {
+            fromGoals.push({ id: g.id, name: g.text, kind: "", status: g.done ? "done" : "active", milestones: [], timeframe: timeframeFor[bucket] });
+          }
+        }
+        migratedProjects = [...migratedProjects, ...fromGoals];
+      }
       cache = {
         schemaVersion: 12,
         school: p.school ?? d.school,
@@ -450,12 +462,11 @@ export function loadState(): State {
         schoolMods: p.schoolMods ?? d.schoolMods,
         events: p.events ?? d.events,
         completions: p.completions ?? {},
-        projects: p.projects ?? d.projects,
+        projects: migratedProjects,
         ventures: p.ventures ?? d.ventures,
         inbox: p.inbox ?? [],
         notes: p.notes ?? [],
         classes: p.classes ?? d.classes,
-        goals: { ...d.goals, ...(p.goals ?? {}) },
         distractions: p.distractions ?? [],
         screenSessions: p.screenSessions ?? [],
         urges: p.urges ?? [],
@@ -978,12 +989,8 @@ export function removeInbox(id: string) {
 export function inboxToEventDraft(item: InboxItem): CalEvent {
   return { ...blankEvent(today()), title: item.text, allDay: true };
 }
-export function inboxToProject(item: InboxItem) {
-  upsertProject({ ...blankProject(), name: item.text });
-  removeInbox(item.id);
-}
-export function inboxToGoal(item: InboxItem, bucket: keyof Goals) {
-  updateState((s) => ({ ...s, goals: { ...s.goals, [bucket]: [...s.goals[bucket], { id: uid(), text: item.text }] } }));
+export function inboxToProject(item: InboxItem, timeframe?: GoalTimeframe) {
+  upsertProject({ ...blankProject(), name: item.text, timeframe });
   removeInbox(item.id);
 }
 
@@ -1344,8 +1351,7 @@ export function removeReplacement(id: string) {
   updateState((s) => ({ ...s, replacements: s.replacements.filter((r) => r.id !== id) }));
 }
 
-// ── goals / distractions / rewards ──────────────────────────────────────────
-export function setGoals(goals: Goals) { updateState((s) => ({ ...s, goals })); }
+// ── distractions / rewards ──────────────────────────────────────────────────
 export function logDistraction(note: string) {
   updateState((s) => ({
     ...s,

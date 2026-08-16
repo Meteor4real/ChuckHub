@@ -1,23 +1,23 @@
-// MoreMe — calendar-first UI. Today / Calendar / Projects / Goals /
+// MoreMe — calendar-first UI. Today / Calendar / Projects (incl. goals) /
 // Achievements / Levels, plus a full event editor. Subscribes to the single
 // store; XP is earned by completing scheduled items and project milestones.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { T } from "./styles";
 import {
-  CATEGORY_META, CATEGORY_ORDER, DEFAULT_XP_BY_CATEGORY, HELP_KINDS, HELP_KIND_LABEL, MAX_LEVEL, RANK_NAMES, cumulativeXp, levelStep,
+  CATEGORY_META, CATEGORY_ORDER, DEFAULT_XP_BY_CATEGORY, GOAL_CATEGORIES, GOAL_SOURCES, GOAL_TIMEFRAMES, HELP_KINDS, HELP_KIND_LABEL, MAX_LEVEL, RANK_NAMES, cumulativeXp, levelStep,
 } from "./types";
 import type {
-  CalEvent, Category, ChecklistItem, Class, Goal, HelpKind, InboxItem, Priority,
+  CalEvent, Category, ChecklistItem, Class, HelpKind, InboxItem, Priority,
   Project, Recurrence, SchoolPath, State, Visibility,
 } from "./types";
 import {
   ACHIEVEMENTS, achievementProgress, blankClass, blankEvent, blankProject,
   captureInbox, conflictIds, dayComplete, distractionsOn, dueReminders,
   eventsOnDate, fmtTime, gradeLabel, gradeStatus, inboxToEventDraft,
-  inboxToGoal, inboxToProject, insights, iso, isDone, levelInfo, loadState, logDistraction, monthLabel,
+  inboxToProject, insights, iso, isDone, levelInfo, loadState, logDistraction, monthLabel,
   removeClass, removeDistraction, removeEvent, removeInbox,
-  removeProject, revealEvent, schoolYearLabel, setGoals, setReward, setSchool,
+  removeProject, revealEvent, schoolYearLabel, setReward, setSchool,
   streakInfo, subscribeState, today, toggleDone, uid, upcomingWithReminders,
   upsertClass, upsertEvent, upsertProject, xpForDate,
 } from "./store";
@@ -48,23 +48,23 @@ import { makePrintHandler } from "./print";
 // "projects" hosts Projects | Plans as segments; "progress" hosts
 // Achievements | Levels | Insights. The old ids stay valid for hiddenTabs /
 // tabLabels / widgets so nothing customized is lost.
-type BuiltInTab = "today" | "ahead" | "calendar" | "screens" | "empire" | "projects" | "plans" | "goals" | "achievements" | "insights" | "levels" | "progress" | "customize";
+type BuiltInTab = "today" | "ahead" | "calendar" | "screens" | "empire" | "projects" | "plans" | "achievements" | "insights" | "levels" | "progress" | "customize";
 type Tab = BuiltInTab | string;
 type CalMode = "month" | "week" | "day";
 const TAB_LABELS: Record<string, string> = {
   today: "Overview", ahead: "Get Ahead", calendar: "Calendar", screens: "Screens", empire: "Companies",
-  projects: "Projects", plans: "Plans", goals: "Goals", achievements: "Achievements",
+  projects: "Projects", plans: "Plans", achievements: "Achievements",
   insights: "Insights", levels: "Levels", progress: "Progress", customize: "Customize",
 };
 
 // Sidebar organization — HALOS-style labeled groups instead of a flat
-// twelve-tab row. ~8 destinations; merged surfaces keep their old ids alive
-// as segments inside.
+// tab row. Merged surfaces keep their old ids alive as segments inside.
+// Goals merged into Projects (a Project can carry goal tags).
 const NAV_GROUPS: { label: string; items: { id: BuiltInTab; glyph: string }[] }[] = [
   { label: "Day",    items: [{ id: "today", glyph: "◆" }, { id: "calendar", glyph: "▦" }] },
   { label: "School", items: [{ id: "ahead", glyph: "»" }] },
   { label: "Build",  items: [{ id: "projects", glyph: "◈" }, { id: "empire", glyph: "$" }] },
-  { label: "Self",   items: [{ id: "goals", glyph: "✦" }, { id: "screens", glyph: "▣" }, { id: "progress", glyph: "▲" }] },
+  { label: "Self",   items: [{ id: "screens", glyph: "▣" }, { id: "progress", glyph: "▲" }] },
 ];
 
 function useStore(): State {
@@ -111,7 +111,6 @@ export function MoreMeUI({ onSignOut }: { onSignOut?: () => void }) {
           {tab === "empire" && <EmpireView s={s} />}
           {tab === "projects" && <SegmentHub s={s} segments={[{ id: "projects", label: tabLabel("projects", "Projects", s) }, { id: "plans", label: tabLabel("plans", "Plans", s) }]}
             render={(seg) => seg === "plans" ? <PlansView s={s} /> : <ProjectsView s={s} />} />}
-          {tab === "goals" && <GoalsView s={s} />}
           {tab === "progress" && <SegmentHub s={s} segments={[{ id: "achievements", label: tabLabel("achievements", "Achievements", s) }, { id: "levels", label: tabLabel("levels", "Levels", s) }, { id: "insights", label: tabLabel("insights", "Insights", s) }]}
             render={(seg) => seg === "levels" ? <LevelsView s={s} /> : seg === "insights" ? <InsightsView s={s} /> : <AchievementsView s={s} />} />}
           {tab === "customize" && <CustomizeView s={s} />}
@@ -686,7 +685,7 @@ function InboxRow({ item, onEdit }: { item: InboxItem; onEdit: (e: CalEvent, inb
       <div style={{ flex: 1, minWidth: 0, fontSize: 13 }}>{item.text}</div>
       <button className="mm-btn" style={{ padding: "3px 8px" }} title="Schedule it" onClick={() => onEdit(inboxToEventDraft(item), item.id)}>Schedule</button>
       <button className="mm-btn" style={{ padding: "3px 8px" }} title="Make it a project" onClick={() => inboxToProject(item)}>Project</button>
-      <button className="mm-btn" style={{ padding: "3px 8px" }} title="Add to this week's goals" onClick={() => inboxToGoal(item, "week")}>Goal</button>
+      <button className="mm-btn" style={{ padding: "3px 8px" }} title="Add as this week's goal" onClick={() => inboxToProject(item, "Week")}>Goal</button>
       <button className="mm-btn mm-btn-danger" style={{ padding: "3px 8px" }} title="Discard" onClick={() => removeInbox(item.id)}>×</button>
     </div>
   );
@@ -1091,6 +1090,15 @@ function RoutineTemplateCard({ id, s }: { id: RoutineTemplateId; s: State }) {
 }
 
 function ProjectsView({ s }: { s: State }) {
+  const [catFilter, setCatFilter] = useState<string>("");
+  const [srcFilter, setSrcFilter] = useState<string>("");
+  const [tfFilter, setTfFilter] = useState<string>("");
+  const filtered = s.projects.filter((p) =>
+    (!catFilter || p.category === catFilter) &&
+    (!srcFilter || p.source === srcFilter) &&
+    (!tfFilter || p.timeframe === tfFilter)
+  );
+  const anyFilter = catFilter || srcFilter || tfFilter;
   return (
     <div style={{ display: "grid", gap: 16, gridTemplateColumns: "minmax(0,1fr) 300px", alignItems: "start" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -1098,12 +1106,30 @@ function ProjectsView({ s }: { s: State }) {
         <RoutineTemplatesSection s={s} />
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div className="serif" style={{ fontSize: 20 }}>Projects & Ventures</div>
+          <div className="serif" style={{ fontSize: 20 }}>Projects &amp; Goals</div>
           <button className="mm-btn mm-btn-primary" onClick={() => upsertProject({ ...blankProject(), name: "New project" })}>+ Project</button>
         </div>
-        {s.projects.length === 0 && <Empty>No projects yet.</Empty>}
+        <div style={{ fontSize: 11, color: T.inkTiny, marginTop: -8 }}>
+          Everything you're building or working toward lives here — a business idea and "run a 7-min mile" are both projects, just tagged differently.
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <select value={catFilter} onChange={(e) => setCatFilter(e.target.value)} style={{ width: 130 }}>
+            <option value="">Any category</option>
+            {GOAL_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <select value={srcFilter} onChange={(e) => setSrcFilter(e.target.value)} style={{ width: 140 }}>
+            <option value="">Any source</option>
+            {GOAL_SOURCES.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <select value={tfFilter} onChange={(e) => setTfFilter(e.target.value)} style={{ width: 130 }}>
+            <option value="">Any timeframe</option>
+            {GOAL_TIMEFRAMES.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+          {anyFilter && <button className="mm-btn" onClick={() => { setCatFilter(""); setSrcFilter(""); setTfFilter(""); }}>Clear filters</button>}
+        </div>
+        {filtered.length === 0 && <Empty>{anyFilter ? "Nothing matches those filters." : "No projects yet."}</Empty>}
         <div style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", alignItems: "start" }}>
-          {s.projects.map((p) => <ProjectCard key={p.id} p={p} />)}
+          {filtered.map((p) => <ProjectCard key={p.id} p={p} />)}
         </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -1243,47 +1269,26 @@ function ProjectCard({ p }: { p: Project }) {
         </select>
         <button className="mm-btn mm-btn-danger" style={{ padding: "4px 8px" }} onClick={() => removeProject(p.id)}>×</button>
       </div>
+      <div className="mm-row" style={{ marginTop: 6 }}>
+        <select value={p.category ?? ""} onChange={(e) => upsertProject({ ...p, category: (e.target.value || undefined) as Project["category"] })} style={{ flex: 1 }}>
+          <option value="">No category</option>
+          {GOAL_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <select value={p.source ?? ""} onChange={(e) => upsertProject({ ...p, source: (e.target.value || undefined) as Project["source"] })} style={{ flex: 1 }}>
+          <option value="">No source</option>
+          {GOAL_SOURCES.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <select value={p.timeframe ?? ""} onChange={(e) => upsertProject({ ...p, timeframe: (e.target.value || undefined) as Project["timeframe"] })} style={{ flex: 1 }}>
+          <option value="">No timeframe</option>
+          {GOAL_TIMEFRAMES.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </div>
       <div className="mm-progress" style={{ margin: "10px 0" }}><div className="mm-progress-fill" style={{ width: pct + "%" }} /><div className="mm-progress-text">{done}/{p.milestones.length} milestones · {pct}%</div></div>
       <ChecklistEditor items={p.milestones} onChange={(milestones) => upsertProject({ ...p, milestones })} />
       <div style={{ fontSize: 11, color: T.inkTiny, marginTop: 8 }}>Each milestone +30 XP · completing the project +100 XP</div>
     </div>
   );
 }
-// ── Goals ───────────────────────────────────────────────────────────────────
-function GoalsView({ s }: { s: State }) {
-  const cols: { key: keyof typeof s.goals; title: string }[] = [
-    { key: "week", title: "This Week" },
-    { key: "semester", title: "This Semester" },
-    { key: "year", title: "This Year" },
-    { key: "identity", title: "Identity" },
-  ];
-  return (
-    <div style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
-      {cols.map((c) => <GoalColumn key={c.key} title={c.title} goals={s.goals[c.key]} onChange={(g) => setGoals({ ...s.goals, [c.key]: g })} />)}
-    </div>
-  );
-}
-function GoalColumn({ title, goals, onChange }: { title: string; goals: Goal[]; onChange: (g: Goal[]) => void }) {
-  const [v, setV] = useState("");
-  return (
-    <div className="mm-card" style={{ padding: 16 }}>
-      <div className="serif" style={{ fontSize: 16, marginBottom: 10 }}>{title}</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {goals.map((g) => (
-          <div key={g.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <input type="checkbox" checked={!!g.done} onChange={() => onChange(goals.map((x) => x.id === g.id ? { ...x, done: !x.done } : x))} style={{ width: "auto" }} />
-            <span style={{ flex: 1, fontSize: 13, textDecoration: g.done ? "line-through" : "none", color: g.done ? T.inkTiny : T.ink }}>{g.text}</span>
-            <button className="mm-btn" style={{ padding: "2px 8px" }} onClick={() => onChange(goals.filter((x) => x.id !== g.id))}>×</button>
-          </div>
-        ))}
-      </div>
-      <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-        <input placeholder="Add a goal…" value={v} onChange={(e) => setV(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && v.trim()) { onChange([...goals, { id: uid(), text: v.trim() }]); setV(""); } }} />
-      </div>
-    </div>
-  );
-}
-
 // ── Achievements ──────────────────────────────────────────────────────────
 // Per-category accent so unlocked achievements read as five different
 // tracks, not one monochrome mint wall. Colors echo the calendar category
