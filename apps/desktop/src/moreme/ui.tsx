@@ -207,17 +207,17 @@ function SideNav({ s, tab, onTab, onSignOut }: { s: State; tab: Tab; onTab: (t: 
     <aside style={{ display: "flex", flexDirection: "column", minHeight: 0, background: T.elev, borderRight: `1px solid ${T.line}` }}>
       {/* identity */}
       <div style={{ padding: "14px 14px 12px", borderBottom: `1px solid ${T.line}` }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <MoreMeMark size={44} />
-          <div className="mm-h1" style={{ fontSize: 27, lineHeight: 1, flex: 1 }}>MoreMe</div>
-          {onSignOut && (
-            <button className="mm-btn" style={{ padding: "3px 7px", fontSize: 10, whiteSpace: "nowrap", flex: "none" }} onClick={onSignOut} title="Sign out">Sign out</button>
-          )}
+        <div style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
+          <div style={{ flex: "none" }}><MoreMeMark size={38} /></div>
+          <div className="mm-h1" style={{ fontSize: 21, lineHeight: 1, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>MoreMe</div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
           <span className="mm-pill" style={{ background: chipColor + "22", color: chipColor, border: `1px solid ${chipColor}55` }}>{chipText}</span>
           <span style={{ fontSize: 10, color: T.inkTiny }}>{gradeLabel(s).split(" · ")[0]}</span>
         </div>
+        {onSignOut && (
+          <button className="mm-btn" style={{ marginTop: 8, width: "100%", padding: "4px 8px", fontSize: 10 }} onClick={onSignOut} title="Sign out">Sign out</button>
+        )}
       </div>
 
       {/* nav */}
