@@ -805,11 +805,15 @@ export const ROUTINE_TEMPLATES: Record<RoutineTemplateId, { label: string; blurb
   },
   weekend: {
     label: "Weekend routine",
-    blurb: "Saturday strength circuit + sports block, Sunday light movement + weekly planning. Runs indefinitely until you remove it.",
+    blurb: "Saturday strength circuit + sports block in the morning, then the rest of the weekend is protected for friends — Saturday afternoon/evening and Sunday midday are game-like-crazy time, before Sunday's light reset + planning. Runs indefinitely until you remove it.",
     bounded: false,
     items: [
       { slug: "sat-morning", title: "Saturday strength + sports", category: "fitness", start: "09:00", end: "11:00", recurrence: { kind: "weekly", days: [6] },
         checklist: ["Warm-up 3 min", "Push-ups 3×10–15", "Squats 3×15–20", "Plank 3×30–45s", "Mountain climbers 2×20", "Sports 1–2 hours — basketball, soccer, running, biking, tennis…"] },
+      { slug: "sat-friends", title: "Friends & gaming", category: "personal", start: "14:00", end: "20:00", recurrence: { kind: "weekly", days: [6] },
+        checklist: ["This is the priority, not an afterthought", "Get on with friends — game, call, hang out, whatever's fun"] },
+      { slug: "sun-friends", title: "Friends & gaming", category: "personal", start: "12:00", end: "15:30", recurrence: { kind: "weekly", days: [0] },
+        checklist: ["Get on with friends — game, call, hang out", "School week's coming — enjoy this while it's here"] },
       { slug: "sun-reset", title: "Sunday reset + planning", category: "personal", start: "16:00", end: "16:30", recurrence: { kind: "weekly", days: [0] },
         checklist: ["Light movement — walk, stretch, easy jog", "Weekly planning — goals for the week, school calendar", "Optional workout — short run / bodyweight / basketball"] },
     ],
