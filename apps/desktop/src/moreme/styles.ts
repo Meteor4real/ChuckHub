@@ -1,23 +1,29 @@
 // MoreMe theme tokens. One fixed palette — Papatui: The Rock's brand, warm
-// Polynesian earth (sand/cream, deep teal-green, bronze, espresso black).
-// Interpreted from the brand's documented earthy identity and real product
-// line names (Sandalwood Suede, Cedar Sport) — Papatui has never published
-// an official hex/design-system guide, confirmed via direct research.
+// Polynesian earth. Papatui has never published an official hex/design-
+// system guide (confirmed — papatui.com itself isn't reachable from this
+// build environment's network, so the site's own CSS can't be pulled
+// directly either), so this is a judgment call, not an extraction. It's
+// built from the one consistent signal across independent coverage of the
+// actual packaging (Global Cosmetic Industry, retail listings, press):
+// "earthy... olive, tan, and brown... minimalist, rustic, masculine."
+// Earlier passes leaned almost entirely on a single teal/mint accent —
+// this version pulls the olive and bronze/copper tones the real packaging
+// is described as actually having, instead of one narrow accent family.
 // No theme switching, no decorative hero-image backdrop (it read as clutter
 // behind the Today text) — just this one look, everywhere.
 
 export type Palette = {
   bg: string; elev: string; sunk: string;
   ink: string; inkSoft: string; inkTiny: string; line: string;
-  mint: string; mintDeep: string; mintHi: string;  // primary accent family
-  warn: string; cool: string;
+  mint: string; mintDeep: string; mintHi: string;  // primary accent family (olive-teal)
+  warn: string; cool: string;                       // rust-clay, bronze/copper
 };
 
 const PAPATUI_PALETTE: Palette = {
-  bg: "#19140F", elev: "#241C15", sunk: "#0F0B08",
-  ink: "#F4EAD9", inkSoft: "#C8B59B", inkTiny: "#8A7355", line: "#3A2E22",
-  mint: "#2FA98A", mintDeep: "#1E7D66", mintHi: "#5CCBB0",
-  warn: "#D9603B", cool: "#C9A24B",
+  bg: "#1B1712", elev: "#26201A", sunk: "#100D0A",
+  ink: "#F3EBDB", inkSoft: "#C9B99E", inkTiny: "#8F7B5C", line: "#3D3323",
+  mint: "#5C7A4A", mintDeep: "#405838", mintHi: "#8AAE6E",
+  warn: "#B2532E", cool: "#B8862F",
 };
 
 // The token object every component imports.
