@@ -37,6 +37,7 @@ import { WidgetView } from "./widgets";
 import { generateClassPeriods, clearClassPeriods, setClassPeriod } from "./store";
 import { ROUTINE_TEMPLATES, applyRoutineTemplate, removeRoutineTemplate, routineTemplateApplied, type RoutineTemplateId } from "./store";
 import { addDays } from "./store";
+import { ParentGate } from "./parentGate";
 import { pullOnce, pushOnce, subscribeSync, type SyncStatus } from "./sync";
 import { quoteOfDay } from "./quotes";
 import { makePrintHandler } from "./print";
@@ -1360,35 +1361,87 @@ function AchievementsView({ s }: { s: State }) {
 // ── Levels / rewards ────────────────────────────────────────────────────────
 function LevelsView({ s }: { s: State }) {
   const lv = levelInfo(s);
+  const [editingRewards, setEditingRewards] = useState(false);
   return (
-    <div style={{ maxWidth: 1300, margin: "0 auto" }}>
-      <div className="serif" style={{ fontSize: 20, marginBottom: 6 }}>Level Track</div>
+    <div style={{ maxWidth: 900, margin: "0 auto" }}>
+      <div className="serif" style={{ fontSize: 20, marginBottom: 6 }}>The Road</div>
       <div style={{ fontSize: 12, color: T.inkSoft, marginBottom: 16 }}>
-        {MAX_LEVEL} levels on a steep curve — each level costs more than the last. Set a reward you'll actually give yourself at each one.
+        {MAX_LEVEL} levels on a steep curve — each one costs more than the last. Rewards need the parent code to set or change.
       </div>
       {lv.isMax && <CapstoneCard s={s} />}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {Array.from({ length: MAX_LEVEL }, (_, i) => i + 1).map((level) => {
+
+      <div className="mm-card" style={{ padding: 16, marginBottom: 16 }}>
+        {editingRewards ? (
+          <ParentGate s={s}>
+            <RewardsEditor s={s} />
+            <div style={{ fontSize: 10, color: T.inkTiny, marginTop: 8 }}>
+              <button className="mm-btn" style={{ fontSize: 10, padding: "3px 8px" }} onClick={() => setEditingRewards(false)}>Done editing</button>
+            </div>
+          </ParentGate>
+        ) : (
+          <button className="mm-btn" onClick={() => setEditingRewards(true)}>Set / change rewards (parent code)</button>
+        )}
+      </div>
+
+      <div style={{ position: "relative", padding: "8px 0 24px" }}>
+        {/* the road: a single winding line down the middle, nodes alternate L/R */}
+        <div style={{ position: "absolute", left: "50%", top: 0, bottom: 0, width: 3, background: T.line, transform: "translateX(-1.5px)", borderRadius: 2 }} />
+        <div style={{ position: "absolute", left: "50%", top: 0, width: 3, height: `${lv.isMax ? 100 : (lv.level - 1) / (MAX_LEVEL - 1) * 100}%`, background: T.mint, transform: "translateX(-1.5px)", borderRadius: 2, transition: "height .3s" }} />
+
+        {Array.from({ length: MAX_LEVEL }, (_, i) => i + 1).map((level, i) => {
           const reached = lv.level >= level;
+          const current = lv.level === level && !lv.isMax;
           const need = cumulativeXp(level);
           const reward = s.rewards.find((r) => r.level === level)?.reward ?? "";
+          const onLeft = i % 2 === 0;
           return (
-            <div key={level} className="mm-card" style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 12, borderColor: reached ? T.mint : T.line, background: reached ? T.mint + "0d" : T.elev }}>
-              <div style={{ width: 40, textAlign: "center" }}>
-                <div style={{ fontSize: 18, fontWeight: 800, color: reached ? T.mint : T.inkTiny }}>{level}</div>
-              </div>
-              <div style={{ width: 150 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: reached ? T.ink : T.inkSoft }}>{rankFor(level, s)}</div>
+            <div key={level} style={{ position: "relative", display: "flex", justifyContent: onLeft ? "flex-end" : "flex-start", padding: "10px 0" }}>
+              <div
+                className="mm-card"
+                style={{
+                  width: "44%", padding: "10px 12px",
+                  borderColor: current ? T.mint : reached ? T.mint + "88" : T.line,
+                  background: reached ? T.mint + "0d" : T.elev,
+                  boxShadow: current ? `0 0 0 2px ${T.mint}55` : undefined,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: reached ? T.mint : T.inkTiny }}>{level}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: reached ? T.ink : T.inkSoft }}>{rankFor(level, s)}</div>
+                  {reached && <span className="mm-pill" style={{ marginLeft: "auto", background: T.mint, color: T.bg, fontSize: 9 }}>Reached</span>}
+                </div>
                 <div style={{ fontSize: 10, color: T.inkTiny, marginTop: 2 }}>
                   {need.toLocaleString()} XP{level < MAX_LEVEL ? ` · +${levelStep(level).toLocaleString()}` : " · max"}
                 </div>
+                {reward && <div style={{ fontSize: 11, color: T.cool, marginTop: 6, fontStyle: "italic" }}>“{reward}”</div>}
               </div>
-              <input style={{ flex: 1 }} placeholder="Reward for reaching this level…" value={reward} onChange={(e) => setReward(level, e.target.value)} />
-              {reached && <span className="mm-pill" style={{ background: T.mint, color: T.bg }}>Reached</span>}
+              {/* node dot on the road */}
+              <div style={{
+                position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)",
+                width: 14, height: 14, borderRadius: "50%",
+                background: reached ? T.mint : T.sunk, border: `2px solid ${reached ? T.mint : T.line}`,
+                boxShadow: current ? `0 0 0 4px ${T.mint}33` : undefined,
+              }} />
             </div>
           );
         })}
       </div>
+    </div>
+  );
+}
+
+function RewardsEditor({ s }: { s: State }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      {Array.from({ length: MAX_LEVEL }, (_, i) => i + 1).map((level) => {
+        const reward = s.rewards.find((r) => r.level === level)?.reward ?? "";
+        return (
+          <div key={level} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ width: 26, textAlign: "right", fontSize: 12, color: T.inkTiny }}>{level}</div>
+            <input style={{ flex: 1 }} placeholder={`Reward for reaching level ${level}…`} value={reward} onChange={(e) => setReward(level, e.target.value)} />
+          </div>
+        );
+      })}
     </div>
   );
 }
