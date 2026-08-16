@@ -4,7 +4,7 @@
 
 import type {
   CalEvent, Category, Class, ClassPeriod, CustomAchievement,
-  Customization, DistractionLog, DynamicTab, FitnessKind, FitnessSession, GoalTimeframe, InboxItem, LevelReward,
+  Customization, DayType, DistractionLog, DynamicTab, FitnessKind, FitnessSession, GoalTimeframe, InboxItem, LevelReward,
   Note, Project, Recurrence, Replacement, School, SchoolBlock, SchoolMod, SchoolPath, ScreenCategory,
   ScreenSession, ScreenSettings, State, StatSource, UrgeLog, UrgeResolution,
   Venture, VentureStatus, Widget,
@@ -152,6 +152,26 @@ export function isSummer(s: State = loadState(), at = new Date()): boolean {
 }
 export function isAlumnus(s: State = loadState(), at = new Date()): boolean {
   return gradeStatus(s, at).kind === "alumnus";
+}
+
+// A day's real schedule shape. Explicit override wins; otherwise auto-detect
+// from the real Mod Schedule: Sat/Sun -> weekend, a weekday a real Mod
+// actually covers -> school, anything else (a weekday with no Mod covering
+// it — a break) -> vacation.
+export function dayTypeFor(date: string, s: State = loadState()): DayType {
+  const override = s.dayTypes[date];
+  if (override) return override;
+  const d = dow(date);
+  if (d === 0 || d === 6) return "weekend";
+  const inMod = s.schoolMods.some((m) => date >= m.startDate && date <= m.endDate);
+  return inMod ? "school" : "vacation";
+}
+export function setDayType(date: string, type: DayType | undefined) {
+  updateState((s) => {
+    const dayTypes = { ...s.dayTypes };
+    if (type) dayTypes[date] = type; else delete dayTypes[date];
+    return { ...s, dayTypes };
+  });
 }
 export function setSchool(school: Partial<School>) {
   updateState((s) => ({ ...s, school: { ...s.school, ...school } }));
@@ -411,6 +431,7 @@ function seedState(): State {
     rewards: Array.from({ length: MAX_LEVEL }, (_, i) => ({ level: i + 1, reward: "" })),
     unlockedAchievements: {},
     startedAt: Date.now(),
+    dayTypes: {},
   };
 }
 
@@ -479,6 +500,7 @@ export function loadState(): State {
         unlockedAchievements: p.unlockedAchievements ?? {},
         startedAt: p.startedAt ?? Date.now(),
         parentCode: p.parentCode,
+        dayTypes: p.dayTypes ?? {},
       };
     } else cache = seedState();
   } catch { cache = seedState(); }

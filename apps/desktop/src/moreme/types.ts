@@ -300,6 +300,15 @@ export const WIDGET_KINDS: WidgetKind[] = ["text", "counter", "note", "checklist
 
 export type LevelReward = { level: number; reward: string };
 
+// A day's real schedule shape. Auto-detected from the actual Mod Schedule
+// (weekday inside a Mod's real date range -> school; Sat/Sun -> weekend;
+// otherwise -> vacation) unless the user overrides a specific date (e.g. a
+// Tuesday that's actually a school holiday, or a weekend at the beach).
+export type DayType = "school" | "weekend" | "vacation" | "beach";
+export const DAY_TYPE_LABEL: Record<DayType, string> = {
+  school: "School day", weekend: "Weekend", vacation: "Vacation", beach: "At the beach",
+};
+
 // Mount Vernon Upper School context. `grade9Year` is the calendar year you
 // START 9th grade (the fall). The current grade is DERIVED from today's date
 // vs. that anchor, rolling over each August — so it advances automatically
@@ -373,6 +382,9 @@ export type State = {
   // ceiling/XP-per-urge) and adding level rewards — never punishments, never
   // logging. undefined = no code set yet, nothing is locked.
   parentCode?: string;
+  // Manual day-type overrides, keyed YYYY-MM-DD. Most days don't need one —
+  // school/weekend are auto-detected from the real Mod Schedule + weekday.
+  dayTypes: Record<string, DayType>;
 };
 
 // ── Level economy: fewer levels, much heavier XP per level ────────────────

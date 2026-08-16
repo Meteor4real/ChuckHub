@@ -4,11 +4,19 @@
 
 import { useState } from "react";
 import { T } from "./styles";
-import { CATEGORY_META } from "./types";
-import type { CalEvent, State } from "./types";
+import { CATEGORY_META, DAY_TYPE_LABEL } from "./types";
+import type { CalEvent, DayType, State } from "./types";
 import {
-  blankEvent, conflictIds, eventsOnDate, fmtTime, iso, isDone, toMin, today, toggleDone,
+  ROUTINE_TEMPLATES, applyRoutineTemplate, addDays, blankEvent, conflictIds, dayTypeFor, eventsOnDate,
+  fmtTime, iso, isDone, routineTemplateApplied, setDayType, toMin, today, toggleDone,
 } from "./store";
+
+const DAY_TYPES: DayType[] = ["school", "weekend", "vacation", "beach"];
+// Non-school day types map onto the existing routine templates — same real
+// content Projects has always used, just applicable from the calendar too.
+const TEMPLATE_FOR: Partial<Record<DayType, "weekday" | "weekend" | "beach" | "anywhere">> = {
+  school: "weekday", weekend: "weekend", beach: "beach", vacation: "anywhere",
+};
 
 const DAY_START = 6 * 60;     // 06:00
 const DAY_END   = 23 * 60;    // 23:00
@@ -127,10 +135,51 @@ export function DayView({ s, date, onEdit }: { s: State; date: string; onEdit: (
   return (
     <div className="mm-card scrolly" style={{ padding: 12, maxHeight: "70vh" }}>
       <Header label={new Date(date + "T00:00:00").toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })} />
+      <DayTypeBanner s={s} date={date} />
       <div style={{ display: "flex", gap: 0 }}>
         <HourLabels />
         <Column date={date} s={s} onEdit={onEdit} />
       </div>
+    </div>
+  );
+}
+
+// The day's real shape at a glance: what it is, and — for weekend/vacation/
+// beach — whether that routine is actually on the calendar yet (real
+// scheduled items, not a guess) with a one-click way to put it there.
+function DayTypeBanner({ s, date }: { s: State; date: string }) {
+  const auto = dayTypeFor(date, { ...s, dayTypes: {} });
+  const override = s.dayTypes[date];
+  const type = override ?? auto;
+  const tmplId = TEMPLATE_FOR[type];
+  const applied = tmplId ? routineTemplateApplied(tmplId, s) : false;
+
+  return (
+    <div style={{ marginBottom: 10, padding: "8px 10px", borderRadius: 8, background: T.sunk, border: `1px solid ${T.line}` }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        <span className="mm-pill" style={{ background: T.mint + "22", color: T.mint }}>{DAY_TYPE_LABEL[type]}</span>
+        {!override && <span style={{ fontSize: 10, color: T.inkTiny }}>auto-detected</span>}
+        <div style={{ flex: 1 }} />
+        <select value={override ?? ""} onChange={(e) => setDayType(date, (e.target.value || undefined) as DayType | undefined)} style={{ fontSize: 11, width: 140 }}>
+          <option value="">Auto ({DAY_TYPE_LABEL[auto]})</option>
+          {DAY_TYPES.map((t) => <option key={t} value={t}>{DAY_TYPE_LABEL[t]}</option>)}
+        </select>
+      </div>
+      {tmplId && !applied && (
+        <div style={{ marginTop: 6, fontSize: 11, color: T.inkTiny, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <span>{ROUTINE_TEMPLATES[tmplId].label} isn't on the calendar yet — {ROUTINE_TEMPLATES[tmplId].items.map((it) => `${it.title} ${it.start}–${it.end}`).join(", ")}.</span>
+          <button
+            className="mm-btn"
+            style={{ padding: "2px 8px", fontSize: 10 }}
+            onClick={() => applyRoutineTemplate(tmplId, date, ROUTINE_TEMPLATES[tmplId].bounded ? addDays(date, 6) : undefined)}
+          >Apply it{ROUTINE_TEMPLATES[tmplId].bounded ? " (7 days)" : ""}</button>
+        </div>
+      )}
+      {type === "school" && (
+        <div style={{ marginTop: 6, fontSize: 11, color: T.inkTiny }}>
+          {s.schoolMods.length === 0 ? "No Mod Schedule set up yet — add one in Projects." : "Real Mod Schedule — periods below are what's actually on the calendar."}
+        </div>
+      )}
     </div>
   );
 }

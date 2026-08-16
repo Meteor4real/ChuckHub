@@ -1010,17 +1010,16 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 // ── Projects ────────────────────────────────────────────────────────────
 // ── Routine templates — the real weekday/weekend/beach/travel schedule
-// content, ported off the original site as opt-in one-click calendar
-// generators instead of a static reference page. Nothing here is auto-
-// seeded: it only lands on the calendar when you apply it, same as class
-// periods.
+// content, ported off the original site. Pure reference here — pick a Day
+// type on the Calendar to actually put one on the schedule; this page just
+// shows what's in each one and whether it's currently live.
 const ROUTINE_TEMPLATE_ORDER: RoutineTemplateId[] = ["weekday", "weekend", "beach", "anywhere"];
 function RoutineTemplatesSection({ s }: { s: State }) {
   return (
     <div style={{ marginBottom: 4 }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 4 }}>
         <div className="serif" style={{ fontSize: 20 }}>Routines</div>
-        <div style={{ fontSize: 11, color: T.inkTiny }}>Real schedules — apply one, it lands on your calendar</div>
+        <div style={{ fontSize: 11, color: T.inkTiny }}>Reference — set a day's type on the Calendar to apply one</div>
       </div>
       <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", alignItems: "start", marginBottom: 4 }}>
         {ROUTINE_TEMPLATE_ORDER.map((id) => <RoutineTemplateCard key={id} id={id} s={s} />)}
@@ -1031,8 +1030,6 @@ function RoutineTemplatesSection({ s }: { s: State }) {
 function RoutineTemplateCard({ id, s }: { id: RoutineTemplateId; s: State }) {
   const def = ROUTINE_TEMPLATES[id];
   const applied = routineTemplateApplied(id, s);
-  const [start, setStart] = useState(today());
-  const [until, setUntil] = useState(addDays(today(), 7));
   const [open, setOpen] = useState(false);
   return (
     <div className="mm-card" style={{ padding: 14, borderColor: applied ? T.mint : T.line }}>
@@ -1052,20 +1049,7 @@ function RoutineTemplateCard({ id, s }: { id: RoutineTemplateId; s: State }) {
           ))}
         </div>
       )}
-      <div className="mm-row" style={{ alignItems: "flex-end" }}>
-        <Field label={def.bounded ? "Trip starts" : "Starting"}>
-          <input type="date" value={start} onChange={(e) => setStart(e.target.value)} style={{ width: 152 }} />
-        </Field>
-        {def.bounded && (
-          <Field label="Trip ends">
-            <input type="date" value={until} onChange={(e) => setUntil(e.target.value)} style={{ width: 152 }} />
-          </Field>
-        )}
-        <button className="mm-btn mm-btn-primary" onClick={() => applyRoutineTemplate(id, start, def.bounded ? until : undefined)}>
-          {applied ? "Update" : "Apply"}
-        </button>
-        {applied && <button className="mm-btn mm-btn-danger" onClick={() => removeRoutineTemplate(id)}>Remove</button>}
-      </div>
+      {applied && <button className="mm-btn mm-btn-danger" onClick={() => removeRoutineTemplate(id)}>Remove from calendar</button>}
     </div>
   );
 }
