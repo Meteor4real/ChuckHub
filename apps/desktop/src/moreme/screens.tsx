@@ -11,7 +11,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { makePrintHandler } from "./print";
 import {
   clearTracking, getTracking, setTrackingEnabled, subscribeTracking,
-  trackingReport, type TrackingCurrent, type TrackingReport,
+  trackingReport, type TrackingCurrent, type TrackingReport, type TrackingDiagnostics,
 } from "./tracking";
 import { T } from "./styles";
 import { SCREEN_CATEGORIES, SCREEN_CATEGORY_LABEL } from "./types";
@@ -372,17 +372,24 @@ function ScreenSettingsCard({ s }: { s: State }) {
 }
 
 // ── OS-level tracking panel ────────────────────────────────────────────────
+const FAIL_REASON_TEXT: Record<string, string> = {
+  "no-binary": "the OS tool this needs (xdotool) isn't installed on this machine",
+  "timeout-or-denied": "the OS query is timing out or was denied permission — on Windows this can be antivirus scanning; on macOS check System Settings → Privacy → Automation/Accessibility for MoreMe",
+  "no-window": "no foreground window came back from the OS (nothing focused, or a windowless desktop)",
+};
+
 function TrackingCard() {
   const [enabled, setEnabled] = useState(false);
   const [current, setCurrent] = useState<TrackingCurrent | null>(null);
   const [report, setReport] = useState<TrackingReport>({ sessions: [] });
+  const [diag, setDiag] = useState<TrackingDiagnostics>({ lastFailReason: null, lastSuccessAt: null, consecutiveFailures: 0 });
   const [now, setNow] = useState(Date.now());
   const [busy, setBusy] = useState(false);
 
   // Initial fetch + subscribe to ticks for live updates.
   useEffect(() => {
-    void getTracking().then((s) => { setEnabled(s.enabled); setCurrent(s.current); });
-    return subscribeTracking((m) => { setEnabled(m.enabled); setCurrent(m.current); });
+    void getTracking().then((s) => { setEnabled(s.enabled); setCurrent(s.current); setDiag(s); });
+    return subscribeTracking((m) => { setEnabled(m.enabled); setCurrent(m.current); setDiag(m); });
   }, []);
   // Refresh today's report every 15s while enabled.
   useEffect(() => {
@@ -444,6 +451,13 @@ function TrackingCard() {
           </span>
         )}
       </div>
+      {enabled && diag.consecutiveFailures >= 3 && (
+        <div style={{ marginTop: 8, padding: "8px 10px", borderRadius: 8, background: T.warn + "18", border: `1px solid ${T.warn}55`, fontSize: 11, color: T.inkSoft, lineHeight: 1.5 }}>
+          Tracking is on but hasn't gotten a real reading in {diag.consecutiveFailures} tries
+          {diag.lastSuccessAt ? ` (last one worked ${fmtMin(Math.round((now - diag.lastSuccessAt) / 60_000))} ago)` : " (never has, on this machine)"}.
+          {diag.lastFailReason ? ` Likely reason: ${FAIL_REASON_TEXT[diag.lastFailReason]}.` : ""}
+        </div>
+      )}
       <div style={{ marginTop: 8 }}>
         {report.sessions.length === 0 && !current && (
           <Empty>Nothing tracked today yet.{enabled ? " Open something other than MoreMe — it'll appear here." : " Enable tracking first."}</Empty>

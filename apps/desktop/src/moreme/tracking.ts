@@ -10,14 +10,20 @@ export type TrackingCurrent = {
 export type TrackingReport = {
   sessions: { app: string; title: string; tab?: string; browser?: string; start: number; end: number; durationMs: number }[];
 };
+export type TrackingFailReason = "no-binary" | "timeout-or-denied" | "no-window";
+export type TrackingDiagnostics = {
+  lastFailReason: TrackingFailReason | null;
+  lastSuccessAt: number | null;
+  consecutiveFailures: number;
+};
 
 type Hub = {
   tracking?: {
-    get(): Promise<{ prefs: { enabled: boolean }; current: TrackingCurrent | null }>;
+    get(): Promise<{ prefs: { enabled: boolean }; current: TrackingCurrent | null } & TrackingDiagnostics>;
     set(p: Partial<{ enabled: boolean }>): Promise<{ enabled: boolean }>;
     report(sinceMs?: number): Promise<TrackingReport>;
     clear(): Promise<{ ok: boolean }>;
-    onTick(fn: (msg: { enabled: boolean; current: TrackingCurrent | null }) => void): () => void;
+    onTick(fn: (msg: { enabled: boolean; current: TrackingCurrent | null } & TrackingDiagnostics) => void): () => void;
   };
 };
 
@@ -25,11 +31,15 @@ function hub(): Hub["tracking"] | undefined {
   return (window as unknown as { hub: Hub }).hub?.tracking;
 }
 
-export async function getTracking(): Promise<{ enabled: boolean; current: TrackingCurrent | null }> {
+const NO_DIAGNOSTICS: TrackingDiagnostics = { lastFailReason: null, lastSuccessAt: null, consecutiveFailures: 0 };
+
+export async function getTracking(): Promise<{ enabled: boolean; current: TrackingCurrent | null } & TrackingDiagnostics> {
   const h = hub();
-  if (!h) return { enabled: false, current: null };
+  if (!h) return { enabled: false, current: null, ...NO_DIAGNOSTICS };
   const r = await h.get().catch(() => null);
-  return r ? { enabled: r.prefs.enabled, current: r.current } : { enabled: false, current: null };
+  return r
+    ? { enabled: r.prefs.enabled, current: r.current, lastFailReason: r.lastFailReason, lastSuccessAt: r.lastSuccessAt, consecutiveFailures: r.consecutiveFailures }
+    : { enabled: false, current: null, ...NO_DIAGNOSTICS };
 }
 export async function setTrackingEnabled(on: boolean): Promise<void> {
   const h = hub();
@@ -49,9 +59,9 @@ export async function clearTracking(): Promise<void> {
   if (!h) return;
   await h.clear().catch(() => undefined);
 }
-export function subscribeTracking(fn: (s: { enabled: boolean; current: TrackingCurrent | null }) => void): () => void {
+export function subscribeTracking(fn: (s: { enabled: boolean; current: TrackingCurrent | null } & TrackingDiagnostics) => void): () => void {
   const h = hub();
-  if (!h) { fn({ enabled: false, current: null }); return () => undefined; }
+  if (!h) { fn({ enabled: false, current: null, ...NO_DIAGNOSTICS }); return () => undefined; }
   return h.onTick(fn);
 }
 

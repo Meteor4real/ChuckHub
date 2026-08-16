@@ -70,10 +70,24 @@ function parseTitle(raw: string): { tab?: string; browser?: string } {
   return {};
 }
 
-// Returns "<process/app name>|<window title>" or "" if unknown / failed.
-function queryActiveWindow(): Promise<{ app: string; title: string } | null> {
+// Linux tracking depends on xdotool being installed — it isn't bundled and
+// isn't a default package on most distros, so a missing binary is a common,
+// specific, and previously-silent failure mode. Checked lazily once.
+let xdotoolChecked = false;
+let xdotoolMissing = false;
+function checkXdotool() {
+  if (xdotoolChecked || process.platform !== "linux") return;
+  xdotoolChecked = true;
+  exec("which xdotool", { timeout: 2000 }, (err) => { xdotoolMissing = !!err; });
+}
+
+export type QueryFailReason = "no-binary" | "timeout-or-denied" | "no-window";
+
+// Returns "<process/app name>|<window title>" or null + a reason on failure.
+function queryActiveWindow(): Promise<{ app: string; title: string } | { fail: QueryFailReason }> {
   return new Promise((resolve) => {
     const platform = process.platform;
+    if (platform === "linux") checkXdotool();
     let cmd = "";
     if (platform === "win32") {
       // PowerShell oneliner using PInvoke to call GetForegroundWindow +
@@ -107,14 +121,20 @@ function queryActiveWindow(): Promise<{ app: string; title: string } | null> {
       // Linux — depends on xdotool being installed.
       cmd = "bash -c 'name=$(xdotool getactivewindow getwindowname 2>/dev/null); pid=$(xdotool getactivewindow getwindowpid 2>/dev/null); proc=$(cat /proc/$pid/comm 2>/dev/null); echo \"$proc|$name\"'";
     }
-    exec(cmd, { timeout: 3000, windowsHide: true }, (err, stdout) => {
-      if (err) { resolve(null); return; }
+    if (platform === "linux" && xdotoolMissing) { resolve({ fail: "no-binary" }); return; }
+    // Windows spawns a fresh PowerShell + Add-Type (C# JIT compile) every
+    // single tick — genuinely slow, and easily blown past 3s under AV
+    // scanning of newly-spawned powershell.exe. Give it more room than the
+    // other platforms' plain shell/osascript calls need.
+    const timeoutMs = platform === "win32" ? 8000 : 3000;
+    exec(cmd, { timeout: timeoutMs, windowsHide: true }, (err, stdout) => {
+      if (err) { resolve({ fail: "timeout-or-denied" }); return; }
       const raw = (stdout || "").trim();
       const i = raw.indexOf("|");
-      if (i < 0) { resolve(null); return; }
+      if (i < 0) { resolve({ fail: "no-window" }); return; }
       const appName = raw.slice(0, i).trim();
       const title = raw.slice(i + 1).trim();
-      if (!appName) { resolve(null); return; }
+      if (!appName) { resolve({ fail: "no-window" }); return; }
       resolve({ app: appName, title });
     });
   });
@@ -124,6 +144,8 @@ let pollTimer: NodeJS.Timeout | null = null;
 let prefs: TrackingPrefs = readPrefs();
 let current: { app: string; title: string; tab?: string; browser?: string; start: number } | null = null;
 let lastTickFailures = 0;
+let lastFailReason: QueryFailReason | null = null;
+let lastSuccessAt: number | null = null;
 
 function key(app: string, title: string) {
   const parsed = parseTitle(title);
@@ -151,14 +173,18 @@ function flushCurrent(now: number) {
 async function tick() {
   if (!prefs.enabled) return;
   const w = await queryActiveWindow();
-  if (!w) {
+  if ("fail" in w) {
     lastTickFailures++;
+    lastFailReason = w.fail;
     // Five failures in a row probably means the OS query is just broken
     // on this machine. Flush the current session so we don't lie.
     if (lastTickFailures >= 5 && current) flushCurrent(Date.now());
+    broadcast();
     return;
   }
   lastTickFailures = 0;
+  lastFailReason = null;
+  lastSuccessAt = Date.now();
   const parsed = parseTitle(w.title);
   const k = key(w.app, w.title);
   const now = Date.now();
@@ -170,9 +196,13 @@ async function tick() {
   broadcast();
 }
 
+function diagnostics() {
+  return { lastFailReason, lastSuccessAt, consecutiveFailures: lastTickFailures };
+}
+
 function broadcast() {
   for (const win of BrowserWindow.getAllWindows()) {
-    win.webContents.send("tracking:tick", { enabled: prefs.enabled, current });
+    win.webContents.send("tracking:tick", { enabled: prefs.enabled, current, ...diagnostics() });
   }
 }
 
@@ -188,7 +218,7 @@ export function setupTracking() {
   };
   if (prefs.enabled) start();
 
-  ipcMain.handle("tracking:get", () => ({ prefs, current }));
+  ipcMain.handle("tracking:get", () => ({ prefs, current, ...diagnostics() }));
   ipcMain.handle("tracking:set", (_e, next: Partial<TrackingPrefs>) => {
     prefs = { ...prefs, ...next };
     writePrefs(prefs);

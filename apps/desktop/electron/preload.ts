@@ -22,15 +22,32 @@ const api = {
   },
 
   tracking: {
-    get: (): Promise<{ prefs: { enabled: boolean }; current: { app: string; title: string; tab?: string; browser?: string; start: number } | null }> =>
-      ipcRenderer.invoke("tracking:get"),
+    get: (): Promise<{
+      prefs: { enabled: boolean };
+      current: { app: string; title: string; tab?: string; browser?: string; start: number } | null;
+      lastFailReason: "no-binary" | "timeout-or-denied" | "no-window" | null;
+      lastSuccessAt: number | null;
+      consecutiveFailures: number;
+    }> => ipcRenderer.invoke("tracking:get"),
     set: (p: Partial<{ enabled: boolean }>): Promise<{ enabled: boolean }> =>
       ipcRenderer.invoke("tracking:set", p),
     report: (sinceMs?: number): Promise<{ sessions: { app: string; title: string; tab?: string; browser?: string; start: number; end: number; durationMs: number }[] }> =>
       ipcRenderer.invoke("tracking:report", { sinceMs }),
     clear: (): Promise<{ ok: boolean }> => ipcRenderer.invoke("tracking:clear"),
-    onTick: (fn: (msg: { enabled: boolean; current: { app: string; title: string; tab?: string; browser?: string; start: number } | null }) => void): (() => void) => {
-      const wrapped = (_e: unknown, msg: { enabled: boolean; current: { app: string; title: string; tab?: string; browser?: string; start: number } | null }) => fn(msg);
+    onTick: (fn: (msg: {
+      enabled: boolean;
+      current: { app: string; title: string; tab?: string; browser?: string; start: number } | null;
+      lastFailReason: "no-binary" | "timeout-or-denied" | "no-window" | null;
+      lastSuccessAt: number | null;
+      consecutiveFailures: number;
+    }) => void): (() => void) => {
+      const wrapped = (_e: unknown, msg: {
+        enabled: boolean;
+        current: { app: string; title: string; tab?: string; browser?: string; start: number } | null;
+        lastFailReason: "no-binary" | "timeout-or-denied" | "no-window" | null;
+        lastSuccessAt: number | null;
+        consecutiveFailures: number;
+      }) => fn(msg);
       ipcRenderer.on("tracking:tick", wrapped as (e: unknown, m: unknown) => void);
       return () => ipcRenderer.removeListener("tracking:tick", wrapped as (e: unknown, m: unknown) => void);
     },
