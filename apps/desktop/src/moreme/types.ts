@@ -145,6 +145,9 @@ export type Venture = {
   revenue: RevenueEntry[];
   nextAction?: string;
   createdAt: number;
+  // The roadmap: concrete steps taken/planned to actually build this,
+  // not just the revenue number. Same shape as Project milestones.
+  roadmap: ChecklistItem[];
 };
 
 // GTD quick-capture. Dump anything; triage later into an event/project.

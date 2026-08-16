@@ -37,6 +37,7 @@ import { WidgetView } from "./widgets";
 import { generateClassPeriods, clearClassPeriods, setClassPeriod } from "./store";
 import { ROUTINE_TEMPLATES, applyRoutineTemplate, removeRoutineTemplate, routineTemplateApplied, type RoutineTemplateId } from "./store";
 import { addDays } from "./store";
+import { ChecklistEditor } from "./checklist";
 import { ParentGate } from "./parentGate";
 import { pullOnce, pushOnce, subscribeSync, type SyncStatus } from "./sync";
 import { quoteOfDay } from "./quotes";
@@ -1007,26 +1008,6 @@ function dowOf(date: string) { return new Date(date + "T00:00:00").getDay(); }
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <div className="mm-field"><label>{label}</label>{children}</div>;
 }
-function ChecklistEditor({ items, onChange }: { items: ChecklistItem[]; onChange: (i: ChecklistItem[]) => void }) {
-  const [v, setV] = useState("");
-  const add = () => { if (v.trim()) { onChange([...items, { id: uid(), text: v.trim(), done: false }]); setV(""); } };
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      {items.map((it) => (
-        <div key={it.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <input type="checkbox" checked={it.done} onChange={() => onChange(items.map((x) => x.id === it.id ? { ...x, done: !x.done } : x))} style={{ width: "auto" }} />
-          <span style={{ flex: 1, fontSize: 13, textDecoration: it.done ? "line-through" : "none", color: it.done ? T.inkTiny : T.ink }}>{it.text}</span>
-          <button className="mm-btn" style={{ padding: "2px 8px" }} onClick={() => onChange(items.filter((x) => x.id !== it.id))}>×</button>
-        </div>
-      ))}
-      <div style={{ display: "flex", gap: 6 }}>
-        <input placeholder="Add a sub-task…" value={v} onChange={(e) => setV(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") add(); }} />
-        <button className="mm-btn" onClick={add}>Add</button>
-      </div>
-    </div>
-  );
-}
-
 // ── Projects ────────────────────────────────────────────────────────────
 // ── Routine templates — the real weekday/weekend/beach/travel schedule
 // content, ported off the original site as opt-in one-click calendar

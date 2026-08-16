@@ -9,6 +9,7 @@ import {
   blankVenture, empireLifetime, empireMRR, monthKey, removeVenture,
   setVentureRevenue, upsertVenture, ventureMRR,
 } from "./store";
+import { ChecklistEditor } from "./checklist";
 
 const STATUS: VentureStatus[] = ["idea", "building", "live", "scaling", "sold", "paused"];
 const STATUS_COLOR: Record<VentureStatus, string> = {
@@ -119,6 +120,28 @@ function VentureCard({ v }: { v: Venture }) {
       )}
 
       <input value={v.link ?? ""} placeholder="Link (site / dashboard)" onChange={(e) => upsertVenture({ ...v, link: e.target.value })} style={{ width: "100%", marginTop: 10, fontSize: 12 }} />
+
+      <RoadmapSection v={v} />
+    </div>
+  );
+}
+
+function RoadmapSection({ v }: { v: Venture }) {
+  const [open, setOpen] = useState(v.roadmap.length > 0);
+  const done = v.roadmap.filter((r) => r.done).length;
+  return (
+    <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px dashed ${T.line}` }}>
+      <button className="mm-btn" style={{ width: "100%" }} onClick={() => setOpen((o) => !o)}>
+        {open ? "Hide" : "Show"} roadmap {v.roadmap.length > 0 ? `(${done}/${v.roadmap.length})` : ""}
+      </button>
+      {open && (
+        <div style={{ marginTop: 8 }}>
+          <div style={{ fontSize: 10, color: T.inkTiny, marginBottom: 6 }}>
+            The steps you're actually taking to build this — done and still to do — not just the revenue number.
+          </div>
+          <ChecklistEditor items={v.roadmap} onChange={(roadmap) => upsertVenture({ ...v, roadmap })} />
+        </div>
+      )}
     </div>
   );
 }

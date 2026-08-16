@@ -463,7 +463,7 @@ export function loadState(): State {
         events: p.events ?? d.events,
         completions: p.completions ?? {},
         projects: migratedProjects,
-        ventures: p.ventures ?? d.ventures,
+        ventures: (p.ventures ?? d.ventures).map((v) => ({ ...v, roadmap: v.roadmap ?? [] })),
         inbox: p.inbox ?? [],
         notes: p.notes ?? [],
         classes: p.classes ?? d.classes,
@@ -937,7 +937,7 @@ export function upcomingWithReminders(s: State = loadState(), horizonDays = 2): 
 
 // ── ventures (the Empire) ────────────────────────────────────────────────
 export const blankVenture = (): Venture => ({
-  id: uid(), name: "", status: "idea", revenue: [], createdAt: Date.now(),
+  id: uid(), name: "", status: "idea", revenue: [], createdAt: Date.now(), roadmap: [],
 });
 export function upsertVenture(v: Venture) {
   updateState((s) => ({
