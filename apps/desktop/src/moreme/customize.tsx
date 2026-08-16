@@ -99,12 +99,25 @@ function QuotesCard({ s }: { s: State }) {
   );
 }
 
-function Section({ title, sub, children }: { title: string; sub?: string; children: React.ReactNode }) {
+// Collapsed by default — Customize used to dump every setting on screen at
+// once. Click a section's title to open just the one you're changing.
+function Section({ title, sub, children, defaultOpen }: { title: string; sub?: string; children: React.ReactNode; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(!!defaultOpen);
   return (
     <div className="mm-card" style={{ padding: 16 }}>
-      <div style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: T.inkTiny, marginBottom: 4 }}>{title}</div>
-      {sub && <div style={{ fontSize: 11, color: T.inkSoft, lineHeight: 1.5, marginBottom: 10 }}>{sub}</div>}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{children}</div>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", background: "transparent", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }}
+      >
+        <span style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: T.inkTiny, flex: 1 }}>{title}</span>
+        <span style={{ color: T.inkTiny, fontSize: 11 }}>{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div style={{ marginTop: sub ? 4 : 10 }}>
+          {sub && <div style={{ fontSize: 11, color: T.inkSoft, lineHeight: 1.5, marginBottom: 10 }}>{sub}</div>}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{children}</div>
+        </div>
+      )}
     </div>
   );
 }
