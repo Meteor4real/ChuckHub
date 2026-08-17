@@ -11,8 +11,8 @@ News** kept as a bonus surface. Everything else was retired.
 
 Monorepo (npm workspaces):
 
-- `apps/desktop` — **THE product** (Electron + Vite + React + TS). A focused
-  three-tab shell behind the accounts gate: **MoreMe** (primary), **News**
+- `apps/desktop` — **THE product** (Electron + Vite + React + TS). Single-user,
+  no accounts — boots straight in. A focused three-tab shell: **MoreMe** (primary), **News**
   (NT5, bonus), and **HALOS** (the S.P.A.C.E. collaboration console the owner
   uses with a collaborator — removed once by mistake, restored, KEEP IT).
   No browser, no terminal, no AI crew, no control panel.
@@ -80,12 +80,13 @@ Data model (`moreme/types.ts`, `moreme/store.ts`):
   achievements; it is NOT a checkable block).
 
 UI (`moreme/ui.tsx`): HALOS-style grouped SIDEBAR nav (not a tab row) —
-DAY (Today, Calendar), SCHOOL (Get Ahead), BUILD (Projects|Plans merged,
-Empire), SELF (Goals, Screens, Progress = Achievements|Levels|Insights
-merged via SegmentHub), YOURS (dynamic tabs), footer (level bar, streak,
-Weekly Review, Customize, sync pip). Old tab ids stay valid as segments so
-hiddenTabs/tabLabels/widgets keep working. Theme tokens in
-`moreme/styles.ts` (Papatui default).
+DAY (Overview, Calendar), SCHOOL (Get Ahead), BUILD (Projects|Plans merged,
+Companies), SELF (Screens, Progress = Achievements|Levels|Insights merged
+via SegmentHub), YOURS (dynamic tabs), footer (level bar, streak,
+Customize). Weekly Review lives inline on Overview, not a header button/
+modal. Old tab ids stay valid as segments so hiddenTabs/tabLabels/widgets
+keep working. Theme tokens in `moreme/styles.ts` (single fixed Papatui
+palette, no switcher).
 
 REMOVED for good: modes (semester/vacation/exam/travel), strict time-blocked
 schedules, focus blocks, strikes, session breaks, tiers, prestige.
@@ -151,8 +152,14 @@ bridge lets an external agent (Hermes) take the role.
 
 ## Accounts
 
-Supabase auth gate (`auth/`) — login/signup + guest. Anon key is client-safe;
-no DB password in the binary.
+None. MoreMe is single-user (the owner, this machine) — no login gate, no
+cloud sync, no guest mode. `auth/`, `moreme/sync.ts`, and `config.ts`
+(the Supabase anon key) were removed entirely; the app boots straight into
+MoreMe. State lives in this install's localStorage only — that already
+survives version updates fine since the app data directory doesn't change
+between releases, which is what "keep my data across updates" actually
+needed. Do not reintroduce an accounts/sync system without the owner
+explicitly asking again — it was built once, then explicitly reversed.
 
 ## Build / verify
 
@@ -193,20 +200,23 @@ DONE:
 - Reminders also fire as **OS notifications** (web Notification API, which
   Electron honors) so they surface even on the News tab / backgrounded.
 
-- **Supabase sync** (`moreme/sync.ts`): MoreMe state syncs to
-  `public.moreme_state` (RLS, one row per auth user) on the bundled
-  project. Pull on startup + every 60s; debounced push (4s) on every local
-  change, with an `applyingRemote` guard so a pull doesn't bounce back. A
-  status pip in the header shows synced / saving / pulling / error / guest.
-  Guest mode skips sync entirely. Runs in the background: window has
-  `backgroundThrottling:false` so timers keep full speed when minimized/
-  hidden; sync flushes on visibility-hidden + beforeunload and pulls on
-  refocus; the existing tray + "close hides to tray" pref keeps the renderer
-  (and thus sync) alive after the window is closed. Background prefs
-  (close-to-tray + launch-on-startup) **default OFF**. Opting in is on the
-  user (tray menu + Projects → Background). The previous default-ON
-  behavior read as malware-shaped to first-time installers; bg-prefs file
-  was bumped to `.v2.json` so legacy default-ON installs reset cleanly.
+- **No accounts, no cloud sync** (removed — see Accounts section above).
+  State is local-only (`localStorage`, `nchub.moreme.v12`). Background
+  mode still runs: window has `backgroundThrottling:false` so reminder
+  ticks + calendar-feed syncs keep full speed when minimized/hidden; the
+  tray + "close hides to tray" pref keeps the renderer alive after the
+  window is closed. Background prefs (close-to-tray + launch-on-startup)
+  **default OFF** — opting in is on the user (tray menu + Projects →
+  Background). The previous default-ON behavior read as malware-shaped to
+  first-time installers; bg-prefs file was bumped to `.v2.json` so legacy
+  default-ON installs reset cleanly.
+- **Connected calendars** (`moreme/integrations.tsx`, `moreme/ics.ts`):
+  paste a Canvas or Veracross `.ics` subscription URL once (Projects tab)
+  and MoreMe fetches + parses it (`window.hub.net`, main-process fetch —
+  no CORS) into calendar events, idempotent by the feed's own UID so
+  re-syncing updates in place. Auto-syncs on launch + every 2 hours.
+  Imported items' honesty-log fields (prepared/helpUsed/learned/checklist)
+  survive a re-sync. Veracross wired and ready, needs the owner's real URL.
 - **Class timetables**: a class can carry a weekly `period` (days + start/end
   + room); "Add to calendar" generates one idempotent recurring `class` event
   for the school year (id `clsperiod-<classId>`). In Projects → Classes.

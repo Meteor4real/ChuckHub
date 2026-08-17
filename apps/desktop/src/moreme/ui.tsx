@@ -41,7 +41,6 @@ import { syncIcsFeed } from "./store";
 import { addDays } from "./store";
 import { ChecklistEditor } from "./checklist";
 import { ParentGate } from "./parentGate";
-import { pullOnce, pushOnce, subscribeSync, type SyncStatus } from "./sync";
 import { quoteOfDay } from "./quotes";
 import { makePrintHandler } from "./print";
 
@@ -76,7 +75,7 @@ function useStore(): State {
   return s;
 }
 
-export function MoreMeUI({ onSignOut }: { onSignOut?: () => void }) {
+export function MoreMeUI() {
   const s = useStore();
   const [tab, setTab] = useState<Tab>("today");
   const [editing, setEditing] = useState<CalEvent | null>(null);
@@ -110,7 +109,7 @@ export function MoreMeUI({ onSignOut }: { onSignOut?: () => void }) {
 
   return (
     <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: "196px 1fr", position: "relative" }}>
-      <SideNav s={s} tab={tab} onTab={setTab} onSignOut={onSignOut} />
+      <SideNav s={s} tab={tab} onTab={setTab} />
 
       <div style={{ display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0 }}>
         <CaptureBar />
@@ -181,7 +180,7 @@ function SegmentHub({ s, segments, render }: {
 }
 
 // ── sidebar: identity, grouped nav, progress, controls ────────────────────
-function SideNav({ s, tab, onTab, onSignOut }: { s: State; tab: Tab; onTab: (t: Tab) => void; onSignOut?: () => void }) {
+function SideNav({ s, tab, onTab }: { s: State; tab: Tab; onTab: (t: Tab) => void }) {
   const lv = levelInfo(s);
   const { current } = streakInfo(s);
   const tx = xpForDate(today(), s);
@@ -230,9 +229,6 @@ function SideNav({ s, tab, onTab, onSignOut }: { s: State; tab: Tab; onTab: (t: 
           <span className="mm-pill" style={{ background: chipColor + "22", color: chipColor, border: `1px solid ${chipColor}55` }}>{chipText}</span>
           <span style={{ fontSize: 10, color: T.inkTiny }}>{gradeLabel(s).split(" · ")[0]}</span>
         </div>
-        {onSignOut && (
-          <button className="mm-btn" style={{ marginTop: 8, width: "100%", padding: "4px 8px", fontSize: 10 }} onClick={onSignOut} title="Sign out">Sign out</button>
-        )}
       </div>
 
       {/* nav */}
@@ -269,7 +265,6 @@ function SideNav({ s, tab, onTab, onSignOut }: { s: State; tab: Tab; onTab: (t: 
           </div>
         </div>
         {item("customize", tabLabel("customize", "Customize", s))}
-        <SyncPip />
         <DDDBanner />
       </div>
     </aside>
@@ -476,28 +471,6 @@ function RewardToasts({ s }: { s: State }) {
   );
 }
 
-function SyncPip() {
-  const [s, setS] = useState<{ status: SyncStatus; error: string; at: number | null }>({ status: "off", error: "", at: null });
-  useEffect(() => subscribeSync(setS), []);
-  const color = s.status === "idle" ? T.mint : s.status === "error" ? T.warn : s.status === "off" ? T.inkTiny : "#FFD23E";
-  const label =
-    s.status === "off"     ? "Sync · guest" :
-    s.status === "idle"    ? (s.at ? `Synced · ${new Date(s.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "Synced") :
-    s.status === "pulling" ? "Pulling…" :
-    s.status === "pushing" ? "Saving…" :
-                              `Sync error · ${s.error}`;
-  return (
-    <button
-      className="mm-btn"
-      title={`${label}\nClick to force a sync`}
-      onClick={() => { void pullOnce().then(() => pushOnce()); }}
-      style={{ padding: "5px 10px", fontSize: 11, display: "inline-flex", alignItems: "center", gap: 6 }}
-    >
-      <span style={{ width: 8, height: 8, borderRadius: "50%", background: color, boxShadow: `0 0 8px ${color}` }} />
-      {label}
-    </button>
-  );
-}
 // ── shared: one event row with a complete checkbox ────────────────────────
 function EventRow({ e, date, s, onEdit }: { e: CalEvent; date: string; s: State; onEdit: (e: CalEvent) => void }) {
   const meta = CATEGORY_META[e.category];
@@ -1125,7 +1098,7 @@ function BackgroundCard() {
     <div className="mm-card" style={{ padding: 16 }}>
       <div className="serif" style={{ fontSize: 16, marginBottom: 4 }}>Background</div>
       <div style={{ fontSize: 11, color: T.inkTiny, marginBottom: 10 }}>
-        Keep MoreMe syncing and reminding even when the window's closed.
+        Keep MoreMe running and reminding even when the window's closed.
       </div>
       <Toggle on={!!prefs?.minimizeToTray} disabled={!prefs} onClick={() => toggle("minimizeToTray")} label="Closing hides to tray (keeps running)" />
       <Toggle on={!!prefs?.runOnStartup} disabled={!prefs} onClick={() => toggle("runOnStartup")} label="Launch on system startup" />

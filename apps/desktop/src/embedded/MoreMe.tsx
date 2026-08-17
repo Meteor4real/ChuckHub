@@ -3,12 +3,12 @@ import { buildMMStyle } from "../moreme/styles";
 import { MoreMeUI } from "../moreme/ui";
 
 // Embedded MoreMe — calendar-first life OS for a Mount Vernon student.
-export function MoreMe({ onSignOut }: { onSignOut: () => void }) {
+export function MoreMe() {
   const [css] = useState(() => buildMMStyle());
   return (
     <div className="stage moreme-embed" style={{ display: "flex", flexDirection: "column" }}>
       <style>{css}</style>
-      <MoreMeUI onSignOut={onSignOut} />
+      <MoreMeUI />
     </div>
   );
 }

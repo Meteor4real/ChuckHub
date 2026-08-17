@@ -59,8 +59,9 @@ function createWindow() {
       sandbox: false,
       webviewTag: true, // tabbed browser uses <webview>
       // Keep timers running at full speed when the window is minimized or
-      // hidden to tray, so MoreMe's Supabase sync + reminder ticks + the NT5
-      // wire keep working in the background instead of being throttled.
+      // hidden to tray, so MoreMe's reminder ticks + calendar-feed sync +
+      // the NT5 wire keep working in the background instead of being
+      // throttled.
       backgroundThrottling: false,
       defaultFontSize: 16,
       defaultMonospaceFontSize: 14,
@@ -113,7 +114,7 @@ function refreshTrayMenu() {
     { label: "Show MoreMe", click: () => { if (win) { win.show(); win.focus(); } else createWindow(); } },
     { type: "separator" },
     { label: "Run on system startup", type: "checkbox", checked: p.runOnStartup, click: (m) => { const next = { ...p, runOnStartup: !!m.checked }; writeBgPrefs(next); applyBgPrefs(next); refreshTrayMenu(); } },
-    { label: "Close button hides to tray (keeps MoreMe sync + wire running)", type: "checkbox", checked: p.minimizeToTray, click: (m) => { const next = { ...p, minimizeToTray: !!m.checked }; writeBgPrefs(next); refreshTrayMenu(); } },
+    { label: "Close button hides to tray (keeps MoreMe running)", type: "checkbox", checked: p.minimizeToTray, click: (m) => { const next = { ...p, minimizeToTray: !!m.checked }; writeBgPrefs(next); refreshTrayMenu(); } },
     { type: "separator" },
     { label: "Quit", click: () => { quitting = true; app.quit(); } },
   ]));

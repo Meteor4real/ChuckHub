@@ -1,50 +1,34 @@
 import { useEffect, useState } from "react";
-import { Login } from "./auth/Login";
-import { isAuthed, signOut, clearGuest } from "./auth/supabase";
 import { MoreMe } from "./embedded/MoreMe";
 import { applyAccent, loadAccent } from "./theme-accent";
 import { applyUiPrefs, loadPrefs } from "./uiPrefs";
 import { initTheme } from "./moreme/styles";
-import { startSync, stopSync } from "./moreme/sync";
 import { initTrackingSiren } from "./moreme/tracking";
 import { installAgentApi } from "./moreme/agentApi";
 import { MoreMeMark } from "./moreme/ui";
 import { T } from "./moreme/styles";
 
-// One surface behind the accounts gate: MoreMe. NT5 News and HALOS were
-// retired at the owner's direct request — extra fluff distracting from the
-// actual product.
+// Single-user app — this machine, this person, no accounts. State lives in
+// this install's localStorage only (survives updates fine: same app data
+// dir every version). Boots straight into MoreMe, no login gate.
 export function App() {
-  const [authed, setAuthed] = useState(() => isAuthed());
-
   useEffect(() => {
     applyAccent(loadAccent());
     applyUiPrefs(loadPrefs());
     initTheme();
-    startSync();
     initTrackingSiren();
     installAgentApi();
   }, []);
-
-  function logout() {
-    stopSync();
-    signOut();
-    clearGuest();
-    setAuthed(false);
-  }
-
-  if (!authed) return <Login onDone={() => { setAuthed(true); startSync(); }} />;
 
   return (
     <>
     <BootSplash />
     {/* MoreMe's own sidebar is the app's only chrome now — no separate outer
         topbar. Two "MoreMe" headers stacked on top of each other was a
-        leftover from the three-surface shell; sign-out lives in the
-        sidebar's identity row instead. */}
+        leftover from the three-surface shell. */}
     <div className="shell" style={{ display: "flex", flexDirection: "column", height: "100vh", minHeight: 0 }}>
       <main style={{ flex: 1, minHeight: 0, display: "flex" }}>
-        <MoreMe onSignOut={logout} />
+        <MoreMe />
       </main>
     </div>
     </>
