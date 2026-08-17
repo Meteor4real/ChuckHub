@@ -65,6 +65,12 @@ export type CalEvent = {
   prepared?: boolean;           // "I read what I needed before I dove in"
   helpUsed?: HelpKind;          // "none" | "search" | "ai" | "friend" | "mixed"
   learned?: string;             // one-line takeaway, your own words
+  // Set when this event was imported from an external calendar feed (Canvas,
+  // Veracross) rather than created by hand. Drives a small badge in the UI —
+  // editing still works, but re-syncing overwrites title/date/time/location
+  // from the feed (your honesty-log fields — prepared/helpUsed/learned/
+  // checklist — are preserved across re-sync).
+  externalSource?: "canvas" | "veracross";
 };
 
 export type HelpKind = "none" | "search" | "ai" | "friend" | "mixed";
@@ -385,6 +391,21 @@ export type State = {
   // Manual day-type overrides, keyed YYYY-MM-DD. Most days don't need one —
   // school/weekend are auto-detected from the real Mod Schedule + weekday.
   dayTypes: Record<string, DayType>;
+  // External calendar feeds (.ics) — Canvas assignments/classes, Veracross
+  // schedule. Private per-student URLs the owner pastes in once; MoreMe
+  // fetches + parses them, no login flow, no scraping.
+  integrations: Integrations;
+};
+
+export type IcsFeedState = {
+  url?: string;
+  lastSyncAt?: number;
+  lastCount?: number;
+  lastError?: string;
+};
+export type Integrations = {
+  canvas: IcsFeedState;
+  veracross: IcsFeedState;
 };
 
 // ── Level economy: fewer levels, much heavier XP per level ────────────────

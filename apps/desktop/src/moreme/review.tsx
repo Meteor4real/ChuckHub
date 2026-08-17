@@ -1,6 +1,7 @@
 // MoreMe — Weekly Review. The GTD ritual: look back at what slipped, look
 // ahead at the week, surface every project's next action, clear the inbox,
-// and lock this week's goals. One modal, top to bottom, so nothing rots.
+// and lock this week's goals. Lives permanently on Overview — not a button
+// that opens a modal, just part of the tab, always current.
 
 import { useState } from "react";
 import { T } from "./styles";
@@ -10,7 +11,7 @@ import {
   addDays, aheadTotal, blankProject, eventsOnDate, isDone, removeInbox, today, upsertProject,
 } from "./store";
 
-export function WeeklyReview({ s, onClose, onEdit }: { s: State; onClose: () => void; onEdit: (e: CalEvent) => void }) {
+export function WeeklyReview({ s, onEdit }: { s: State; onEdit: (e: CalEvent) => void }) {
   // Past 7 days: scheduled (non-routine) items left undone.
   const missed: { e: CalEvent; on: string }[] = [];
   for (let i = 1; i <= 7; i++) {
@@ -44,12 +45,7 @@ export function WeeklyReview({ s, onClose, onEdit }: { s: State; onClose: () => 
   }
 
   return (
-    <div className="mm-modal-back" onClick={onClose}>
-      <div className="mm-modal" onClick={(ev) => ev.stopPropagation()} style={{ width: "min(640px, 96%)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-          <div className="serif" style={{ fontSize: 22, flex: 1 }}>Weekly Review</div>
-          <button className="mm-btn" onClick={onClose}>Done</button>
-        </div>
+    <div>
         <div style={{ fontSize: 12, color: T.inkSoft, marginBottom: 16 }}>
           Five minutes, top to bottom. Reconcile last week, get ahead of the next, and nothing falls through.
         </div>
@@ -115,9 +111,6 @@ export function WeeklyReview({ s, onClose, onEdit }: { s: State; onClose: () => 
             <button className="mm-btn" onClick={addGoal}>Add</button>
           </div>
         </Step>
-
-        <button className="mm-btn mm-btn-primary" style={{ width: "100%", marginTop: 8 }} onClick={onClose}>Review complete</button>
-      </div>
     </div>
   );
 }

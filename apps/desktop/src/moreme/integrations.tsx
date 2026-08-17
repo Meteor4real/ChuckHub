@@ -1,0 +1,87 @@
+// MoreMe — external calendar feeds. Canvas (assignments + classes) and
+// Veracross (the live school schedule) both publish a private .ics
+// subscription URL per student. Paste it in once; MoreMe fetches + parses
+// it (electron/main.ts does the actual request — no CORS, no scraping, no
+// login flow) and idempotently mirrors it onto the calendar.
+
+import { useState } from "react";
+import { T } from "./styles";
+import type { State } from "./types";
+import { clearIcsFeed, setIcsUrl, syncIcsFeed, type IcsSource } from "./store";
+
+function timeAgo(ts: number): string {
+  const mins = Math.max(0, Math.round((Date.now() - ts) / 60000));
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.round(hrs / 24)}d ago`;
+}
+
+function FeedCard({ s, source, label, blurb }: { s: State; source: IcsSource; label: string; blurb: string }) {
+  const feed = s.integrations[source];
+  const [draft, setDraft] = useState(feed.url ?? "");
+  const [busy, setBusy] = useState(false);
+
+  async function save() {
+    setIcsUrl(source, draft);
+    if (!draft.trim()) return;
+    setBusy(true);
+    try { await syncIcsFeed(source); } finally { setBusy(false); }
+  }
+  async function syncNow() {
+    setBusy(true);
+    try { await syncIcsFeed(source); } finally { setBusy(false); }
+  }
+  function clear() {
+    if (!confirm(`Remove the ${label} link and everything it imported from your calendar?`)) return;
+    clearIcsFeed(source);
+    setDraft("");
+  }
+
+  return (
+    <div className="mm-card" style={{ padding: 14 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+        <b style={{ fontSize: 14, flex: 1 }}>{label}</b>
+        {feed.url && <span className="mm-pill" style={{ background: T.mint, color: T.bg }}>Connected</span>}
+      </div>
+      <div style={{ fontSize: 11, color: T.inkSoft, lineHeight: 1.5, marginBottom: 8 }}>{blurb}</div>
+      <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+        <input
+          placeholder="Paste the .ics subscription link…"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          style={{ flex: 1, fontSize: 11 }}
+        />
+        <button className="mm-btn mm-btn-primary" onClick={save} disabled={busy || draft.trim() === (feed.url ?? "")}>Save</button>
+      </div>
+      <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+        <button className="mm-btn" onClick={syncNow} disabled={busy || !feed.url}>{busy ? "Syncing…" : "Sync now"}</button>
+        {feed.url && <button className="mm-btn mm-btn-danger" onClick={clear}>Disconnect</button>}
+        <span style={{ fontSize: 10, color: feed.lastError ? T.warn : T.inkTiny, flex: 1, minWidth: 120 }}>
+          {feed.lastError
+            ? `Last sync failed: ${feed.lastError}`
+            : feed.lastSyncAt
+              ? `Synced ${timeAgo(feed.lastSyncAt)} · ${feed.lastCount ?? 0} item${feed.lastCount === 1 ? "" : "s"}`
+              : feed.url ? "Not synced yet." : "Not connected."}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+export function IntegrationsSection({ s }: { s: State }) {
+  return (
+    <div style={{ marginBottom: 4 }}>
+      <div className="serif" style={{ fontSize: 20, marginBottom: 4 }}>Connected calendars</div>
+      <div style={{ fontSize: 11, color: T.inkTiny, marginBottom: 8 }}>
+        Private per-student links — nothing here is shared beyond fetching your own feed. Find them in each portal's
+        Calendar settings (Canvas: Calendar → Calendar Feed; Veracross: Calendar → Subscribe/Export).
+      </div>
+      <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", alignItems: "start" }}>
+        <FeedCard s={s} source="canvas" label="Canvas" blurb="Assignments and class due dates, pulled straight from Canvas — no more adding them by hand." />
+        <FeedCard s={s} source="veracross" label="Veracross" blurb="The live Student Portal schedule. Re-sync whenever it changes and MoreMe follows." />
+      </div>
+    </div>
+  );
+}

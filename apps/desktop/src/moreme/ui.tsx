@@ -31,11 +31,13 @@ import { CustomizeView } from "./customize";
 import { ScreensView, ScreenCardToday, LogSessionModal, UrgeModal } from "./screens";
 import { FitnessCardToday, LogFitnessModal } from "./fitness";
 import { SchoolModsCard } from "./school";
+import { IntegrationsSection } from "./integrations";
 import { empireMRR, empireLifetime } from "./store";
 import { isTabHidden, rankFor, tabLabel } from "./store";
 import { WidgetView } from "./widgets";
 import { generateClassPeriods, clearClassPeriods, setClassPeriod } from "./store";
 import { ROUTINE_TEMPLATES, applyRoutineTemplate, removeRoutineTemplate, routineTemplateApplied, type RoutineTemplateId } from "./store";
+import { syncIcsFeed } from "./store";
 import { addDays } from "./store";
 import { ChecklistEditor } from "./checklist";
 import { ParentGate } from "./parentGate";
@@ -82,7 +84,20 @@ export function MoreMeUI({ onSignOut }: { onSignOut?: () => void }) {
   // the drafted event actually exists, so closing the editor can't eat it.
   const [pendingInboxId, setPendingInboxId] = useState<string | null>(null);
   const openEditor = (e: CalEvent, inboxId?: string) => { setEditing(e); setPendingInboxId(inboxId ?? null); };
-  const [review, setReview] = useState(false);
+
+  // External calendar feeds — sync on launch, then every 2 hours, so Canvas
+  // due dates and the Veracross schedule stay current without a manual click.
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.hub?.net) return;
+    const run = () => {
+      const cur = loadState();
+      if (cur.integrations.canvas.url) void syncIcsFeed("canvas");
+      if (cur.integrations.veracross.url) void syncIcsFeed("veracross");
+    };
+    run();
+    const id = window.setInterval(run, 2 * 60 * 60 * 1000);
+    return () => window.clearInterval(id);
+  }, []);
 
   const dyn = s.customization.dynamicTabs;
   const tabIdStr = String(tab);
@@ -105,7 +120,7 @@ export function MoreMeUI({ onSignOut }: { onSignOut?: () => void }) {
               {widgetsHere.map((w) => <WidgetView key={w.id} s={s} tabId={tabIdStr} w={w} />)}
             </div>
           )}
-          {tab === "today" && <TodayView s={s} onEdit={openEditor} onReview={() => setReview(true)} />}
+          {tab === "today" && <TodayView s={s} onEdit={openEditor} />}
           {tab === "ahead" && <GetAheadView s={s} onEdit={openEditor} />}
           {tab === "calendar" && <CalendarView s={s} onEdit={openEditor} />}
           {tab === "screens" && <ScreensView s={s} />}
@@ -127,7 +142,6 @@ export function MoreMeUI({ onSignOut }: { onSignOut?: () => void }) {
           onSaved={() => { if (pendingInboxId) removeInbox(pendingInboxId); }}
         />
       )}
-      {review && <WeeklyReview s={s} onClose={() => setReview(false)} onEdit={(e) => { setReview(false); openEditor(e); }} />}
       <ReminderToasts s={s} onOpen={openEditor} />
       <RewardToasts s={s} />
     </div>
@@ -524,7 +538,7 @@ function EventRow({ e, date, s, onEdit }: { e: CalEvent; date: string; s: State;
 }
 
 // ── Today ─────────────────────────────────────────────────────────────────
-function TodayView({ s, onEdit, onReview }: { s: State; onEdit: (e: CalEvent) => void; onReview: () => void }) {
+function TodayView({ s, onEdit }: { s: State; onEdit: (e: CalEvent) => void }) {
   const date = today();
   const evs = eventsOnDate(date, s);
   const routines = evs.filter((e) => e.category === "routine");
@@ -543,7 +557,6 @@ function TodayView({ s, onEdit, onReview }: { s: State; onEdit: (e: CalEvent) =>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, position: "relative", zIndex: 1, marginBottom: 16 }}>
         <div className="serif" style={{ fontSize: 20 }}>{new Date(date + "T00:00:00").toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}</div>
         <div className="mm-no-print" style={{ display: "flex", gap: 6 }}>
-          <button className="mm-btn" onClick={onReview}>Weekly Review</button>
           <button className="mm-btn" onClick={print} title="Print today">⎙ Print</button>
           <button className="mm-btn mm-btn-primary" onClick={() => onEdit({ ...blankEvent(date) })}>+ New item</button>
         </div>
@@ -561,16 +574,9 @@ function TodayView({ s, onEdit, onReview }: { s: State; onEdit: (e: CalEvent) =>
           )}
 
           <Section title={`Routine · ${routines.filter((e) => isDone(e, date, s)).length}/${routines.length}`}>
-            {routines.length === 0 ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <Empty>No routines yet — routines are the daily backbone: they feed streaks and earn screen minutes.</Empty>
-                <button
-                  className="mm-btn"
-                  style={{ flex: "none" }}
-                  onClick={() => onEdit({ ...blankEvent(date), category: "routine", start: "07:00", end: "07:20", recurrence: { kind: "daily" } })}
-                >+ Add a routine</button>
-              </div>
-            ) : routines.map((e) => <EventRow key={e.id} e={e} date={date} s={s} onEdit={onEdit} />)}
+            {routines.length === 0
+              ? <Empty>No routines yet — apply a routine template from the Calendar's day-type banner, or build your own in Projects.</Empty>
+              : routines.map((e) => <EventRow key={e.id} e={e} date={date} s={s} onEdit={onEdit} />)}
           </Section>
 
           <Section title="Scheduled">
@@ -592,6 +598,10 @@ function TodayView({ s, onEdit, onReview }: { s: State; onEdit: (e: CalEvent) =>
               </div>
             )}
             <DistractionAdder />
+          </Section>
+
+          <Section title="Weekly Review">
+            <WeeklyReview s={s} onEdit={onEdit} />
           </Section>
         </div>
 
@@ -1030,7 +1040,6 @@ function RoutineTemplatesSection({ s }: { s: State }) {
 function RoutineTemplateCard({ id, s }: { id: RoutineTemplateId; s: State }) {
   const def = ROUTINE_TEMPLATES[id];
   const applied = routineTemplateApplied(id, s);
-  const [open, setOpen] = useState(false);
   return (
     <div className="mm-card" style={{ padding: 14, borderColor: applied ? T.mint : T.line }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
@@ -1038,17 +1047,14 @@ function RoutineTemplateCard({ id, s }: { id: RoutineTemplateId; s: State }) {
         {applied && <span className="mm-pill" style={{ background: T.mint, color: T.bg }}>On calendar</span>}
       </div>
       <div style={{ fontSize: 11, color: T.inkSoft, lineHeight: 1.5, marginBottom: 8 }}>{def.blurb}</div>
-      <button className="mm-btn" style={{ marginBottom: 8 }} onClick={() => setOpen((o) => !o)}>{open ? "Hide" : "Show"} what's in it</button>
-      {open && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
-          {def.items.map((it) => (
-            <div key={it.slug} style={{ fontSize: 11, color: T.inkSoft }}>
-              <b style={{ color: T.ink }}>{it.title}</b> · {it.start}–{it.end}
-              <div style={{ color: T.inkTiny, marginTop: 1 }}>{it.checklist.join(" · ")}</div>
-            </div>
-          ))}
-        </div>
-      )}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
+        {def.items.map((it) => (
+          <div key={it.slug} style={{ fontSize: 11, color: T.inkSoft }}>
+            <b style={{ color: T.ink }}>{it.title}</b> · {it.start}–{it.end}
+            <div style={{ color: T.inkTiny, marginTop: 1 }}>{it.checklist.join(" · ")}</div>
+          </div>
+        ))}
+      </div>
       {applied && <button className="mm-btn mm-btn-danger" onClick={() => removeRoutineTemplate(id)}>Remove from calendar</button>}
     </div>
   );
@@ -1068,6 +1074,7 @@ function ProjectsView({ s }: { s: State }) {
     <div style={{ display: "grid", gap: 16, gridTemplateColumns: "minmax(0,1fr) 300px", alignItems: "start" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <SchoolModsCard s={s} />
+        <IntegrationsSection s={s} />
         <RoutineTemplatesSection s={s} />
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>

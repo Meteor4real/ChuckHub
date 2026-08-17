@@ -23,14 +23,13 @@ permissions:
 
 jobs:
   build:
-    name: Build (${{ matrix.os }})
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
-    # 45 min per platform — Windows + node-llama-cpp is the slow one. If
-    # something hangs past this, we fail with logs instead of hanging silent.
+    name: Build (windows-latest)
+    # Single-user app (owner only, running Windows) — just the Windows
+    # installer. macOS/Linux legs were dropped; re-add a matrix here if that
+    # ever changes.
+    runs-on: windows-latest
+    # node-llama-cpp is the slow part of this build. If something hangs past
+    # this, we fail with logs instead of hanging silent.
     timeout-minutes: 45
     steps:
       # Check out the exact ref we're releasing. For a published release or a
@@ -100,7 +99,7 @@ jobs:
         run: npm run icons --workspace=@nchub/desktop
 
       - name: Package desktop app
-        run: npm run package:desktop
+        run: npm run package:win --workspace=@nchub/desktop
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
@@ -115,7 +114,7 @@ jobs:
           set +e
           d="apps/desktop/release"
           {
-            echo "## Build summary on ${{ matrix.os }}"
+            echo "## Build summary on windows-latest"
             echo ""
             if [ ! -d "$d" ]; then
               echo "**release/ dir does not exist** — packaging produced nothing."
@@ -132,43 +131,15 @@ jobs:
           [ -d "$d" ] && [ -n "$(ls -A "$d" 2>/dev/null)" ]
 
       - name: Upload Windows artifacts
-        if: matrix.os == 'windows-latest'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.tag || github.event.release.tag_name || github.ref_name }}
           draft: false
           prerelease: false
-          # Don't fail the whole job if a glob is empty — let other globs
-          # still upload what they can. The build-output step above already
-          # fails when nothing was produced.
           fail_on_unmatched_files: false
           files: |
             apps/desktop/release/*.exe
             apps/desktop/release/*.zip
-
-      - name: Upload macOS artifacts
-        if: matrix.os == 'macos-latest'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.event.inputs.tag || github.event.release.tag_name || github.ref_name }}
-          draft: false
-          prerelease: false
-          fail_on_unmatched_files: false
-          files: |
-            apps/desktop/release/*.dmg
-            apps/desktop/release/*.zip
-
-      - name: Upload Linux artifacts
-        if: matrix.os == 'ubuntu-latest'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.event.inputs.tag || github.event.release.tag_name || github.ref_name }}
-          draft: false
-          prerelease: false
-          fail_on_unmatched_files: false
-          files: |
-            apps/desktop/release/*.AppImage
-            apps/desktop/release/*.deb
 
       # Final per-job status pinned to the Actions run page.
       - name: Run summary
@@ -177,7 +148,7 @@ jobs:
         run: |
           {
             echo ""
-            echo "### Status on ${{ matrix.os }}"
+            echo "### Status on windows-latest"
             echo ""
             if [ -d "apps/desktop/release" ] && [ -n "$(ls -A apps/desktop/release 2>/dev/null)" ]; then
               echo ":white_check_mark: Built and uploaded to **${{ github.event.inputs.tag || github.ref_name }}**."

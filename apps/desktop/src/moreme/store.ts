@@ -432,6 +432,7 @@ function seedState(): State {
     unlockedAchievements: {},
     startedAt: Date.now(),
     dayTypes: {},
+    integrations: { canvas: {}, veracross: {} },
   };
 }
 
@@ -501,6 +502,7 @@ export function loadState(): State {
         startedAt: p.startedAt ?? Date.now(),
         parentCode: p.parentCode,
         dayTypes: p.dayTypes ?? {},
+        integrations: p.integrations ?? d.integrations,
       };
     } else cache = seedState();
   } catch { cache = seedState(); }
@@ -871,6 +873,83 @@ export function removeRoutineTemplate(tmpl: RoutineTemplateId) {
 }
 export function routineTemplateApplied(tmpl: RoutineTemplateId, s: State): boolean {
   return s.events.some((e) => e.id.startsWith(`tmpl-${tmpl}-`));
+}
+
+// ── external calendar feeds (Canvas, Veracross) ────────────────────────────
+// Private per-student .ics subscription URLs, pasted in once. Fetched over
+// window.hub.net (main-process fetch — no CORS issue) and parsed with the
+// small reader in ./ics. Idempotent: each imported event's id is derived
+// from the feed's own UID, so re-syncing updates in place instead of
+// duplicating, and your honesty-log fields survive a re-sync.
+export type IcsSource = "canvas" | "veracross";
+
+export function setIcsUrl(source: IcsSource, url: string) {
+  updateState((s) => ({
+    ...s,
+    integrations: { ...s.integrations, [source]: { ...s.integrations[source], url: url.trim() || undefined } },
+  }));
+}
+export function clearIcsFeed(source: IcsSource) {
+  updateState((s) => ({
+    ...s,
+    events: s.events.filter((e) => !e.id.startsWith(`${source}-`)),
+    integrations: { ...s.integrations, [source]: {} },
+  }));
+}
+
+const ICS_CATEGORY: Record<IcsSource, Category> = { canvas: "school", veracross: "class" };
+
+export async function syncIcsFeed(source: IcsSource): Promise<{ ok: boolean; count?: number; error?: string }> {
+  const url = loadState().integrations[source]?.url;
+  if (!url) return { ok: false, error: "No URL set." };
+  if (typeof window === "undefined" || !window.hub?.net) return { ok: false, error: "Not available outside the desktop app." };
+  const fetchUrl = url.replace(/^webcal:\/\//i, "https://");
+  const res = await window.hub.net({ method: "GET", url: fetchUrl, headers: { Accept: "text/calendar, text/plain, */*" } });
+  if (!res.ok || typeof res.data !== "string") {
+    const err = res.error || `Feed request failed (status ${res.status}).`;
+    updateState((s) => ({ ...s, integrations: { ...s.integrations, [source]: { ...s.integrations[source], lastError: err } } }));
+    return { ok: false, error: err };
+  }
+  const { parseIcs } = await import("./ics");
+  let items: ReturnType<typeof parseIcs>;
+  try { items = parseIcs(res.data); }
+  catch {
+    const err = "Feed didn't parse as a calendar (.ics) file.";
+    updateState((s) => ({ ...s, integrations: { ...s.integrations, [source]: { ...s.integrations[source], lastError: err } } }));
+    return { ok: false, error: err };
+  }
+  const category = ICS_CATEGORY[source];
+  updateState((s) => {
+    let events = s.events;
+    for (const it of items) {
+      const id = `${source}-${it.uid.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 80) || uid()}`;
+      const existing = events.find((e) => e.id === id);
+      const ev: CalEvent = {
+        id, title: it.summary, category, date: it.date,
+        until: it.endDate, allDay: it.allDay,
+        start: it.start, end: it.end,
+        location: it.location,
+        notes: it.description,
+        linkedClassId: existing?.linkedClassId,
+        checklist: existing?.checklist ?? [],
+        priority: "normal", visibility: "visible", recurrence: { kind: "none" },
+        reminders: existing?.reminders ?? [],
+        xp: existing?.xp ?? DEFAULT_XP_BY_CATEGORY[category],
+        status: existing?.status ?? "planned",
+        createdAt: existing?.createdAt ?? Date.now(),
+        // Honesty-log fields are the user's own reflection — a re-sync from
+        // the feed must never clobber them.
+        prepared: existing?.prepared, helpUsed: existing?.helpUsed, learned: existing?.learned,
+        externalSource: source,
+      };
+      events = existing ? events.map((e) => (e.id === id ? ev : e)) : [...events, ev];
+    }
+    return {
+      ...s, events,
+      integrations: { ...s.integrations, [source]: { url, lastSyncAt: Date.now(), lastCount: items.length, lastError: undefined } },
+    };
+  });
+  return { ok: true, count: items.length };
 }
 
 // ── notes / plans ─────────────────────────────────────────────────────────
