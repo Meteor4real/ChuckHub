@@ -70,7 +70,7 @@ export type CalEvent = {
   // editing still works, but re-syncing overwrites title/date/time/location
   // from the feed (your honesty-log fields — prepared/helpUsed/learned/
   // checklist — are preserved across re-sync).
-  externalSource?: "canvas" | "veracross";
+  externalSource?: "canvas" | "veracross" | "google";
 };
 
 export type HelpKind = "none" | "search" | "ai" | "friend" | "mixed";
@@ -406,6 +406,7 @@ export type IcsFeedState = {
 export type Integrations = {
   canvas: IcsFeedState;
   veracross: IcsFeedState;
+  google: IcsFeedState;
 };
 
 // ── Level economy: fewer levels, much heavier XP per level ────────────────

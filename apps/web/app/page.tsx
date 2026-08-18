@@ -8,31 +8,19 @@ const REPO = "MoreMeApp"; // repo was renamed; old URL still 301-redirects but t
 const RELEASES_PAGE = `https://github.com/${OWNER}/${REPO}/releases`;
 const ACTIONS_PAGE = `https://github.com/${OWNER}/${REPO}/actions`;
 
-type OS = "win" | "mac-arm64" | "mac-x64" | "linux" | null;
-
-// Artifact names must match apps/desktop/electron-builder.yml.
+// Artifact names must match apps/desktop/electron-builder.yml. MoreMe is a
+// single-user app built for the owner's own Windows machine — the release
+// workflow only builds a Windows installer now, so this page only offers
+// that (a portable .zip ships from the same build if electron-builder
+// produces one, shown as a secondary option below).
 const primary = {
   os: "Windows 10/11 · x64",
   file: "MoreMe-Setup.exe",
-  key: "win" as const,
 };
-
-const others: { os: string; file: string; key: Exclude<OS, null> }[] = [
-  { os: "macOS · Apple Silicon", file: "MoreMe-mac-arm64.dmg", key: "mac-arm64" },
-  { os: "macOS · Intel", file: "MoreMe-mac-x64.dmg", key: "mac-x64" },
-  { os: "Linux · AppImage", file: "MoreMe-linux.AppImage", key: "linux" },
-  { os: "Windows · portable .zip", file: "MoreMe-win-x64.zip", key: "win" },
-];
-
-function detectOS(): OS {
-  if (typeof navigator === "undefined") return null;
-  const ua = navigator.userAgent;
-  const platform = navigator.platform || "";
-  if (/Win/i.test(platform)) return "win";
-  if (/Linux/i.test(platform) && !/Android/i.test(ua)) return "linux";
-  if (/Mac/i.test(platform)) return "mac-arm64";
-  return null;
-}
+const portable = {
+  os: "Windows · portable .zip",
+  file: "MoreMe-win-x64.zip",
+};
 
 type Asset = { name: string; browser_download_url: string; size: number };
 type Release = { tag_name: string; html_url: string; published_at: string; assets: Asset[] };
@@ -49,19 +37,19 @@ const rooms: { tag: string; title: string; body: string }[] = [
     body: "For every class, a % pre-done bar over the next 7, 14, or 30 days, plus an empire-wide hero. Crush the upcoming weeks early — the bar fills as you do — until walking into school is the last step, not the first.",
   },
   {
-    tag: "The Empire",
+    tag: "Companies",
     title: "Your businesses, your number",
-    body: "Track every venture you run — status, monthly revenue, next action. MoreMe derives current MRR, lifetime, and a 6-month mini chart per venture. First Dollar, Five Figures, Empire — they're achievements you actually earn.",
+    body: "Track every venture you run — status, monthly revenue, next action, and the real roadmap of steps you're taking to build it. MoreMe derives current MRR, lifetime, and a 6-month mini chart per venture. First Dollar, Five Figures — they're achievements you actually earn.",
   },
   {
     tag: "GTD, the loop",
     title: "Capture · Plan · Schedule · Review",
-    body: "A capture bar over every tab dumps anything into your inbox. Plans is the reference bucket for ideas and drafts. Today triages the inbox. Weekly Review walks you through last week's loose ends and locks the goals for the next one.",
+    body: "A capture bar over every tab dumps anything into your inbox. Plans is the reference bucket for ideas and drafts. Overview triages the inbox and carries the Weekly Review right on the tab — no button, no modal, always current.",
   },
   {
-    tag: "Synced + quiet",
+    tag: "Local + quiet",
     title: "Levels you earn, reminders that fire",
-    body: "20 levels on a steep curve — heavy XP each, no busywork. Earnable achievements. Reminders fire as OS notifications. State syncs to your account so the app follows you across devices, runs from the tray, and stays alive when the window's closed.",
+    body: "Earnable achievements on a steep XP curve — no busywork. Reminders fire as real OS notifications. Everything lives on this machine only, no account required, runs from the tray, and stays alive when the window's closed.",
   },
   {
     tag: "NT5 News",
@@ -71,16 +59,11 @@ const rooms: { tag: string; title: string; body: string }[] = [
 ];
 
 export default function Page() {
-  const [os, setOs] = useState<OS>(null);
   const [release, setRelease] = useState<Release | null>(null);
   const [loadErr, setLoadErr] = useState<string | null>(null);
 
-  useEffect(() => {
-    setOs(detectOS());
-  }, []);
-
   // Fetch the real latest release from the GitHub API. Only assets that
-  // actually exist render as download buttons; missing platforms show a
+  // actually exist render as download buttons; missing ones show a
   // "build pending" state instead of a dead /releases/latest/download link.
   useEffect(() => {
     let cancelled = false;
@@ -102,14 +85,11 @@ export default function Page() {
   const findAsset = (file: string) => assets.find((a) => a.name === file);
 
   const primaryAsset = findAsset(primary.file);
-  const winPreferred = os === "win";
-  const allCount = 1 + others.length;
-  const readyCount = (primaryAsset ? 1 : 0) + others.filter((d) => findAsset(d.file)).length;
-  const status: "loading" | "pending" | "partial" | "ready" | "error" =
+  const portableAsset = findAsset(portable.file);
+  const status: "loading" | "pending" | "ready" | "error" =
     loadErr ? "error"
     : !release ? "loading"
-    : readyCount === 0 ? "pending"
-    : readyCount < allCount ? "partial"
+    : !primaryAsset ? "pending"
     : "ready";
 
   function statusBanner() {
@@ -129,21 +109,12 @@ export default function Page() {
         <div className="mt-6 chuck-panel p-3 text-center font-mono text-xs leading-relaxed">
           <span className="chuck-chip-live mr-2">Build pending</span>
           <span className="text-chuck-ink">
-            {release?.tag_name} is published but no installers have uploaded yet.
+            {release?.tag_name} is published but the installer hasn&apos;t uploaded yet.
           </span>{" "}
           <a href={ACTIONS_PAGE} target="_blank" rel="noopener" className="chuck-glow-text underline">
             Check Actions
           </a>
-          <span className="text-chuck-mute"> · this page updates automatically once a build attaches.</span>
-        </div>
-      );
-    }
-    if (status === "partial") {
-      return (
-        <div className="mt-6 chuck-panel p-3 text-center font-mono text-xs">
-          <span className="chuck-chip mr-2">{readyCount} / {allCount} ready</span>
-          <span className="text-chuck-ink">{release?.tag_name} — some platforms still building.</span>{" "}
-          <a href={ACTIONS_PAGE} target="_blank" rel="noopener" className="chuck-glow-text underline">Actions</a>
+          <span className="text-chuck-mute"> · this page updates automatically once the build attaches.</span>
         </div>
       );
     }
@@ -165,10 +136,10 @@ export default function Page() {
         </h1>
 
         <p className="mt-5 max-w-2xl text-base leading-relaxed text-chuck-mute">
-          A real calendar, a Get-Ahead view that finishes school early, an
-          Empire dashboard for the businesses you run, GTD capture, and 20
-          levels you actually earn. Synced across devices. Always running.
-          Quiet by default.
+          A real calendar, a Get-Ahead view that finishes school early, a
+          Companies dashboard for the businesses you run, GTD capture, and
+          earnable levels. Runs quietly in the background. Local to this
+          machine — no accounts, no cloud.
         </p>
 
         <div className="mt-8 h-[2px] w-full max-w-sm chuck-strip" />
@@ -185,7 +156,7 @@ export default function Page() {
               className="group block chuck-panel-hot p-5 text-left transition hover:shadow-glow"
             >
               <div className="flex items-center justify-between">
-                <span className="chuck-chip">{winPreferred ? "Likely yours" : "Recommended"}</span>
+                <span className="chuck-chip">Windows 10/11</span>
                 <span className="font-mono text-[10px] uppercase tracking-widest text-chuck-mute">
                   .exe installer · {fmtBytes(primaryAsset.size)}
                 </span>
@@ -207,37 +178,24 @@ export default function Page() {
           )}
         </div>
 
-        {/* Other platforms */}
-        <div className="mt-4 grid w-full max-w-md grid-cols-1 gap-2 sm:grid-cols-2">
-          {others.map((d) => {
-            const a = findAsset(d.file);
-            return a ? (
-              <a
-                key={d.file}
-                href={a.browser_download_url}
-                download={d.file}
-                rel="noopener"
-                className="chuck-panel px-3 py-2 text-left transition hover:border-chuck-pink/60"
-              >
-                <div className="font-mono text-[11px] uppercase tracking-wider text-chuck-ink">{d.os}</div>
-                <div className="font-mono text-[10px] text-chuck-mute">{d.file} · {fmtBytes(a.size)}</div>
-              </a>
-            ) : (
-              <div
-                key={d.file}
-                className="chuck-panel px-3 py-2 text-left opacity-50"
-                title="This platform hasn't uploaded yet"
-              >
-                <div className="font-mono text-[11px] uppercase tracking-wider text-chuck-mute">{d.os}</div>
-                <div className="font-mono text-[10px] text-chuck-mute">pending CI · {d.file}</div>
-              </div>
-            );
-          })}
-        </div>
+        {/* Portable option — same Windows build, no installer/admin rights needed */}
+        {portableAsset && (
+          <div className="mt-3 w-full max-w-md">
+            <a
+              href={portableAsset.browser_download_url}
+              download={portable.file}
+              rel="noopener"
+              className="block chuck-panel px-3 py-2 text-left transition hover:border-chuck-pink/60"
+            >
+              <div className="font-mono text-[11px] uppercase tracking-wider text-chuck-ink">{portable.os}</div>
+              <div className="font-mono text-[10px] text-chuck-mute">{portable.file} · {fmtBytes(portableAsset.size)}</div>
+            </a>
+          </div>
+        )}
 
         <p className="mt-6 max-w-md text-xs leading-relaxed text-chuck-mute">
-          MoreMe is built for Windows first. The macOS and Linux builds run
-          the app, but background-on-startup behavior is best on Windows.
+          MoreMe is a single-user app, built for the owner's own Windows
+          machine — the installer above is the only supported download.
         </p>
         <p className="mt-2 text-xs text-chuck-mute">
           No download yet?{" "}
@@ -273,7 +231,7 @@ export default function Page() {
         <span>MoreMe{release ? ` · ${release.tag_name}` : ""}</span>
         <span className="text-chuck-line">·</span>
         <a
-          href="https://github.com/meteor4real/networkchuckhub"
+          href={`https://github.com/${OWNER}/${REPO}`}
           className="transition hover:text-chuck-pink"
         >
           Source

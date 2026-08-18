@@ -75,12 +75,14 @@ export function IntegrationsSection({ s }: { s: State }) {
     <div style={{ marginBottom: 4 }}>
       <div className="serif" style={{ fontSize: 20, marginBottom: 4 }}>Connected calendars</div>
       <div style={{ fontSize: 11, color: T.inkTiny, marginBottom: 8 }}>
-        Private per-student links — nothing here is shared beyond fetching your own feed. Find them in each portal's
-        Calendar settings (Canvas: Calendar → Calendar Feed; Veracross: Calendar → Subscribe/Export).
+        Private links — nothing here is shared beyond fetching your own feed. Find them in each service's own
+        settings: Canvas → Calendar → Calendar Feed; Veracross → Calendar → Subscribe/Export; Google Calendar →
+        Settings → pick a calendar on the left → "Secret address in iCal format" (under Integrate calendar).
       </div>
       <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", alignItems: "start" }}>
         <FeedCard s={s} source="canvas" label="Canvas" blurb="Assignments and class due dates, pulled straight from Canvas — no more adding them by hand." />
         <FeedCard s={s} source="veracross" label="Veracross" blurb="The live Student Portal schedule. Re-sync whenever it changes and MoreMe follows." />
+        <FeedCard s={s} source="google" label="Google Calendar" blurb="Any Google calendar's secret iCal address — personal events, a shared family calendar, whatever you point it at." />
       </div>
     </div>
   );

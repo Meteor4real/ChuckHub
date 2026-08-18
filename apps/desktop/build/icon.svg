@@ -2,19 +2,21 @@
   <!-- The MoreMe mark: sun + mountain peaks + barbell, on the Papatui
        espresso tile (the app's default theme). Same geometry as the
        .mm-logo / More_Me favicon — this IS the brand mark, recolored to
-       the Papatui palette (sand ink, bronze sun, teal-green accent). -->
-  <rect width="512" height="512" rx="96" fill="#19140F"/>
-  <rect x="14" y="14" width="484" height="484" rx="86" fill="none" stroke="#2FA98A" stroke-width="8" opacity="0.55"/>
+       the current Papatui palette (sand ink, bronze sun, olive-green
+       accent) — see apps/desktop/src/moreme/styles.ts PAPATUI_PALETTE,
+       the single source of truth for these hex values. -->
+  <rect width="512" height="512" rx="96" fill="#1B1712"/>
+  <rect x="14" y="14" width="484" height="484" rx="86" fill="none" stroke="#5C7A4A" stroke-width="8" opacity="0.55"/>
   <g transform="translate(64,72) scale(6)">
     <!-- sun -->
-    <circle cx="32" cy="10" r="4" fill="#C9A24B"/>
+    <circle cx="32" cy="10" r="4" fill="#B8862F"/>
     <!-- peaks -->
-    <path d="M6 52 L20 24 L32 42 L44 24 L58 52" fill="none" stroke="#F4EAD9" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M6 52 L20 24 L32 42 L44 24 L58 52" fill="none" stroke="#F3EBDB" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
     <!-- horizon -->
-    <path d="M6 56 L58 56" fill="none" stroke="#F4EAD9" stroke-width="1.6" stroke-linecap="round" opacity="0.4"/>
+    <path d="M6 56 L58 56" fill="none" stroke="#F3EBDB" stroke-width="1.6" stroke-linecap="round" opacity="0.4"/>
     <!-- barbell -->
-    <path d="M22 58 L42 58" fill="none" stroke="#2FA98A" stroke-width="3" stroke-linecap="round"/>
-    <circle cx="20" cy="58" r="3" fill="#2FA98A"/>
-    <circle cx="44" cy="58" r="3" fill="#2FA98A"/>
+    <path d="M22 58 L42 58" fill="none" stroke="#5C7A4A" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="20" cy="58" r="3" fill="#5C7A4A"/>
+    <circle cx="44" cy="58" r="3" fill="#5C7A4A"/>
   </g>
 </svg>

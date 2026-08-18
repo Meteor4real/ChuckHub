@@ -432,7 +432,7 @@ function seedState(): State {
     unlockedAchievements: {},
     startedAt: Date.now(),
     dayTypes: {},
-    integrations: { canvas: {}, veracross: {} },
+    integrations: { canvas: {}, veracross: {}, google: {} },
   };
 }
 
@@ -502,7 +502,14 @@ export function loadState(): State {
         startedAt: p.startedAt ?? Date.now(),
         parentCode: p.parentCode,
         dayTypes: p.dayTypes ?? {},
-        integrations: p.integrations ?? d.integrations,
+        // Per-key backfill (not a blanket ?? on the whole object) so an
+        // install saved before the Google Calendar source existed doesn't
+        // end up with integrations.google undefined.
+        integrations: {
+          canvas: p.integrations?.canvas ?? {},
+          veracross: p.integrations?.veracross ?? {},
+          google: p.integrations?.google ?? {},
+        },
       };
     } else cache = seedState();
   } catch { cache = seedState(); }
@@ -881,7 +888,7 @@ export function routineTemplateApplied(tmpl: RoutineTemplateId, s: State): boole
 // small reader in ./ics. Idempotent: each imported event's id is derived
 // from the feed's own UID, so re-syncing updates in place instead of
 // duplicating, and your honesty-log fields survive a re-sync.
-export type IcsSource = "canvas" | "veracross";
+export type IcsSource = "canvas" | "veracross" | "google";
 
 export function setIcsUrl(source: IcsSource, url: string) {
   updateState((s) => ({
@@ -897,7 +904,7 @@ export function clearIcsFeed(source: IcsSource) {
   }));
 }
 
-const ICS_CATEGORY: Record<IcsSource, Category> = { canvas: "school", veracross: "class" };
+const ICS_CATEGORY: Record<IcsSource, Category> = { canvas: "school", veracross: "class", google: "personal" };
 
 export async function syncIcsFeed(source: IcsSource): Promise<{ ok: boolean; count?: number; error?: string }> {
   const url = loadState().integrations[source]?.url;
