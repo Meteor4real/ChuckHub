@@ -1,21 +1,21 @@
 import type { Config } from "tailwindcss";
 
-// MoreMe download-page theme tokens — the real DP (Dude Perfect) palette,
-// pulled verbatim from More_Me's own css/style.css dark-mode block (matches
-// apps/desktop/src/moreme/styles.ts DP_PALETTE exactly). Class names stay
-// `chuck-*` for historical reasons — they're just CSS aliases now; only the
-// *values* are MoreMe.
+// MoreMe download-page theme tokens — Papatui espresso base with the real
+// DP (Dude Perfect) mint kept as the accent family (matches
+// apps/desktop/src/moreme/styles.ts PAPATUI_PALETTE exactly). Class names
+// stay `chuck-*` for historical reasons — they're just CSS aliases now;
+// only the *values* are MoreMe.
 const config: Config = {
   content: ["./app/**/*.{ts,tsx,js,jsx,mdx}"],
   theme: {
     extend: {
       colors: {
         chuck: {
-          bg: "#0F1318",
-          panel: "#1A2028",
-          line: "#2A3038",
-          ink: "#FFFFFF",
-          mute: "#A8B3C0",
+          bg: "#1B1712",
+          panel: "#26201A",
+          line: "#3D3323",
+          ink: "#F3EBDB",
+          mute: "#C9B99E",
           red: "#3EDBB5",         // primary accent (DP Mint)
           pink: "#7FEBD0",        // soft accent
           orange: "#33B5FF",      // secondary / cool accent

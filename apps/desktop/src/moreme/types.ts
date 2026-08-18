@@ -229,8 +229,8 @@ export type ScreenSettings = {
 
 // ── Customization ──────────────────────────────────────────────────────────
 // Lets the user rename tabs, hide ones they don't use, override the rank
-// names, and add their own achievements. No theme picker — DP mint is the
-// one look.
+// names, and add their own achievements. No theme picker — Papatui + DP
+// mint is the one look.
 export type CustomAchievement = {
   id: string;
   title: string;

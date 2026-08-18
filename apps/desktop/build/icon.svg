@@ -1,19 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="MoreMe">
-  <!-- The MoreMe mark: sun + mountain peaks + barbell, on the DP (Dude
-       Perfect) black tile — the real More_Me site's own palette (mint,
-       black, white), pulled verbatim from its css/style.css. Same geometry
-       as the .mm-logo / More_Me favicon. See
-       apps/desktop/src/moreme/styles.ts DP_PALETTE, the single source of
-       truth for these hex values. -->
-  <rect width="512" height="512" rx="96" fill="#0F1318"/>
+  <!-- The MoreMe mark: sun + mountain peaks + barbell, on the Papatui
+       espresso tile with the DP (Dude Perfect) mint kept as the accent —
+       the mint earned its keep once seen rendered, the black/white base
+       didn't. See apps/desktop/src/moreme/styles.ts PAPATUI_PALETTE, the
+       single source of truth for these hex values. -->
+  <rect width="512" height="512" rx="96" fill="#1B1712"/>
   <rect x="14" y="14" width="484" height="484" rx="86" fill="none" stroke="#3EDBB5" stroke-width="8" opacity="0.55"/>
   <g transform="translate(64,72) scale(6)">
     <!-- sun -->
     <circle cx="32" cy="10" r="4" fill="#33B5FF"/>
     <!-- peaks -->
-    <path d="M6 52 L20 24 L32 42 L44 24 L58 52" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M6 52 L20 24 L32 42 L44 24 L58 52" fill="none" stroke="#F3EBDB" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
     <!-- horizon -->
-    <path d="M6 56 L58 56" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round" opacity="0.4"/>
+    <path d="M6 56 L58 56" fill="none" stroke="#F3EBDB" stroke-width="1.6" stroke-linecap="round" opacity="0.4"/>
     <!-- barbell -->
     <path d="M22 58 L42 58" fill="none" stroke="#3EDBB5" stroke-width="3" stroke-linecap="round"/>
     <circle cx="20" cy="58" r="3" fill="#3EDBB5"/>

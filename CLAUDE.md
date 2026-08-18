@@ -16,11 +16,14 @@ Monorepo (npm workspaces):
   (NT5, bonus), and **HALOS** (the S.P.A.C.E. collaboration console the owner
   uses with a collaborator — removed once by mistake, restored, KEEP IT).
   No browser, no terminal, no AI crew, no control panel.
-  **Default theme is DP** (Dude Perfect — mint, black, white), pulled
-  verbatim from More_Me's own css/style.css dark-mode block, not a guess —
-  T, boot backgroundColor, and the app icon (MoreMe mark: sun + peaks +
-  barbell on the DP black tile in build/icon.svg + src/assets/logo.png)
-  all agree on it. No NCH-derived art anywhere.
+  **Default theme is Papatui + DP mint** (espresso/olive/bronze base, with
+  the real DP (Dude Perfect) mint — pulled verbatim from More_Me's own
+  css/style.css dark-mode block — kept as the accent family; the brown base
+  is the app's own identity, the DP black/white base didn't survive contact
+  with a real screenshot). T, boot backgroundColor, and the app icon
+  (MoreMe mark: sun + peaks + barbell on the Papatui espresso tile in
+  build/icon.svg + src/assets/logo.png) all agree on it. No NCH-derived art
+  anywhere.
 - `apps/web` — public download page (Vercel). Static.
 - `apps/control-panel` — legacy Next.js dashboard, preserved but unused by the
   desktop app.
@@ -86,8 +89,8 @@ Companies, Screens, Progress (Achievements|Levels|Insights merged via
 SegmentHub), then dynamic tabs, footer (level bar, streak, Customize).
 Weekly Review lives inline on Overview, not a header button/modal. Old tab
 ids stay valid as segments so hiddenTabs/tabLabels/widgets keep working.
-Theme tokens in `moreme/styles.ts` (single fixed DP — mint/black/white —
-palette, no switcher).
+Theme tokens in `moreme/styles.ts` (single fixed Papatui-base + DP-mint-
+accent palette, no switcher).
 
 REMOVED for good: modes (semester/vacation/exam/travel), strict time-blocked
 schedules, focus blocks, strikes, session breaks, tiers, prestige.

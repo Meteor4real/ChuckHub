@@ -8,8 +8,8 @@
 
 html,
 body {
-  background: #0F1318;
-  color: #FFFFFF;
+  background: #1B1712;
+  color: #F3EBDB;
   font-family: Inter, system-ui, -apple-system, sans-serif;
   margin: 0;
 }
@@ -86,7 +86,7 @@ body::before {
   }
   .chuck-btn:hover {
     border-color: rgba(62, 219, 181, 0.6);
-    color: #fff;
+    color: #F3EBDB;
     box-shadow: 0 0 16px rgba(62, 219, 181, 0.4);
   }
 
@@ -107,7 +107,7 @@ body::before {
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #0F1318;
+  background: #1B1712;
 }
 ::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, #3EDBB5, #7FEBD0);

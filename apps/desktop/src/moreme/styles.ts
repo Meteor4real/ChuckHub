@@ -1,33 +1,34 @@
-// MoreMe theme tokens. One fixed palette — DP (Dude Perfect): mint, black,
-// white. Pulled verbatim from the real More_Me site's own css/style.css
-// (`html[data-theme="dark"]` block, the DP Mint / Black / White palette it
-// names itself) — not a guess or an interpretation this time. The earlier
-// "Papatui" palette (espresso/olive/bronze) was a judgment call made when
-// papatui.com wasn't reachable to check; this replaces it with the site's
-// actual documented colors. Dark mode only — this app has no light mode.
+// MoreMe theme tokens. Warm espresso/olive/bronze base (Papatui — The
+// Rock's brand, warm Polynesian earth) with the DP (Dude Perfect) mint —
+// pulled verbatim from the real More_Me site's own css/style.css — kept as
+// the accent family. The brown base reads as the app's own identity; the
+// site's mint (#3EDBB5 family) is the one piece of "DP basics" that earned
+// its keep once seen rendered, so it stays even though the rest of DP's
+// black/white base didn't. Dark mode only — this app has no light mode.
 // No theme switching, no decorative hero-image backdrop (it read as clutter
 // behind the Today text) — just this one look, everywhere.
 
 export type Palette = {
   bg: string; elev: string; sunk: string;
   ink: string; inkSoft: string; inkTiny: string; line: string;
-  mint: string; mintDeep: string; mintHi: string;  // DP Mint family
+  mint: string; mintDeep: string; mintHi: string;  // DP Mint family (accent)
   warn: string; cool: string;
 };
 
-// bg/elev/sunk are darkened and de-blued from the site's literal
-// html[data-theme="dark"] values (#0F1318 etc, which have a visible navy
-// cast) per direct feedback that it read as "light blue, not black" —
-// mint/mintDeep/mintHi/warn/cool are still the exact site values.
-const DP_PALETTE: Palette = {
-  bg: "#0A0A0C", elev: "#151719", sunk: "#050506",
-  ink: "#FFFFFF", inkSoft: "#A8B3C0", inkTiny: "#6A7280", line: "#262A30",
+// Espresso/olive/bronze base — same family MoreMe used before the DP
+// detour, pushed to real saturation rather than dusty/desaturated tones.
+// mint/mintDeep/mintHi are the real DP site values, kept as-is; warn/cool
+// are the DP site's rust-red/sky-blue rather than reverting to the old
+// olive-teal ones, since the mint pairing was tuned against them.
+const PAPATUI_PALETTE: Palette = {
+  bg: "#1B1712", elev: "#26201A", sunk: "#100D0A",
+  ink: "#F3EBDB", inkSoft: "#C9B99E", inkTiny: "#8F7B5C", line: "#3D3323",
   mint: "#3EDBB5", mintDeep: "#00A076", mintHi: "#7FEBD0",
   warn: "#FF5C5F", cool: "#33B5FF",
 };
 
 // The token object every component imports.
-export const T: Palette = { ...DP_PALETTE };
+export const T: Palette = { ...PAPATUI_PALETTE };
 
 // Push the palette onto the desktop chrome's CSS vars so the topbar / login
 // shell match too. The token names (--red etc.) are legacy aliases; only
