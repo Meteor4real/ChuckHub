@@ -8,42 +8,42 @@
 
 html,
 body {
-  background: #1B1712;
-  color: #F3EBDB;
+  background: #0F1318;
+  color: #FFFFFF;
   font-family: Inter, system-ui, -apple-system, sans-serif;
   margin: 0;
 }
 
-/* Faint warm grid — echoes the desktop app's espresso surface instead of a
-   neon CRT scanline look. */
+/* Faint mint grid — the real DP (Dude Perfect) glow, not an approximation
+   of it. */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background-image: linear-gradient(rgba(76, 166, 114, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(76, 166, 114, 0.06) 1px, transparent 1px);
+  background-image: linear-gradient(rgba(62, 219, 181, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(62, 219, 181, 0.06) 1px, transparent 1px);
   background-size: 48px 48px;
   z-index: 0;
   mask-image: radial-gradient(circle at 50% 20%, black 0%, transparent 80%);
 }
 
 @layer components {
-  /* The signature glowing olive strip */
+  /* The signature glowing DP mint strip */
   .chuck-strip {
     position: relative;
     height: 2px;
     background: linear-gradient(
       90deg,
       transparent 0%,
-      #4CA672 15%,
-      #7FE0AA 40%,
-      #4CA672 60%,
-      #7FE0AA 85%,
+      #3EDBB5 15%,
+      #7FEBD0 40%,
+      #3EDBB5 60%,
+      #7FEBD0 85%,
       transparent 100%
     );
-    box-shadow: 0 0 12px rgba(76, 166, 114, 0.9), 0 0 24px rgba(127, 224, 170, 0.55),
-      0 0 40px rgba(76, 166, 114, 0.35);
+    box-shadow: 0 0 12px rgba(62, 219, 181, 0.9), 0 0 24px rgba(127, 235, 208, 0.55),
+      0 0 40px rgba(62, 219, 181, 0.35);
   }
 
   .chuck-strip-thin {
@@ -51,11 +51,11 @@ body::before {
     background: linear-gradient(
       90deg,
       transparent,
-      rgba(76, 166, 114, 0.7),
-      rgba(127, 224, 170, 0.7),
+      rgba(62, 219, 181, 0.7),
+      rgba(127, 235, 208, 0.7),
       transparent
     );
-    box-shadow: 0 0 8px rgba(76, 166, 114, 0.6);
+    box-shadow: 0 0 8px rgba(62, 219, 181, 0.6);
   }
 
   .chuck-panel {
@@ -65,9 +65,9 @@ body::before {
 
   .chuck-panel-hot {
     @apply chuck-panel;
-    border-color: rgba(76, 166, 114, 0.35);
+    border-color: rgba(62, 219, 181, 0.35);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02),
-      0 0 24px rgba(76, 166, 114, 0.18);
+      0 0 24px rgba(62, 219, 181, 0.18);
   }
 
   .chuck-chip {
@@ -76,28 +76,28 @@ body::before {
 
   .chuck-chip-live {
     @apply chuck-chip;
-    color: #7FE0AA;
-    border-color: rgba(76, 166, 114, 0.45);
-    text-shadow: 0 0 8px rgba(76, 166, 114, 0.6);
+    color: #7FEBD0;
+    border-color: rgba(62, 219, 181, 0.45);
+    text-shadow: 0 0 8px rgba(62, 219, 181, 0.6);
   }
 
   .chuck-btn {
     @apply inline-flex items-center gap-2 rounded-sm border border-chuck-line bg-black/50 px-3 py-1.5 font-mono text-xs uppercase tracking-wider text-chuck-ink transition;
   }
   .chuck-btn:hover {
-    border-color: rgba(76, 166, 114, 0.6);
+    border-color: rgba(62, 219, 181, 0.6);
     color: #fff;
-    box-shadow: 0 0 16px rgba(76, 166, 114, 0.4);
+    box-shadow: 0 0 16px rgba(62, 219, 181, 0.4);
   }
 
   .chuck-title {
     @apply font-mono uppercase tracking-[0.2em] text-chuck-ink;
-    text-shadow: 0 0 12px rgba(76, 166, 114, 0.4);
+    text-shadow: 0 0 12px rgba(62, 219, 181, 0.4);
   }
 
   .chuck-glow-text {
-    color: #7FE0AA;
-    text-shadow: 0 0 6px rgba(76, 166, 114, 0.9), 0 0 18px rgba(127, 224, 170, 0.5);
+    color: #7FEBD0;
+    text-shadow: 0 0 6px rgba(62, 219, 181, 0.9), 0 0 18px rgba(127, 235, 208, 0.5);
   }
 }
 
@@ -107,9 +107,9 @@ body::before {
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #1B1712;
+  background: #0F1318;
 }
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #4CA672, #7FE0AA);
+  background: linear-gradient(180deg, #3EDBB5, #7FEBD0);
   border-radius: 4px;
 }

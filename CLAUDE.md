@@ -16,9 +16,10 @@ Monorepo (npm workspaces):
   (NT5, bonus), and **HALOS** (the S.P.A.C.E. collaboration console the owner
   uses with a collaborator — removed once by mistake, restored, KEEP IT).
   No browser, no terminal, no AI crew, no control panel.
-  **Default theme is Papatui** (espresso/sand/teal) — T, currentThemeName
-  fallback, boot backgroundColor, and the app icon (MoreMe mark: sun + peaks
-  + barbell on the Papatui tile in build/icon.svg + src/assets/logo.png)
+  **Default theme is DP** (Dude Perfect — mint, black, white), pulled
+  verbatim from More_Me's own css/style.css dark-mode block, not a guess —
+  T, boot backgroundColor, and the app icon (MoreMe mark: sun + peaks +
+  barbell on the DP black tile in build/icon.svg + src/assets/logo.png)
   all agree on it. No NCH-derived art anywhere.
 - `apps/web` — public download page (Vercel). Static.
 - `apps/control-panel` — legacy Next.js dashboard, preserved but unused by the
@@ -79,13 +80,13 @@ Data model (`moreme/types.ts`, `moreme/store.ts`):
   is a standing expectation, logged passively → feeds Quiet-streak
   achievements; it is NOT a checkable block).
 
-UI (`moreme/ui.tsx`): HALOS-style grouped SIDEBAR nav (not a tab row) —
-DAY (Overview, Calendar), SCHOOL (Get Ahead), BUILD (Projects|Plans merged,
-Companies), SELF (Screens, Progress = Achievements|Levels|Insights merged
-via SegmentHub), YOURS (dynamic tabs), footer (level bar, streak,
-Customize). Weekly Review lives inline on Overview, not a header button/
-modal. Old tab ids stay valid as segments so hiddenTabs/tabLabels/widgets
-keep working. Theme tokens in `moreme/styles.ts` (single fixed Papatui
+UI (`moreme/ui.tsx`): a flat SIDEBAR nav, no category headers ("tabs are
+tabs") — Overview, Calendar, Get Ahead, Projects (Plans merged in),
+Companies, Screens, Progress (Achievements|Levels|Insights merged via
+SegmentHub), then dynamic tabs, footer (level bar, streak, Customize).
+Weekly Review lives inline on Overview, not a header button/modal. Old tab
+ids stay valid as segments so hiddenTabs/tabLabels/widgets keep working.
+Theme tokens in `moreme/styles.ts` (single fixed DP — mint/black/white —
 palette, no switcher).
 
 REMOVED for good: modes (semester/vacation/exam/travel), strict time-blocked

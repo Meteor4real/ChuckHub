@@ -1,37 +1,33 @@
-// MoreMe theme tokens. One fixed palette — Papatui: The Rock's brand, warm
-// Polynesian earth. Papatui has never published an official hex/design-
-// system guide (confirmed — papatui.com itself isn't reachable from this
-// build environment's network, so the site's own CSS can't be pulled
-// directly either), so this is a judgment call, not an extraction. It's
-// built from the one consistent signal across independent coverage of the
-// actual packaging (Global Cosmetic Industry, retail listings, press):
-// "earthy... olive, tan, and brown... minimalist, rustic, masculine."
-// Earlier passes leaned almost entirely on a single teal/mint accent —
-// this version pulls the olive and bronze/copper tones the real packaging
-// is described as actually having, instead of one narrow accent family.
+// MoreMe theme tokens. One fixed palette — DP (Dude Perfect): mint, black,
+// white. Pulled verbatim from the real More_Me site's own css/style.css
+// (`html[data-theme="dark"]` block, the DP Mint / Black / White palette it
+// names itself) — not a guess or an interpretation this time. The earlier
+// "Papatui" palette (espresso/olive/bronze) was a judgment call made when
+// papatui.com wasn't reachable to check; this replaces it with the site's
+// actual documented colors. Dark mode only — this app has no light mode.
 // No theme switching, no decorative hero-image backdrop (it read as clutter
 // behind the Today text) — just this one look, everywhere.
 
 export type Palette = {
   bg: string; elev: string; sunk: string;
   ink: string; inkSoft: string; inkTiny: string; line: string;
-  mint: string; mintDeep: string; mintHi: string;  // primary accent family (olive-teal)
-  warn: string; cool: string;                       // rust-clay, bronze/copper
+  mint: string; mintDeep: string; mintHi: string;  // DP Mint family
+  warn: string; cool: string;
 };
 
-// Same espresso/olive/bronze family as before, but the accents are pushed
-// to real saturation instead of dusty/desaturated tones — a dark background
-// alone doesn't read as "vibrant"; the accent colors have to actually carry
-// it, and the previous values were too close to gray to do that.
-const PAPATUI_PALETTE: Palette = {
-  bg: "#1B1712", elev: "#26201A", sunk: "#100D0A",
-  ink: "#F3EBDB", inkSoft: "#C9B99E", inkTiny: "#8F7B5C", line: "#3D3323",
-  mint: "#4CA672", mintDeep: "#2F7350", mintHi: "#7FE0AA",
-  warn: "#E0602E", cool: "#E0A93A",
+// bg/elev/sunk are darkened and de-blued from the site's literal
+// html[data-theme="dark"] values (#0F1318 etc, which have a visible navy
+// cast) per direct feedback that it read as "light blue, not black" —
+// mint/mintDeep/mintHi/warn/cool are still the exact site values.
+const DP_PALETTE: Palette = {
+  bg: "#0A0A0C", elev: "#151719", sunk: "#050506",
+  ink: "#FFFFFF", inkSoft: "#A8B3C0", inkTiny: "#6A7280", line: "#262A30",
+  mint: "#3EDBB5", mintDeep: "#00A076", mintHi: "#7FEBD0",
+  warn: "#FF5C5F", cool: "#33B5FF",
 };
 
 // The token object every component imports.
-export const T: Palette = { ...PAPATUI_PALETTE };
+export const T: Palette = { ...DP_PALETTE };
 
 // Push the palette onto the desktop chrome's CSS vars so the topbar / login
 // shell match too. The token names (--red etc.) are legacy aliases; only
@@ -62,7 +58,7 @@ export function buildMMStyle(): string {
 .moreme-embed { background: ${T.bg}; color: ${T.ink}; font-family: "Inter", system-ui, sans-serif; }
 .moreme-embed .serif { font-family: "Cormorant Garamond", Georgia, serif; font-weight: 600; letter-spacing: .01em; }
 .moreme-embed .condensed { font-family: "Barlow Condensed", "Inter", sans-serif; letter-spacing: .04em; }
-.moreme-embed .mm-card { background: linear-gradient(165deg, ${T.elev}, ${T.sunk} 140%); border: 1px solid ${T.line}; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35); }
+.moreme-embed .mm-card { background: linear-gradient(165deg, ${T.elev}, ${T.sunk} 140%); border: 1px solid ${T.mint}2a; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35); }
 .moreme-embed .mm-card-mint { background: linear-gradient(165deg, ${T.elev}, ${T.sunk} 140%); border: 1px solid ${T.mint}77; border-radius: 14px; box-shadow: 0 0 28px ${T.mint}22 inset, 0 8px 24px rgba(0,0,0,.35); animation: mmGlow 6s ease-in-out infinite; }
 @keyframes mmGlow { 0%, 100% { box-shadow: 0 0 28px ${T.mint}22 inset, 0 8px 24px rgba(0,0,0,.35); } 50% { box-shadow: 0 0 36px ${T.mint}3a inset, 0 0 30px ${T.mint}33, 0 8px 24px rgba(0,0,0,.35); } }
 @keyframes mmToastIn { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }

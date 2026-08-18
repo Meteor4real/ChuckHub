@@ -1,24 +1,25 @@
 import type { Config } from "tailwindcss";
 
-// MoreMe download-page theme tokens — the real Papatui palette (matches
-// apps/desktop/src/moreme/styles.ts PAPATUI_PALETTE exactly, not a mint-CRT
-// approximation of it). Class names stay `chuck-*` for historical reasons —
-// they're just CSS aliases now; only the *values* are MoreMe.
+// MoreMe download-page theme tokens — the real DP (Dude Perfect) palette,
+// pulled verbatim from More_Me's own css/style.css dark-mode block (matches
+// apps/desktop/src/moreme/styles.ts DP_PALETTE exactly). Class names stay
+// `chuck-*` for historical reasons — they're just CSS aliases now; only the
+// *values* are MoreMe.
 const config: Config = {
   content: ["./app/**/*.{ts,tsx,js,jsx,mdx}"],
   theme: {
     extend: {
       colors: {
         chuck: {
-          bg: "#1B1712",
-          panel: "#26201A",
-          line: "#3D3323",
-          ink: "#F3EBDB",
-          mute: "#C9B99E",
-          red: "#4CA672",         // primary accent (saturated olive-teal)
-          pink: "#7FE0AA",        // soft accent
-          orange: "#E0A93A",      // attention / bronze
-          glow: "#4CA672",
+          bg: "#0F1318",
+          panel: "#1A2028",
+          line: "#2A3038",
+          ink: "#FFFFFF",
+          mute: "#A8B3C0",
+          red: "#3EDBB5",         // primary accent (DP Mint)
+          pink: "#7FEBD0",        // soft accent
+          orange: "#33B5FF",      // secondary / cool accent
+          glow: "#3EDBB5",
         },
       },
       fontFamily: {
@@ -26,8 +27,8 @@ const config: Config = {
         display: ["Inter", "system-ui", "sans-serif"],
       },
       boxShadow: {
-        glow: "0 0 24px 0 rgba(76, 166, 114, 0.45), 0 0 4px 0 rgba(127, 224, 170, 0.4)",
-        glowSoft: "0 0 18px 0 rgba(76, 166, 114, 0.30)",
+        glow: "0 0 24px 0 rgba(62, 219, 181, 0.45), 0 0 4px 0 rgba(127, 235, 208, 0.4)",
+        glowSoft: "0 0 18px 0 rgba(62, 219, 181, 0.30)",
       },
       animation: {
         pulseGlow: "pulseGlow 2.6s ease-in-out infinite",
@@ -36,8 +37,8 @@ const config: Config = {
       },
       keyframes: {
         pulseGlow: {
-          "0%, 100%": { opacity: "1", filter: "drop-shadow(0 0 6px #4CA672)" },
-          "50%": { opacity: "0.6", filter: "drop-shadow(0 0 14px #7FE0AA)" },
+          "0%, 100%": { opacity: "1", filter: "drop-shadow(0 0 6px #3EDBB5)" },
+          "50%": { opacity: "0.6", filter: "drop-shadow(0 0 14px #7FEBD0)" },
         },
         scan: {
           "0%": { transform: "translateY(-100%)" },

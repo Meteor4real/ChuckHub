@@ -199,9 +199,9 @@ function SideNav({ s, tab, onTab }: { s: State; tab: Tab; onTab: (t: Tab) => voi
         style={{
           display: "flex", alignItems: "center", width: "100%",
           padding: "7px 10px", borderRadius: 8, border: "none", cursor: "pointer",
-          background: active ? T.mint + "1a" : "transparent",
-          borderLeft: `2px solid ${active ? T.mint : "transparent"}`,
-          color: active ? T.ink : T.inkSoft,
+          background: active ? T.mint + "2e" : "transparent",
+          borderLeft: `3px solid ${active ? T.mint : "transparent"}`,
+          color: active ? T.mintHi : T.inkSoft,
           font: "inherit", fontSize: 13, fontWeight: active ? 600 : 400, textAlign: "left",
           transition: "background .15s, color .15s",
         }}
@@ -1226,8 +1226,8 @@ function ProjectCard({ p }: { p: Project }) {
 // ── Achievements ──────────────────────────────────────────────────────────
 // Per-category accent so unlocked achievements read as five different
 // tracks, not one monochrome mint wall. Colors echo the calendar category
-// hues already used elsewhere in the app; "level" gets Papatui's cool
-// bronze since it's the rank ladder, not the daily-discipline loop.
+// hues already used elsewhere in the app; "level" gets DP's cool blue
+// since it's the rank ladder, not the daily-discipline loop.
 const ACH_CAT_COLOR: Record<string, string> = {
   discipline: T.mint,
   school: "#3EA0FF",

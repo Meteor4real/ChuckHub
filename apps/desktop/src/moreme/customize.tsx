@@ -1,5 +1,5 @@
 // MoreMe — Customize. Rename tabs, hide tabs, override the rank names, add
-// your own achievements (claim them manually for XP). One fixed Papatui
+// your own achievements (claim them manually for XP). One fixed DP mint
 // look — no theme picker.
 
 import { useState } from "react";

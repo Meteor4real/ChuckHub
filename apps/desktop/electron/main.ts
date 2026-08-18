@@ -47,7 +47,7 @@ function createWindow() {
     height: 900,
     minWidth: 1024,
     minHeight: 680,
-    backgroundColor: "#19140F", // Papatui espresso — matches the default theme so boot doesn't flash a foreign color
+    backgroundColor: "#0F1318", // DP black — matches the default theme so boot doesn't flash a foreign color
     show: false,
     autoHideMenuBar: true,
     useContentSize: true,
