@@ -15,10 +15,10 @@ const config: Config = {
           line: "#3D3323",
           ink: "#F3EBDB",
           mute: "#C9B99E",
-          red: "#5C7A4A",         // primary accent (olive-green)
-          pink: "#8AAE6E",        // soft accent
-          orange: "#B8862F",      // attention / bronze
-          glow: "#5C7A4A",
+          red: "#4CA672",         // primary accent (saturated olive-teal)
+          pink: "#7FE0AA",        // soft accent
+          orange: "#E0A93A",      // attention / bronze
+          glow: "#4CA672",
         },
       },
       fontFamily: {
@@ -26,8 +26,8 @@ const config: Config = {
         display: ["Inter", "system-ui", "sans-serif"],
       },
       boxShadow: {
-        glow: "0 0 24px 0 rgba(92, 122, 74, 0.45), 0 0 4px 0 rgba(138, 174, 110, 0.4)",
-        glowSoft: "0 0 18px 0 rgba(92, 122, 74, 0.30)",
+        glow: "0 0 24px 0 rgba(76, 166, 114, 0.45), 0 0 4px 0 rgba(127, 224, 170, 0.4)",
+        glowSoft: "0 0 18px 0 rgba(76, 166, 114, 0.30)",
       },
       animation: {
         pulseGlow: "pulseGlow 2.6s ease-in-out infinite",
@@ -36,8 +36,8 @@ const config: Config = {
       },
       keyframes: {
         pulseGlow: {
-          "0%, 100%": { opacity: "1", filter: "drop-shadow(0 0 6px #5C7A4A)" },
-          "50%": { opacity: "0.6", filter: "drop-shadow(0 0 14px #8AAE6E)" },
+          "0%, 100%": { opacity: "1", filter: "drop-shadow(0 0 6px #4CA672)" },
+          "50%": { opacity: "0.6", filter: "drop-shadow(0 0 14px #7FE0AA)" },
         },
         scan: {
           "0%": { transform: "translateY(-100%)" },

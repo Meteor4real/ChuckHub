@@ -19,11 +19,15 @@ export type Palette = {
   warn: string; cool: string;                       // rust-clay, bronze/copper
 };
 
+// Same espresso/olive/bronze family as before, but the accents are pushed
+// to real saturation instead of dusty/desaturated tones — a dark background
+// alone doesn't read as "vibrant"; the accent colors have to actually carry
+// it, and the previous values were too close to gray to do that.
 const PAPATUI_PALETTE: Palette = {
   bg: "#1B1712", elev: "#26201A", sunk: "#100D0A",
   ink: "#F3EBDB", inkSoft: "#C9B99E", inkTiny: "#8F7B5C", line: "#3D3323",
-  mint: "#5C7A4A", mintDeep: "#405838", mintHi: "#8AAE6E",
-  warn: "#B2532E", cool: "#B8862F",
+  mint: "#4CA672", mintDeep: "#2F7350", mintHi: "#7FE0AA",
+  warn: "#E0602E", cool: "#E0A93A",
 };
 
 // The token object every component imports.
@@ -59,8 +63,8 @@ export function buildMMStyle(): string {
 .moreme-embed .serif { font-family: "Cormorant Garamond", Georgia, serif; font-weight: 600; letter-spacing: .01em; }
 .moreme-embed .condensed { font-family: "Barlow Condensed", "Inter", sans-serif; letter-spacing: .04em; }
 .moreme-embed .mm-card { background: linear-gradient(165deg, ${T.elev}, ${T.sunk} 140%); border: 1px solid ${T.line}; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35); }
-.moreme-embed .mm-card-mint { background: ${T.elev}; border: 1px solid ${T.mint}55; border-radius: 14px; box-shadow: 0 0 24px ${T.mint}11 inset, 0 8px 24px rgba(0,0,0,.35); animation: mmGlow 6s ease-in-out infinite; }
-@keyframes mmGlow { 0%, 100% { box-shadow: 0 0 24px ${T.mint}11 inset, 0 8px 24px rgba(0,0,0,.35); } 50% { box-shadow: 0 0 30px ${T.mint}22 inset, 0 0 30px ${T.mint}22, 0 8px 24px rgba(0,0,0,.35); } }
+.moreme-embed .mm-card-mint { background: linear-gradient(165deg, ${T.elev}, ${T.sunk} 140%); border: 1px solid ${T.mint}77; border-radius: 14px; box-shadow: 0 0 28px ${T.mint}22 inset, 0 8px 24px rgba(0,0,0,.35); animation: mmGlow 6s ease-in-out infinite; }
+@keyframes mmGlow { 0%, 100% { box-shadow: 0 0 28px ${T.mint}22 inset, 0 8px 24px rgba(0,0,0,.35); } 50% { box-shadow: 0 0 36px ${T.mint}3a inset, 0 0 30px ${T.mint}33, 0 8px 24px rgba(0,0,0,.35); } }
 @keyframes mmToastIn { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 .moreme-embed .mm-toast-in { animation: mmToastIn .25s ease-out; }
 /* The HALOS feel layer: controls physically respond to being pressed, and

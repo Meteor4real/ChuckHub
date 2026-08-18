@@ -10,14 +10,14 @@ export function Logo({ size = 104 }: { size?: number }) {
       viewBox="0 0 192 192"
       role="img"
       aria-label="MoreMe"
-      style={{ display: "block", filter: "drop-shadow(0 0 18px rgba(92,122,74,0.45))" }}
+      style={{ display: "block", filter: "drop-shadow(0 0 18px rgba(76,166,114,0.45))" }}
     >
       <rect width="192" height="192" rx="36" fill="#1B1712" />
-      <circle cx="96" cy="46" r="12" fill="#B8862F" />
+      <circle cx="96" cy="46" r="12" fill="#E0A93A" />
       <path d="M18 156 L60 72 L96 126 L132 72 L174 156" fill="none" stroke="#F3EBDB" strokeWidth={12} strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M66 174 L126 174" fill="none" stroke="#5C7A4A" strokeWidth={9} strokeLinecap="round" />
-      <circle cx="60" cy="174" r="9" fill="#5C7A4A" />
-      <circle cx="132" cy="174" r="9" fill="#5C7A4A" />
+      <path d="M66 174 L126 174" fill="none" stroke="#4CA672" strokeWidth={9} strokeLinecap="round" />
+      <circle cx="60" cy="174" r="9" fill="#4CA672" />
+      <circle cx="132" cy="174" r="9" fill="#4CA672" />
     </svg>
   );
 }
