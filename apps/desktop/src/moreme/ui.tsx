@@ -527,9 +527,7 @@ function TodayView({ s, onEdit }: { s: State; onEdit: (e: CalEvent) => void }) {
           )}
 
           <Section title={`Routine · ${routines.filter((e) => isDone(e, date, s)).length}/${routines.length}`}>
-            {routines.length === 0
-              ? <Empty>No routines yet — apply a routine template from the Calendar's day-type banner, or build your own in Projects.</Empty>
-              : routines.map((e) => <EventRow key={e.id} e={e} date={date} s={s} onEdit={onEdit} />)}
+            <RoutineSectionBody s={s} date={date} routines={routines} onEdit={onEdit} />
           </Section>
 
           <Section title="Scheduled">
@@ -611,11 +609,11 @@ function EmpirePulseCard({ s }: { s: State }) {
   const live = s.ventures.filter((v) => v.status === "live" || v.status === "scaling");
   const nextActions = s.ventures.filter((v) => v.nextAction?.trim()).slice(0, 2);
   return (
-    <div className="mm-card" style={{ padding: 14 }}>
+    <div className="mm-card" style={{ padding: 14, borderLeft: `3px solid ${T.cool}` }}>
       <div style={{ fontSize: 11, letterSpacing: ".1em", color: T.inkTiny, marginBottom: 10 }}>Companies</div>
       <div style={{ display: "flex", gap: 18, marginBottom: nextActions.length ? 10 : 0 }}>
         <div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: T.mint, lineHeight: 1 }}>${Math.round(mrr).toLocaleString()}</div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: T.cool, lineHeight: 1 }}>${Math.round(mrr).toLocaleString()}</div>
           <div style={{ fontSize: 10, color: T.inkTiny, marginTop: 2 }}>MRR</div>
         </div>
         <div>
@@ -974,19 +972,31 @@ function dowOf(date: string) { return new Date(date + "T00:00:00").getDay(); }
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <div className="mm-field"><label>{label}</label>{children}</div>;
 }
-// ── Projects ────────────────────────────────────────────────────────────
+// ── Overview's Routine section — today's checklist, plus (collapsed once
+// something's applied) the template cards so applying/switching/removing
+// one never requires a trip to another tab.
+function RoutineSectionBody({ s, date, routines, onEdit }: { s: State; date: string; routines: CalEvent[]; onEdit: (e: CalEvent) => void }) {
+  const [manage, setManage] = useState(routines.length === 0);
+  if (routines.length === 0) return <RoutineTemplatesSection s={s} />;
+  return (
+    <div>
+      {routines.map((e) => <EventRow key={e.id} e={e} date={date} s={s} onEdit={onEdit} />)}
+      <button className="mm-btn" style={{ marginTop: 8 }} onClick={() => setManage((v) => !v)}>
+        {manage ? "Hide" : "Manage"} routine templates
+      </button>
+      {manage && <div style={{ marginTop: 10 }}><RoutineTemplatesSection s={s} /></div>}
+    </div>
+  );
+}
+
 // ── Routine templates — the real weekday/weekend/beach/travel schedule
-// content, ported off the original site. Pure reference here — pick a Day
-// type on the Calendar to actually put one on the schedule; this page just
-// shows what's in each one and whether it's currently live.
+// content, ported off the original site. Apply/remove them right here or
+// from Overview's Routine section.
 const ROUTINE_TEMPLATE_ORDER: RoutineTemplateId[] = ["weekday", "weekend", "beach", "anywhere"];
 function RoutineTemplatesSection({ s }: { s: State }) {
   return (
     <div style={{ marginBottom: 4 }}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 4 }}>
-        <div className="serif" style={{ fontSize: 20 }}>Routines</div>
-        <div style={{ fontSize: 11, color: T.inkTiny }}>Reference — set a day's type on the Calendar to apply one</div>
-      </div>
+      <div style={{ fontSize: 11, color: T.inkTiny, marginBottom: 8 }}>Nothing applied yet — pick one and it's on the calendar for good.</div>
       <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", alignItems: "start", marginBottom: 4 }}>
         {ROUTINE_TEMPLATE_ORDER.map((id) => <RoutineTemplateCard key={id} id={id} s={s} />)}
       </div>
@@ -1029,8 +1039,6 @@ function ProjectsView({ s }: { s: State }) {
   return (
     <div style={{ display: "grid", gap: 16, gridTemplateColumns: "minmax(0,1fr) 300px", alignItems: "start" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <RoutineTemplatesSection s={s} />
-
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div className="serif" style={{ fontSize: 20 }}>Projects &amp; Goals</div>
           <button className="mm-btn mm-btn-primary" onClick={() => upsertProject({ ...blankProject(), name: "New project" })}>+ Project</button>

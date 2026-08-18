@@ -19,11 +19,11 @@ export function FitnessCardToday({ s, onOpenLog }: { s: State; onOpenLog: () => 
   const sessions = fitnessSessionsOn(date, s);
   const minutes = fitnessMinutesOn(date, s);
   return (
-    <div className="mm-card" style={{ padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+    <div className="mm-card" style={{ padding: 14, display: "flex", flexDirection: "column", gap: 10, borderLeft: `3px solid ${T.warn}` }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
         <div style={{ fontSize: 11, letterSpacing: ".1em", color: T.inkTiny }}>Training today</div>
         <div style={{ flex: 1 }} />
-        {sessions.length > 0 && <span className="mm-pill" style={{ background: "#4ADE8022", color: "#4ADE80" }}>{fmtMin(minutes)} logged</span>}
+        {sessions.length > 0 && <span className="mm-pill" style={{ background: T.warn + "22", color: T.warn }}>{fmtMin(minutes)} logged</span>}
       </div>
 
       {sessions.length === 0 ? (
@@ -32,7 +32,7 @@ export function FitnessCardToday({ s, onOpenLog }: { s: State; onOpenLog: () => 
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {sessions.map((x) => (
             <div key={x.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12 }}>
-              <span className="mm-dot" style={{ ["--c" as never]: "#4ADE80" }} />
+              <span className="mm-dot" style={{ ["--c" as never]: T.warn }} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <b>{x.what}</b> <span style={{ color: T.inkTiny, fontWeight: 400 }}>· {FITNESS_KIND_LABEL[x.kind]}</span>
                 {x.distanceMi ? <span style={{ color: T.inkTiny }}> · {x.distanceMi}mi</span> : null}

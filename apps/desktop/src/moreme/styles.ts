@@ -58,7 +58,7 @@ export function buildMMStyle(): string {
 .moreme-embed { background: ${T.bg}; color: ${T.ink}; font-family: "Inter", system-ui, sans-serif; }
 .moreme-embed .serif { font-family: "Cormorant Garamond", Georgia, serif; font-weight: 600; letter-spacing: .01em; }
 .moreme-embed .condensed { font-family: "Barlow Condensed", "Inter", sans-serif; letter-spacing: .04em; }
-.moreme-embed .mm-card { background: ${T.elev}; border: 1px solid ${T.line}; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35); }
+.moreme-embed .mm-card { background: linear-gradient(165deg, ${T.elev}, ${T.sunk} 140%); border: 1px solid ${T.line}; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35); }
 .moreme-embed .mm-card-mint { background: ${T.elev}; border: 1px solid ${T.mint}55; border-radius: 14px; box-shadow: 0 0 24px ${T.mint}11 inset, 0 8px 24px rgba(0,0,0,.35); animation: mmGlow 6s ease-in-out infinite; }
 @keyframes mmGlow { 0%, 100% { box-shadow: 0 0 24px ${T.mint}11 inset, 0 8px 24px rgba(0,0,0,.35); } 50% { box-shadow: 0 0 30px ${T.mint}22 inset, 0 0 30px ${T.mint}22, 0 8px 24px rgba(0,0,0,.35); } }
 @keyframes mmToastIn { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
