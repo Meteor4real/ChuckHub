@@ -10,9 +10,10 @@ export type TrackingCurrent = {
 export type TrackingReport = {
   sessions: { app: string; title: string; tab?: string; browser?: string; start: number; end: number; durationMs: number }[];
 };
-export type TrackingFailReason = "no-binary" | "timeout-or-denied" | "no-window";
+export type TrackingFailReason = "no-binary" | "timeout" | "denied" | "command-failed" | "no-window";
 export type TrackingDiagnostics = {
   lastFailReason: TrackingFailReason | null;
+  lastFailDetail?: string;
   lastSuccessAt: number | null;
   consecutiveFailures: number;
 };
@@ -38,7 +39,7 @@ export async function getTracking(): Promise<{ enabled: boolean; current: Tracki
   if (!h) return { enabled: false, current: null, ...NO_DIAGNOSTICS };
   const r = await h.get().catch(() => null);
   return r
-    ? { enabled: r.prefs.enabled, current: r.current, lastFailReason: r.lastFailReason, lastSuccessAt: r.lastSuccessAt, consecutiveFailures: r.consecutiveFailures }
+    ? { enabled: r.prefs.enabled, current: r.current, lastFailReason: r.lastFailReason, lastFailDetail: r.lastFailDetail, lastSuccessAt: r.lastSuccessAt, consecutiveFailures: r.consecutiveFailures }
     : { enabled: false, current: null, ...NO_DIAGNOSTICS };
 }
 export async function setTrackingEnabled(on: boolean): Promise<void> {

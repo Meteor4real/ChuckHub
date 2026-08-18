@@ -81,10 +81,10 @@ function checkXdotool() {
   exec("which xdotool", { timeout: 2000 }, (err) => { xdotoolMissing = !!err; });
 }
 
-export type QueryFailReason = "no-binary" | "timeout-or-denied" | "no-window";
+export type QueryFailReason = "no-binary" | "timeout" | "denied" | "command-failed" | "no-window";
 
 // Returns "<process/app name>|<window title>" or null + a reason on failure.
-function queryActiveWindow(): Promise<{ app: string; title: string } | { fail: QueryFailReason }> {
+function queryActiveWindow(): Promise<{ app: string; title: string } | { fail: QueryFailReason; detail?: string }> {
   return new Promise((resolve) => {
     const platform = process.platform;
     if (platform === "linux") checkXdotool();
@@ -127,8 +127,23 @@ function queryActiveWindow(): Promise<{ app: string; title: string } | { fail: Q
     // scanning of newly-spawned powershell.exe. Give it more room than the
     // other platforms' plain shell/osascript calls need.
     const timeoutMs = platform === "win32" ? 8000 : 3000;
-    exec(cmd, { timeout: timeoutMs, windowsHide: true }, (err, stdout) => {
-      if (err) { resolve({ fail: "timeout-or-denied" }); return; }
+    exec(cmd, { timeout: timeoutMs, windowsHide: true }, (err, stdout, stderr) => {
+      if (err) {
+        // exec sets `killed: true` ONLY when it killed the process itself
+        // because the `timeout` option elapsed — an unambiguous signal,
+        // not a guess. Anything else is a real command failure.
+        if (err.killed) { resolve({ fail: "timeout", detail: `no reply after ${timeoutMs / 1000}s` }); return; }
+        if ((err as NodeJS.ErrnoException).code === "ENOENT") { resolve({ fail: "no-binary" }); return; }
+        const errText = `${stderr || ""} ${err.message || ""}`.toLowerCase();
+        // macOS: AppleEvents/Automation permission denial has a specific,
+        // documented shape (osascript error -1743, or this exact phrase) —
+        // checked for real, not assumed.
+        if (platform === "darwin" && (errText.includes("not allowed") || errText.includes("not authorized") || errText.includes("-1743"))) {
+          resolve({ fail: "denied" }); return;
+        }
+        resolve({ fail: "command-failed", detail: (stderr || err.message || "").trim().slice(0, 200) });
+        return;
+      }
       const raw = (stdout || "").trim();
       const i = raw.indexOf("|");
       if (i < 0) { resolve({ fail: "no-window" }); return; }
@@ -145,6 +160,7 @@ let prefs: TrackingPrefs = readPrefs();
 let current: { app: string; title: string; tab?: string; browser?: string; start: number } | null = null;
 let lastTickFailures = 0;
 let lastFailReason: QueryFailReason | null = null;
+let lastFailDetail: string | undefined;
 let lastSuccessAt: number | null = null;
 
 function key(app: string, title: string) {
@@ -176,6 +192,7 @@ async function tick() {
   if ("fail" in w) {
     lastTickFailures++;
     lastFailReason = w.fail;
+    lastFailDetail = w.detail;
     // Five failures in a row probably means the OS query is just broken
     // on this machine. Flush the current session so we don't lie.
     if (lastTickFailures >= 5 && current) flushCurrent(Date.now());
@@ -184,6 +201,7 @@ async function tick() {
   }
   lastTickFailures = 0;
   lastFailReason = null;
+  lastFailDetail = undefined;
   lastSuccessAt = Date.now();
   const parsed = parseTitle(w.title);
   const k = key(w.app, w.title);
@@ -197,7 +215,7 @@ async function tick() {
 }
 
 function diagnostics() {
-  return { lastFailReason, lastSuccessAt, consecutiveFailures: lastTickFailures };
+  return { lastFailReason, lastFailDetail, lastSuccessAt, consecutiveFailures: lastTickFailures };
 }
 
 function broadcast() {

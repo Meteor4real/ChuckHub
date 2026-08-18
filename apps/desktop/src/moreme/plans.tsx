@@ -17,7 +17,7 @@ export function PlansView({ s }: { s: State }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
         <div>
           <div className="serif" style={{ fontSize: 22, lineHeight: 1 }}>Plans</div>
-          <div style={{ fontSize: 11, color: T.inkTiny, letterSpacing: ".08em", textTransform: "uppercase", marginTop: 4 }}>
+          <div style={{ fontSize: 11, color: T.inkTiny, letterSpacing: ".08em", marginTop: 4 }}>
             Ideas, drafts, and the things you haven't announced yet
           </div>
         </div>

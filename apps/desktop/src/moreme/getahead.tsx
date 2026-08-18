@@ -41,7 +41,7 @@ export function GetAheadView({ s, onEdit }: { s: State; onEdit: (e: CalEvent) =>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 14 }}>
         <div>
           <div className="serif" style={{ fontSize: 22, lineHeight: 1 }}>Get Ahead</div>
-          <div style={{ fontSize: 11, color: T.inkTiny, letterSpacing: ".08em", textTransform: "uppercase", marginTop: 4 }}>
+          <div style={{ fontSize: 11, color: T.inkTiny, letterSpacing: ".08em", marginTop: 4 }}>
             Finish next week's work before next week starts
           </div>
         </div>
@@ -54,7 +54,7 @@ export function GetAheadView({ s, onEdit }: { s: State; onEdit: (e: CalEvent) =>
 
       <div className="mm-card-mint" style={{ padding: 16, marginBottom: 16 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
-          <b style={{ fontSize: 13, letterSpacing: ".08em", textTransform: "uppercase", color: T.mint }}>Pre-done across all classes</b>
+          <b style={{ fontSize: 13, letterSpacing: ".08em", color: T.mint }}>Pre-done across all classes</b>
           <span style={{ fontSize: 12, color: T.inkSoft }}>{totals.done} / {totals.total} items</span>
         </div>
         <div className="mm-progress" style={{ height: 18 }}>

@@ -62,7 +62,7 @@ function BootSplash() {
       <div style={{ textAlign: "center", animation: "mmBootIn .5s ease-out" }}>
         <MoreMeMark size={64} />
         <div className="mm-h1 serif" style={{ fontSize: 30, color: T.ink, marginTop: 10, fontFamily: "Georgia, serif" }}>MoreMe</div>
-        <div style={{ fontSize: 10, letterSpacing: "0.3em", textTransform: "uppercase", color: T.inkTiny, marginTop: 6 }}>more you than yesterday</div>
+        <div style={{ fontSize: 10, letterSpacing: "0.3em", color: T.inkTiny, marginTop: 6 }}>more you than yesterday</div>
       </div>
       <style>{`@keyframes mmBootIn { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }`}</style>
     </div>

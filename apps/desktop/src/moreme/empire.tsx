@@ -25,7 +25,7 @@ export function EmpireView({ s }: { s: State }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
         <div>
           <div className="serif" style={{ fontSize: 22, lineHeight: 1 }}>Companies</div>
-          <div style={{ fontSize: 11, color: T.inkTiny, letterSpacing: ".08em", textTransform: "uppercase", marginTop: 4 }}>
+          <div style={{ fontSize: 11, color: T.inkTiny, letterSpacing: ".08em", marginTop: 4 }}>
             Everything you build and run
           </div>
         </div>
@@ -71,7 +71,7 @@ function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <div style={{ fontSize: 24, fontWeight: 800, color: T.mint, lineHeight: 1 }}>{value}</div>
-      <div style={{ fontSize: 10, color: T.inkTiny, letterSpacing: ".1em", textTransform: "uppercase", marginTop: 4 }}>{label}</div>
+      <div style={{ fontSize: 10, color: T.inkTiny, letterSpacing: ".1em", marginTop: 4 }}>{label}</div>
     </div>
   );
 }

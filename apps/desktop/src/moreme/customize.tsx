@@ -14,6 +14,7 @@ import {
   unclaimCustomAchievement, updateCustomAchievement, updateDynamicTab, levelInfo,
 } from "./store";
 import { WidgetEditor } from "./widgets";
+import { ParentGate } from "./parentGate";
 
 const TAB_DEFAULTS: { id: string; label: string }[] = [
   { id: "today", label: "Overview" },
@@ -33,9 +34,6 @@ export function CustomizeView({ s }: { s: State }) {
     <div style={{ maxWidth: 1400, margin: "0 auto" }}>
       <div style={{ marginBottom: 16 }}>
         <div className="serif" style={{ fontSize: 22, lineHeight: 1 }}>Customize</div>
-        <div style={{ fontSize: 11, color: T.inkTiny, letterSpacing: ".08em", textTransform: "uppercase", marginTop: 4 }}>
-          Make MoreMe yours
-        </div>
       </div>
       <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-start" }}>
         {/* Main column — the builder-heavy cards. */}
@@ -109,7 +107,7 @@ function Section({ title, sub, children, defaultOpen }: { title: string; sub?: s
         onClick={() => setOpen((o) => !o)}
         style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", background: "transparent", border: "none", cursor: "pointer", padding: 0, textAlign: "left" }}
       >
-        <span style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: T.inkTiny, flex: 1 }}>{title}</span>
+        <span style={{ fontSize: 11, letterSpacing: ".1em", color: T.inkTiny, flex: 1 }}>{title}</span>
         <span style={{ color: T.inkTiny, fontSize: 11 }}>{open ? "▲" : "▼"}</span>
       </button>
       {open && (
@@ -191,34 +189,43 @@ function RanksCard({ s }: { s: State }) {
 function CustomAchievementsCard({ s }: { s: State }) {
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
-  const [xp, setXp] = useState("100");
+  const [editingXp, setEditingXp] = useState(false);
   function add() {
     if (!title.trim()) return;
-    addCustomAchievement({ ...blankCustomAchievement(), title: title.trim(), desc: desc.trim(), xp: Math.max(0, parseInt(xp, 10) || 0) });
-    setTitle(""); setDesc(""); setXp("100");
+    // Starts at 0 XP — a new goal you just typed in isn't automatically
+    // worth anything. Giving it real XP needs the parent code, same as
+    // every other XP number in the app.
+    addCustomAchievement({ ...blankCustomAchievement(), title: title.trim(), desc: desc.trim(), xp: 0 });
+    setTitle(""); setDesc("");
   }
   return (
-    <Section title={`Your achievements · ${s.customization.customAchievements.length}`} sub="Set your own goals. Claim them when you've actually earned them — claim awards XP once and sticks.">
+    <Section title={`Your achievements · ${s.customization.customAchievements.length}`} sub="Set your own goals and claim them when you've actually earned them.">
       {s.customization.customAchievements.length === 0 && (
         <div style={{ fontSize: 12, color: T.inkTiny, fontStyle: "italic" }}>None yet. Define your own below.</div>
       )}
-      {s.customization.customAchievements.map((a) => <CustomAchievementRow key={a.id} a={a} />)}
+      {s.customization.customAchievements.map((a) => <CustomAchievementRow key={a.id} a={a} editableXp={editingXp} />)}
       <div style={{ marginTop: 6, padding: 10, background: T.sunk, borderRadius: 10, border: `1px dashed ${T.mint}55`, display: "flex", flexDirection: "column", gap: 6 }}>
-        <div style={{ fontSize: 11, color: T.mint, letterSpacing: ".06em", textTransform: "uppercase" }}>Add a goal</div>
+        <div style={{ fontSize: 11, color: T.mint, letterSpacing: ".06em" }}>Add a goal</div>
         <input value={title} placeholder="Title — e.g. 'Run a 7-min mile'" onChange={(e) => setTitle(e.target.value)} />
         <input value={desc} placeholder="Description (optional)" onChange={(e) => setDesc(e.target.value)} />
-        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          <label style={{ fontSize: 11, color: T.inkTiny }}>XP reward</label>
-          <input type="number" min={0} value={xp} onChange={(e) => setXp(e.target.value)} style={{ width: 90 }} />
-          <div style={{ flex: 1 }} />
-          <button className="mm-btn mm-btn-primary" onClick={add}>+ Add</button>
-        </div>
+        <button className="mm-btn mm-btn-primary" onClick={add} style={{ alignSelf: "flex-start" }}>+ Add goal</button>
+      </div>
+      <div style={{ marginTop: 6 }}>
+        {editingXp ? (
+          <ParentGate s={s}>
+            <div style={{ fontSize: 10, color: T.inkTiny, marginTop: 4 }}>
+              <button className="mm-btn" style={{ fontSize: 10, padding: "3px 8px" }} onClick={() => setEditingXp(false)}>Done setting XP</button>
+            </div>
+          </ParentGate>
+        ) : (
+          <button className="mm-btn" style={{ fontSize: 11 }} onClick={() => setEditingXp(true)}>Set XP for your goals (parent code)</button>
+        )}
       </div>
     </Section>
   );
 }
 
-function CustomAchievementRow({ a }: { a: CustomAchievement }) {
+function CustomAchievementRow({ a, editableXp }: { a: CustomAchievement; editableXp: boolean }) {
   return (
     <div className={"mm-ach" + (a.claimedAt ? " unlocked" : "")} style={{ alignItems: "center" }}>
       <div className="mm-medal">{a.claimedAt ? "★" : "◇"}</div>
@@ -227,12 +234,14 @@ function CustomAchievementRow({ a }: { a: CustomAchievement }) {
         <input value={a.desc} placeholder="Description" onChange={(e) => updateCustomAchievement(a.id, { desc: e.target.value })} />
         <div style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 11, color: T.inkTiny }}>
           <label>XP</label>
-          <input type="number" min={0} value={a.xp} onChange={(e) => updateCustomAchievement(a.id, { xp: Math.max(0, parseInt(e.target.value, 10) || 0) })} style={{ width: 80 }} />
+          {editableXp
+            ? <input type="number" min={0} value={a.xp} onChange={(e) => updateCustomAchievement(a.id, { xp: Math.max(0, parseInt(e.target.value, 10) || 0) })} style={{ width: 80 }} />
+            : <span>{a.xp}</span>}
           {a.claimedAt && <span style={{ marginLeft: 8 }}>· claimed {new Date(a.claimedAt).toLocaleDateString()}</span>}
         </div>
       </div>
       {!a.claimedAt ? (
-        <button className="mm-btn mm-btn-primary" onClick={() => claimCustomAchievement(a.id)}>Claim · +{a.xp} XP</button>
+        <button className="mm-btn mm-btn-primary" onClick={() => claimCustomAchievement(a.id)}>Claim{a.xp > 0 ? ` · +${a.xp} XP` : ""}</button>
       ) : (
         <button className="mm-btn" onClick={() => unclaimCustomAchievement(a.id)} title="Undo claim (refund XP)">Unclaim</button>
       )}
@@ -264,7 +273,6 @@ function PagesAndWidgetsCard({ s }: { s: State }) {
   const dyn = s.customization.dynamicTabs;
   const [target, setTarget] = useState<string>(dyn[0]?.id ?? "today");
   const [newTabLabel, setNewTabLabel] = useState("");
-  const [newTabIcon, setNewTabIcon] = useState("");
 
   const tabOptions = [
     ...BUILTIN_TAB_OPTIONS.map((t) => ({ id: t.id, label: t.label, builtIn: true })),
@@ -275,9 +283,9 @@ function PagesAndWidgetsCard({ s }: { s: State }) {
   function addNewTab() {
     const label = newTabLabel.trim();
     if (!label) return;
-    const t = addDynamicTab(label, newTabIcon.trim() || undefined);
+    const t = addDynamicTab(label);
     setTarget(t.id);
-    setNewTabLabel(""); setNewTabIcon("");
+    setNewTabLabel("");
   }
 
   return (
@@ -287,19 +295,14 @@ function PagesAndWidgetsCard({ s }: { s: State }) {
           <label>New tab label</label>
           <input value={newTabLabel} placeholder="e.g. Workouts" onChange={(e) => setNewTabLabel(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") addNewTab(); }} />
         </div>
-        <div className="mm-field" style={{ width: 100 }}>
-          <label>Icon (optional)</label>
-          <input value={newTabIcon} placeholder="◆ ◈ ✦ ▲" onChange={(e) => setNewTabIcon(e.target.value)} />
-        </div>
         <button className="mm-btn mm-btn-primary" onClick={addNewTab}>+ Add tab</button>
       </div>
 
       {dyn.length > 0 && (
         <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
-          <div style={{ fontSize: 11, color: T.inkTiny, letterSpacing: ".06em", textTransform: "uppercase" }}>Your tabs</div>
+          <div style={{ fontSize: 11, color: T.inkTiny, letterSpacing: ".06em" }}>Your tabs</div>
           {dyn.map((d, i) => (
             <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <input value={d.icon ?? ""} placeholder="icon" onChange={(e) => updateDynamicTab(d.id, { icon: e.target.value })} style={{ width: 56 }} />
               <input value={d.label} placeholder="Label" onChange={(e) => updateDynamicTab(d.id, { label: e.target.value })} style={{ flex: 1 }} />
               <button className="mm-btn" style={{ padding: "3px 8px" }} disabled={i === 0} onClick={() => moveDynamicTab(d.id, -1)}>↑</button>
               <button className="mm-btn" style={{ padding: "3px 8px" }} disabled={i === dyn.length - 1} onClick={() => moveDynamicTab(d.id, 1)}>↓</button>

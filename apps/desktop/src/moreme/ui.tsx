@@ -59,15 +59,9 @@ const TAB_LABELS: Record<string, string> = {
   insights: "Insights", levels: "Levels", progress: "Progress", customize: "Customize",
 };
 
-// Sidebar organization — HALOS-style labeled groups instead of a flat
-// tab row. Merged surfaces keep their old ids alive as segments inside.
-// Goals merged into Projects (a Project can carry goal tags).
-const NAV_GROUPS: { label: string; items: { id: BuiltInTab; glyph: string }[] }[] = [
-  { label: "Day",    items: [{ id: "today", glyph: "◆" }, { id: "calendar", glyph: "▦" }] },
-  { label: "School", items: [{ id: "ahead", glyph: "»" }] },
-  { label: "Build",  items: [{ id: "projects", glyph: "◈" }, { id: "empire", glyph: "$" }] },
-  { label: "Self",   items: [{ id: "screens", glyph: "▣" }, { id: "progress", glyph: "▲" }] },
-];
+// Sidebar order — a flat list, no category grouping. Merged surfaces keep
+// their old ids alive as segments inside (Projects/Plans, Progress).
+const NAV_ITEMS: BuiltInTab[] = ["today", "calendar", "ahead", "projects", "empire", "screens", "progress"];
 
 function useStore(): State {
   const [s, setS] = useState<State>(loadState);
@@ -233,22 +227,8 @@ function SideNav({ s, tab, onTab }: { s: State; tab: Tab; onTab: (t: Tab) => voi
 
       {/* nav */}
       <div className="scrolly" style={{ flex: 1, minHeight: 0, padding: "10px 8px", display: "flex", flexDirection: "column", gap: 2 }}>
-        {NAV_GROUPS.map((g) => {
-          const items = g.items.filter((x) => !isTabHidden(x.id, s));
-          if (!items.length) return null;
-          return (
-            <div key={g.label} style={{ marginBottom: 8 }}>
-              <div className="condensed" style={{ fontSize: 10, color: T.inkTiny, letterSpacing: ".18em", padding: "2px 10px 4px" }}>{g.label}</div>
-              {items.map((x) => item(x.id, tabLabel(x.id, TAB_LABELS[x.id], s)))}
-            </div>
-          );
-        })}
-        {dyn.length > 0 && (
-          <div style={{ marginBottom: 8 }}>
-            <div className="condensed" style={{ fontSize: 10, color: T.inkTiny, letterSpacing: ".18em", padding: "2px 10px 4px" }}>Yours</div>
-            {dyn.map((d) => item(d.id, d.label))}
-          </div>
-        )}
+        {NAV_ITEMS.filter((id) => !isTabHidden(id, s)).map((id) => item(id, tabLabel(id, TAB_LABELS[id], s)))}
+        {dyn.map((d) => item(d.id, d.label))}
       </div>
 
       {/* footer: progress + controls */}
@@ -325,7 +305,7 @@ function DynamicTabView({ s, tabId }: { s: State; tabId: string }) {
   const list = s.customization.widgets[tabId] ?? [];
   return (
     <div style={{ maxWidth: 1400, margin: "0 auto", display: "flex", flexDirection: "column", gap: 14 }}>
-      <div className="serif" style={{ fontSize: 22 }}>{t?.icon ? `${t.icon} ` : ""}{t?.label ?? "Tab"}</div>
+      <div className="serif" style={{ fontSize: 22 }}>{t?.label ?? "Tab"}</div>
       {list.length === 0
         ? <div style={{ fontSize: 12, color: T.inkTiny, fontStyle: "italic", padding: 16 }}>No widgets here yet. Open <b>Customize → Pages &amp; widgets</b> to drop some in.</div>
         : list.map((w) => <WidgetView key={w.id} s={s} tabId={tabId} w={w} />)}
@@ -391,7 +371,7 @@ function ReminderToasts({ s, onOpen }: { s: State; onOpen: (e: CalEvent) => void
         const meta = CATEGORY_META[t.e.category];
         return (
           <div key={t.key} className="mm-card-mint" style={{ padding: "12px 14px", boxShadow: "0 12px 40px rgba(0,0,0,.5)" }}>
-            <div style={{ fontSize: 10, letterSpacing: ".1em", textTransform: "uppercase", color: T.mint, marginBottom: 4 }}>
+            <div style={{ fontSize: 10, letterSpacing: ".1em", color: T.mint, marginBottom: 4 }}>
               Reminder · {t.lead}m before
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -456,7 +436,7 @@ function RewardToasts({ s }: { s: State }) {
         <div key={t.key} className="mm-card-mint mm-toast-in" style={{ padding: "10px 20px", display: "flex", alignItems: "center", gap: 12, boxShadow: `0 12px 40px rgba(0,0,0,.5), 0 0 24px ${T.mint}33` }}>
           <span style={{ color: T.mint, fontSize: 18 }}>{t.kind === "level" ? "◆" : "✦"}</span>
           <div>
-            <div style={{ fontSize: 10, letterSpacing: ".14em", textTransform: "uppercase", color: T.mint }}>
+            <div style={{ fontSize: 10, letterSpacing: ".14em", color: T.mint }}>
               {t.kind === "level" ? "Level up" : "Achievement unlocked"}
             </div>
             <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
@@ -558,7 +538,7 @@ function TodayView({ s, onEdit }: { s: State; onEdit: (e: CalEvent) => void }) {
 
           <Section title="Distraction-free check">
             <div style={{ fontSize: 12, color: T.inkSoft, marginBottom: 8 }}>
-              Zero distractions is the standing expectation — not a box to check. If you slipped, log it honestly; a clean day counts toward Quiet streaks.
+              A clean day (nothing logged) counts toward Quiet streaks.
             </div>
             {dists.length > 0 && (
               <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8 }}>
@@ -590,7 +570,7 @@ function TodayView({ s, onEdit }: { s: State; onEdit: (e: CalEvent) => void }) {
 
           {upcoming.length > 0 && (
             <div className="mm-card-mint" style={{ padding: "10px 14px" }}>
-              <div style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: T.mint, marginBottom: 6 }}>
+              <div style={{ fontSize: 11, letterSpacing: ".1em", color: T.mint, marginBottom: 6 }}>
                 Upcoming reminders
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -632,7 +612,7 @@ function EmpirePulseCard({ s }: { s: State }) {
   const nextActions = s.ventures.filter((v) => v.nextAction?.trim()).slice(0, 2);
   return (
     <div className="mm-card" style={{ padding: 14 }}>
-      <div style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: T.inkTiny, marginBottom: 10 }}>Companies</div>
+      <div style={{ fontSize: 11, letterSpacing: ".1em", color: T.inkTiny, marginBottom: 10 }}>Companies</div>
       <div style={{ display: "flex", gap: 18, marginBottom: nextActions.length ? 10 : 0 }}>
         <div>
           <div style={{ fontSize: 20, fontWeight: 800, color: T.mint, lineHeight: 1 }}>${Math.round(mrr).toLocaleString()}</div>
@@ -700,7 +680,7 @@ function QuoteBanner({ quote }: { quote: { text: string; by: string } }) {
       <span className="condensed" style={{ fontSize: 10, color: T.mint, letterSpacing: ".2em", flex: "none", writingMode: "vertical-rl", transform: "rotate(180deg)" }}>Today</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className="serif" style={{ fontSize: 17, lineHeight: 1.35, color: T.ink }}>“{quote.text}”</div>
-        <div style={{ fontSize: 11, color: T.inkTiny, marginTop: 4, letterSpacing: ".06em", textTransform: "uppercase" }}>— {quote.by}</div>
+        <div style={{ fontSize: 11, color: T.inkTiny, marginTop: 4, letterSpacing: ".06em" }}>— {quote.by}</div>
       </div>
     </div>
   );
@@ -711,12 +691,11 @@ function CalendarView({ s, onEdit }: { s: State; onEdit: (e: CalEvent) => void }
   const [mode, setMode] = useState<CalMode>("month");
   const [cursor, setCursor] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; });
   const [sel, setSel] = useState(today());
+  const [manage, setManage] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
   const print = makePrintHandler(() => printRef.current);
 
   const grid = useMemo(() => buildMonth(cursor.y, cursor.m), [cursor]);
-  const selEvents = eventsOnDate(sel, s);
-  const selConflicts = conflictIds(sel, s);
 
   function shiftMonth(n: number) {
     setCursor((c) => { const d = new Date(c.y, c.m + n, 1); return { y: d.getFullYear(), m: d.getMonth() }; });
@@ -733,7 +712,7 @@ function CalendarView({ s, onEdit }: { s: State; onEdit: (e: CalEvent) => void }
   }
 
   return (
-    <div ref={printRef} style={{ display: "grid", gridTemplateColumns: mode === "month" ? "minmax(0,1fr) 320px" : "minmax(0,1fr)", gap: 16, alignItems: "start" }}>
+    <div ref={printRef} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr)", gap: 16, alignItems: "start" }}>
       <div className="mm-card" style={{ padding: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
           <button className="mm-btn" onClick={() => shift(-1)}>‹</button>
@@ -758,19 +737,27 @@ function CalendarView({ s, onEdit }: { s: State; onEdit: (e: CalEvent) => void }
           {grid.map((cell) => {
             const evs = eventsOnDate(cell.date, s);
             const isToday = cell.date === today();
+            const hasConflict = conflictIds(cell.date, s).size > 0;
             return (
               <div
                 key={cell.date}
                 className={"mm-day" + (cell.inMonth ? "" : " other") + (isToday ? " today" : "") + (cell.date === sel ? " selected" : "")}
-                onClick={() => setSel(cell.date)}
-                onDoubleClick={() => onEdit({ ...blankEvent(cell.date) })}
+                style={hasConflict ? { boxShadow: `0 0 0 1px ${T.warn}` } : undefined}
+                title="Click to add an item"
+                onClick={() => { setSel(cell.date); onEdit({ ...blankEvent(cell.date) }); }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span className="mm-daynum">{cell.day}</span>
                   {dayComplete(cell.date, s) && <span style={{ color: T.mint, fontSize: 11 }}>✓</span>}
                 </div>
                 {evs.slice(0, 3).map((e) => (
-                  <div key={e.id} className={"mm-chip" + (isDone(e, cell.date, s) ? " done" : "")} style={{ ["--c" as never]: CATEGORY_META[e.category].color }}>
+                  <div
+                    key={e.id}
+                    className={"mm-chip" + (isDone(e, cell.date, s) ? " done" : "")}
+                    style={{ ["--c" as never]: CATEGORY_META[e.category].color, cursor: "pointer" }}
+                    title="Click to edit"
+                    onClick={(ev) => { ev.stopPropagation(); onEdit(e); }}
+                  >
                     <span style={{ color: CATEGORY_META[e.category].color, flex: "none" }}>{CATEGORY_META[e.category].glyph}</span>
                     {e.visibility === "hidden" ? "• " : ""}{e.title || CATEGORY_META[e.category].label}
                   </div>
@@ -784,18 +771,17 @@ function CalendarView({ s, onEdit }: { s: State; onEdit: (e: CalEvent) => void }
         {mode === "day"  && <DayView  s={s} date={sel} onEdit={onEdit} />}
       </div>
 
-      {mode === "month" && (
-        <div className="mm-card" style={{ padding: 16, position: "sticky", top: 0 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <div className="serif" style={{ fontSize: 16 }}>{new Date(sel + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}</div>
-            <button className="mm-btn mm-btn-primary" style={{ padding: "5px 10px" }} onClick={() => onEdit({ ...blankEvent(sel) })}>+ Add</button>
+      <div>
+        <button className="mm-btn" onClick={() => setManage((v) => !v)}>
+          {manage ? "Hide" : ""} School schedule &amp; connected calendars {manage ? "" : "▾"}
+        </button>
+        {manage && (
+          <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 14 }}>
+            <SchoolModsCard s={s} />
+            <IntegrationsSection s={s} />
           </div>
-          {selConflicts.size > 0 && <div style={{ fontSize: 11, color: T.warn, marginBottom: 8 }}>Time conflict on this day.</div>}
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {selEvents.length === 0 ? <Empty>Nothing scheduled. Double-click any day to add.</Empty> : selEvents.map((e) => <EventRow key={e.id} e={e} date={sel} s={s} onEdit={onEdit} />)}
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
@@ -940,11 +926,8 @@ function EventEditor({ s, draft, onClose, onSaved }: { s: State; draft: CalEvent
 
           {e.category === "school" && (
             <div style={{ padding: 12, background: T.sunk, border: `1px dashed ${T.mint}55`, borderRadius: 10, display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: T.mint }}>
+              <div style={{ fontSize: 11, letterSpacing: ".1em", color: T.mint }}>
                 Honesty log
-              </div>
-              <div style={{ fontSize: 11, color: T.inkSoft, lineHeight: 1.5 }}>
-                Just for you. No judgment, no nags — just the mirror.
               </div>
               <div className="mm-row" style={{ alignItems: "flex-end", flexWrap: "wrap" }}>
                 <Field label="Prepared">
@@ -1046,8 +1029,6 @@ function ProjectsView({ s }: { s: State }) {
   return (
     <div style={{ display: "grid", gap: 16, gridTemplateColumns: "minmax(0,1fr) 300px", alignItems: "start" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <SchoolModsCard s={s} />
-        <IntegrationsSection s={s} />
         <RoutineTemplatesSection s={s} />
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -1264,7 +1245,7 @@ function AchievementsView({ s }: { s: State }) {
         const accent = ACH_CAT_COLOR[cat] ?? T.mint;
         return (
           <div key={cat} style={{ marginBottom: 18 }}>
-            <div style={{ fontSize: 11, letterSpacing: ".12em", textTransform: "uppercase", color: T.inkTiny, marginBottom: 8 }}>{cat}</div>
+            <div style={{ fontSize: 11, letterSpacing: ".12em", color: T.inkTiny, marginBottom: 8 }}>{cat}</div>
             <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
               {list.map((a) => {
                 const p = prog[a.id];
@@ -1287,7 +1268,7 @@ function AchievementsView({ s }: { s: State }) {
       })}
       {s.customization.customAchievements.length > 0 && (
         <div style={{ marginBottom: 18 }}>
-          <div style={{ fontSize: 11, letterSpacing: ".12em", textTransform: "uppercase", color: T.cool, marginBottom: 8 }}>yours</div>
+          <div style={{ fontSize: 11, letterSpacing: ".12em", color: T.cool, marginBottom: 8 }}>yours</div>
           <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
             {s.customization.customAchievements.map((a) => (
               <div key={a.id} className={"mm-ach" + (a.claimedAt ? " unlocked" : "")} style={{ ["--c" as never]: T.cool }}>

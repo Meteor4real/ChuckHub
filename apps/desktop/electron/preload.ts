@@ -25,7 +25,8 @@ const api = {
     get: (): Promise<{
       prefs: { enabled: boolean };
       current: { app: string; title: string; tab?: string; browser?: string; start: number } | null;
-      lastFailReason: "no-binary" | "timeout-or-denied" | "no-window" | null;
+      lastFailReason: "no-binary" | "timeout" | "denied" | "command-failed" | "no-window" | null;
+      lastFailDetail?: string;
       lastSuccessAt: number | null;
       consecutiveFailures: number;
     }> => ipcRenderer.invoke("tracking:get"),
@@ -37,14 +38,16 @@ const api = {
     onTick: (fn: (msg: {
       enabled: boolean;
       current: { app: string; title: string; tab?: string; browser?: string; start: number } | null;
-      lastFailReason: "no-binary" | "timeout-or-denied" | "no-window" | null;
+      lastFailReason: "no-binary" | "timeout" | "denied" | "command-failed" | "no-window" | null;
+      lastFailDetail?: string;
       lastSuccessAt: number | null;
       consecutiveFailures: number;
     }) => void): (() => void) => {
       const wrapped = (_e: unknown, msg: {
         enabled: boolean;
         current: { app: string; title: string; tab?: string; browser?: string; start: number } | null;
-        lastFailReason: "no-binary" | "timeout-or-denied" | "no-window" | null;
+        lastFailReason: "no-binary" | "timeout" | "denied" | "command-failed" | "no-window" | null;
+        lastFailDetail?: string;
         lastSuccessAt: number | null;
         consecutiveFailures: number;
       }) => fn(msg);

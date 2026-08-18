@@ -21,7 +21,7 @@ export function FitnessCardToday({ s, onOpenLog }: { s: State; onOpenLog: () => 
   return (
     <div className="mm-card" style={{ padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-        <div style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: T.inkTiny }}>Training today</div>
+        <div style={{ fontSize: 11, letterSpacing: ".1em", color: T.inkTiny }}>Training today</div>
         <div style={{ flex: 1 }} />
         {sessions.length > 0 && <span className="mm-pill" style={{ background: "#4ADE8022", color: "#4ADE80" }}>{fmtMin(minutes)} logged</span>}
       </div>

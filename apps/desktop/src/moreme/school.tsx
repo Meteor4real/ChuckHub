@@ -88,7 +88,7 @@ function DayEditor({ modId, weekday, label, blocks, s }: { modId: string; weekda
   const sorted = [...blocks].sort((a, b) => a.start.localeCompare(b.start));
   return (
     <div style={{ padding: 8, background: T.sunk, borderRadius: 8 }}>
-      <div style={{ fontSize: 10, letterSpacing: ".08em", textTransform: "uppercase", color: T.inkTiny, marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 10, letterSpacing: ".08em", color: T.inkTiny, marginBottom: 6 }}>{label}</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 6 }}>
         {sorted.map((b) => <BlockRow key={b.id} modId={modId} weekday={weekday} b={b} s={s} />)}
       </div>

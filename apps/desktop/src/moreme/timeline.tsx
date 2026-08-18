@@ -196,7 +196,7 @@ export function WeekView({ s, anchor, onEdit, onPickDate }: { s: State; anchor: 
             <div key={d} style={{ flex: 1, textAlign: "center", padding: "0 4px" }}>
               <button
                 onClick={() => onPickDate(d)}
-                style={{ background: "transparent", border: "none", color: isToday ? T.mint : T.ink, fontSize: 11, cursor: "pointer", letterSpacing: ".05em", textTransform: "uppercase" }}
+                style={{ background: "transparent", border: "none", color: isToday ? T.mint : T.ink, fontSize: 11, cursor: "pointer", letterSpacing: ".05em" }}
               >
                 {new Date(d + "T00:00:00").toLocaleDateString(undefined, { weekday: "short" })}
                 <br />

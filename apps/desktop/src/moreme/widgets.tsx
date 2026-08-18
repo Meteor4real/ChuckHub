@@ -30,7 +30,7 @@ export function WidgetView({ s, tabId, w }: { s: State; tabId: string; w: Widget
 function Frame({ title, children }: { title?: string; children: React.ReactNode }) {
   return (
     <div className="mm-card" style={{ padding: 14 }}>
-      {title && <div style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: T.inkTiny, marginBottom: 8 }}>{title}</div>}
+      {title && <div style={{ fontSize: 11, letterSpacing: ".1em", color: T.inkTiny, marginBottom: 8 }}>{title}</div>}
       {children}
     </div>
   );
@@ -110,7 +110,7 @@ function StatView({ w, s }: { w: Extract<Widget, { kind: "stat" }>; s: State }) 
   return (
     <Frame>
       <div style={{ fontSize: 32, fontWeight: 800, color: T.mint, lineHeight: 1 }}>{display}</div>
-      <div style={{ fontSize: 11, color: T.inkTiny, letterSpacing: ".08em", textTransform: "uppercase", marginTop: 6 }}>{w.title}</div>
+      <div style={{ fontSize: 11, color: T.inkTiny, letterSpacing: ".08em", marginTop: 6 }}>{w.title}</div>
     </Frame>
   );
 }
@@ -145,7 +145,7 @@ function QuoteView({ w, s }: { w: Extract<Widget, { kind: "quote" }>; s: State }
   return (
     <Frame title={w.title}>
       <div className="serif" style={{ fontSize: 17, lineHeight: 1.35, color: T.ink }}>“{q.text}”</div>
-      <div style={{ fontSize: 11, color: T.inkTiny, marginTop: 4, letterSpacing: ".06em", textTransform: "uppercase" }}>— {q.by}</div>
+      <div style={{ fontSize: 11, color: T.inkTiny, marginTop: 4, letterSpacing: ".06em" }}>— {q.by}</div>
     </Frame>
   );
 }

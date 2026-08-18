@@ -21,7 +21,7 @@ import {
   loadState, logScreenSession, logUrge, removeReplacement,
   removeScreenSession, removeUrge, screenMinutesOn, screenSessionsOn,
   setScreenSettings, startScreenSession, stopScreenSession, subscribeState,
-  today, updateReplacement, urgesOn,
+  today, urgesOn,
 } from "./store";
 import { ParentGate } from "./parentGate";
 
@@ -54,7 +54,7 @@ export function ScreenCardToday({ s, onOpenUrge, onOpenLog }: {
   return (
     <div className="mm-card" style={{ padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-        <div style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: T.inkTiny }}>Screens today</div>
+        <div style={{ fontSize: 11, letterSpacing: ".1em", color: T.inkTiny }}>Screens today</div>
         <div style={{ flex: 1 }} />
       </div>
 
@@ -126,9 +126,6 @@ export function ScreensView({ s }: { s: State }) {
       <div style={{ display: "flex", alignItems: "flex-end", gap: 12, marginBottom: 16 }}>
         <div style={{ flex: 1 }}>
           <div className="serif" style={{ fontSize: 22, lineHeight: 1 }}>Screens</div>
-          <div style={{ fontSize: 11, color: T.inkTiny, letterSpacing: ".08em", textTransform: "uppercase", marginTop: 4 }}>
-            honest mirror — no nags
-          </div>
         </div>
         <button className="mm-btn mm-no-print" onClick={print} title="Print last-30-days screen report">⎙ Print report</button>
       </div>
@@ -177,16 +174,11 @@ export function ScreensView({ s }: { s: State }) {
           </Section>
         </div>
 
-        {/* Side rail — settings, OS tracking, replacement drawer. */}
+        {/* Side rail — settings, OS tracking. */}
         <div style={{ flex: "1 1 340px", minWidth: 300, display: "flex", flexDirection: "column", gap: 16 }}>
           <ScreenSettingsCard s={s} />
           <TrackingCard />
-          <ReplacementDrawerCard s={s} />
         </div>
-      </div>
-
-      <div style={{ fontSize: 11, color: T.inkTiny, fontStyle: "italic", textAlign: "center", padding: "16px 0 20px" }}>
-        MoreMe doesn't lock anything. The lever is yours.
       </div>
 
       {logOpen && <LogSessionModal onClose={() => setLogOpen(false)} />}
@@ -218,7 +210,7 @@ function SessionRow({ x }: { x: ScreenSession }) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mm-card" style={{ padding: 16 }}>
-      <div style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: T.inkTiny, marginBottom: 10 }}>{title}</div>
+      <div style={{ fontSize: 11, letterSpacing: ".1em", color: T.inkTiny, marginBottom: 10 }}>{title}</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{children}</div>
     </div>
   );
@@ -278,12 +270,14 @@ export function LogSessionModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-// ── Urge modal — replacement drawer + honest resolution ───────────────────
+// ── Urge modal — pick a replacement, log an honest resolution ─────────────
 export function UrgeModal({ s, onClose }: { s: State; onClose: () => void }) {
   const [what, setWhat] = useState("");
   const [picked, setPicked] = useState<Replacement | null>(null);
   const [resolution, setResolution] = useState<UrgeResolution>("resisted");
   const [note, setNote] = useState("");
+  const [newRepLabel, setNewRepLabel] = useState("");
+  const [newRepMins, setNewRepMins] = useState("5");
   function save() {
     logUrge({
       what: what.trim() || undefined,
@@ -311,11 +305,19 @@ export function UrgeModal({ s, onClose }: { s: State; onClose: () => void }) {
           <Field label="Pick a replacement (optional)">
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {s.replacements.map((r) => (
-                <button key={r.id} className={"mm-tab" + (picked?.id === r.id ? " active" : "")} onClick={() => setPicked(picked?.id === r.id ? null : r)}>
-                  {r.label} · {r.minutes}m
-                </button>
+                <span key={r.id} style={{ display: "inline-flex", alignItems: "center", gap: 2 }}>
+                  <button className={"mm-tab" + (picked?.id === r.id ? " active" : "")} onClick={() => setPicked(picked?.id === r.id ? null : r)}>
+                    {r.label} · {r.minutes}m
+                  </button>
+                  <button className="mm-btn" style={{ padding: "1px 6px", fontSize: 11 }} title="Remove" onClick={() => { if (picked?.id === r.id) setPicked(null); removeReplacement(r.id); }}>×</button>
+                </span>
               ))}
-              {s.replacements.length === 0 && <Empty>Add a replacement in the Screens tab.</Empty>}
+              {s.replacements.length === 0 && <Empty>No alternatives added yet — add one below.</Empty>}
+            </div>
+            <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+              <input value={newRepLabel} placeholder="A 2-minute alternative…" onChange={(e) => setNewRepLabel(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && newRepLabel.trim()) { addReplacement(newRepLabel, +newRepMins || 2); setNewRepLabel(""); } }} style={{ flex: 1 }} />
+              <input type="number" min={1} max={120} value={newRepMins} onChange={(e) => setNewRepMins(e.target.value)} style={{ width: 60 }} />
+              <button className="mm-btn" onClick={() => { if (newRepLabel.trim()) { addReplacement(newRepLabel, +newRepMins || 2); setNewRepLabel(""); } }}>Add</button>
             </div>
           </Field>
 
@@ -346,7 +348,7 @@ export function UrgeModal({ s, onClose }: { s: State; onClose: () => void }) {
 // ── Settings card ─────────────────────────────────────────────────────────
 function ScreenSettingsCard({ s }: { s: State }) {
   return (
-    <Section title="Settings · earn the screens">
+    <Section title="Settings">
       <ParentGate s={s}>
         <div className="mm-row" style={{ alignItems: "flex-end", flexWrap: "wrap" }}>
           <Field label="Base daily budget (min)">
@@ -372,9 +374,15 @@ function ScreenSettingsCard({ s }: { s: State }) {
 }
 
 // ── OS-level tracking panel ────────────────────────────────────────────────
+// Each reason below is a real branch in electron/tracking.ts's error
+// handling (exec()'s killed flag for timeout, ENOENT for a missing binary,
+// a specific macOS AppleEvents error for denial) — not a single guess
+// covering multiple causes.
 const FAIL_REASON_TEXT: Record<string, string> = {
   "no-binary": "the OS tool this needs (xdotool) isn't installed on this machine",
-  "timeout-or-denied": "the OS query is timing out or was denied permission — on Windows this can be antivirus scanning; on macOS check System Settings → Privacy → Automation/Accessibility for MoreMe",
+  "timeout": "the OS query didn't respond in time — on Windows this is usually antivirus scanning the PowerShell process it spawns each check",
+  "denied": "macOS denied the permission this needs — check System Settings → Privacy & Security → Automation (and Accessibility) for MoreMe",
+  "command-failed": "the OS command itself errored",
   "no-window": "no foreground window came back from the OS (nothing focused, or a windowless desktop)",
 };
 
@@ -455,7 +463,7 @@ function TrackingCard() {
         <div style={{ marginTop: 8, padding: "8px 10px", borderRadius: 8, background: T.warn + "18", border: `1px solid ${T.warn}55`, fontSize: 11, color: T.inkSoft, lineHeight: 1.5 }}>
           Tracking is on but hasn't gotten a real reading in {diag.consecutiveFailures} tries
           {diag.lastSuccessAt ? ` (last one worked ${fmtMin(Math.round((now - diag.lastSuccessAt) / 60_000))} ago)` : " (never has, on this machine)"}.
-          {diag.lastFailReason ? ` Likely reason: ${FAIL_REASON_TEXT[diag.lastFailReason]}.` : ""}
+          {diag.lastFailReason ? ` Reason: ${FAIL_REASON_TEXT[diag.lastFailReason]}${diag.lastFailDetail ? ` (${diag.lastFailDetail})` : ""}.` : ""}
         </div>
       )}
       <div style={{ marginTop: 8 }}>
@@ -475,29 +483,6 @@ function TrackingCard() {
             ))}
           </div>
         )}
-      </div>
-    </Section>
-  );
-}
-
-function ReplacementDrawerCard({ s }: { s: State }) {
-  const [label, setLabel] = useState("");
-  const [mins, setMins] = useState("5");
-  return (
-    <Section title="Replacement drawer">
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {s.replacements.map((r) => (
-          <div key={r.id} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input value={r.label} onChange={(e) => updateReplacement(r.id, { label: e.target.value })} style={{ flex: 1 }} />
-            <input type="number" min={1} max={120} value={r.minutes} onChange={(e) => updateReplacement(r.id, { minutes: clamp(+e.target.value, 1, 120) })} style={{ width: 70 }} />
-            <button className="mm-btn mm-btn-danger" style={{ padding: "3px 8px" }} onClick={() => removeReplacement(r.id)}>×</button>
-          </div>
-        ))}
-      </div>
-      <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-        <input value={label} placeholder="A 2-minute alternative…" onChange={(e) => setLabel(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && label.trim()) { addReplacement(label, +mins || 2); setLabel(""); } }} style={{ flex: 1 }} />
-        <input type="number" min={1} max={120} value={mins} onChange={(e) => setMins(e.target.value)} style={{ width: 70 }} />
-        <button className="mm-btn" onClick={() => { if (label.trim()) { addReplacement(label, +mins || 2); setLabel(""); } }}>Add</button>
       </div>
     </Section>
   );

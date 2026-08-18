@@ -34,7 +34,7 @@ export function InsightsView({ s }: { s: State }) {
 
       {/* XP 30-day chart */}
       <div className="mm-card" style={{ padding: 16, marginBottom: 16 }}>
-        <div style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: T.inkTiny, marginBottom: 12 }}>XP earned · last 30 days</div>
+        <div style={{ fontSize: 11, letterSpacing: ".1em", color: T.inkTiny, marginBottom: 12 }}>XP earned · last 30 days</div>
         <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 90 }}>
           {ins.xpByDay.map((d) => (
             <div key={d.date} title={`${d.date}: ${d.xp} XP`} style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", height: "100%" }}>
@@ -51,7 +51,7 @@ export function InsightsView({ s }: { s: State }) {
       {/* SCREENS — data mirror */}
       <div className="mm-card" style={{ padding: 16, marginBottom: 16, border: hasScreens ? `1px solid ${T.mint}55` : undefined }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 12 }}>
-          <div style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: T.mint }}>Screens · the mirror</div>
+          <div style={{ fontSize: 11, letterSpacing: ".1em", color: T.mint }}>Screens · the mirror</div>
           <div style={{ fontSize: 11, color: T.inkTiny }}>{hasScreens ? `last 30 days · ${fmtMin(ins.screenLast30)} total` : "log a session to start the mirror"}</div>
         </div>
 
@@ -74,7 +74,7 @@ export function InsightsView({ s }: { s: State }) {
             {/* THE COMPARISON — routine days vs. no-routine days */}
             {hasRoutineDelta ? (
               <div style={{ padding: 14, background: T.sunk, border: `1px solid ${T.mint}66`, borderRadius: 10, marginBottom: 12 }}>
-                <div style={{ fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", color: T.mint, marginBottom: 8 }}>
+                <div style={{ fontSize: 11, letterSpacing: ".08em", color: T.mint, marginBottom: 8 }}>
                   Days you did the morning routine vs. days you didn't
                 </div>
                 <BarComparison
@@ -96,7 +96,7 @@ export function InsightsView({ s }: { s: State }) {
             )}
 
             {/* 30-day trend vs budget */}
-            <div style={{ fontSize: 10, letterSpacing: ".1em", textTransform: "uppercase", color: T.inkTiny, marginBottom: 6 }}>
+            <div style={{ fontSize: 10, letterSpacing: ".1em", color: T.inkTiny, marginBottom: 6 }}>
               Daily screens vs. earned budget · last 30 days
             </div>
             <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 84, marginBottom: 6 }}>
@@ -122,7 +122,7 @@ export function InsightsView({ s }: { s: State }) {
             {/* Worst hour + category breakdown */}
             <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr", marginTop: 14 }}>
               <div style={{ padding: 12, background: T.sunk, borderRadius: 8 }}>
-                <div style={{ fontSize: 10, letterSpacing: ".08em", textTransform: "uppercase", color: T.inkTiny, marginBottom: 6 }}>Worst hour</div>
+                <div style={{ fontSize: 10, letterSpacing: ".08em", color: T.inkTiny, marginBottom: 6 }}>Worst hour</div>
                 {ins.worstHour ? (
                   <>
                     <div style={{ fontSize: 22, fontWeight: 800, color: T.ink }}>{fmtHour(ins.worstHour.hour)}</div>
@@ -131,7 +131,7 @@ export function InsightsView({ s }: { s: State }) {
                 ) : <div style={{ fontSize: 12, color: T.inkTiny, fontStyle: "italic" }}>Not enough data yet.</div>}
               </div>
               <div style={{ padding: 12, background: T.sunk, borderRadius: 8 }}>
-                <div style={{ fontSize: 10, letterSpacing: ".08em", textTransform: "uppercase", color: T.inkTiny, marginBottom: 6 }}>Where the time goes</div>
+                <div style={{ fontSize: 10, letterSpacing: ".08em", color: T.inkTiny, marginBottom: 6 }}>Where the time goes</div>
                 {ins.byScreenCategory.length === 0 ? <div style={{ fontSize: 12, color: T.inkTiny, fontStyle: "italic" }}>—</div> : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     {ins.byScreenCategory.slice(0, 4).map((c) => {
@@ -156,7 +156,7 @@ export function InsightsView({ s }: { s: State }) {
 
       {/* Existing "where your effort goes" */}
       <div className="mm-card" style={{ padding: 16 }}>
-        <div style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: T.inkTiny, marginBottom: 12 }}>Where your effort goes</div>
+        <div style={{ fontSize: 11, letterSpacing: ".1em", color: T.inkTiny, marginBottom: 12 }}>Where your effort goes</div>
         {ins.byCategory.length === 0 ? (
           <div style={{ fontSize: 12, color: T.inkTiny, fontStyle: "italic" }}>Complete some items to see the breakdown.</div>
         ) : (
@@ -186,7 +186,7 @@ function Card({ label, value, sub, tone }: { label: string; value: string; sub?:
   return (
     <div className="mm-card" style={{ padding: 14 }}>
       <div style={{ fontSize: 26, fontWeight: 800, color, lineHeight: 1 }}>{value}</div>
-      <div style={{ fontSize: 10, color: T.inkTiny, letterSpacing: ".08em", textTransform: "uppercase", marginTop: 6 }}>{label}</div>
+      <div style={{ fontSize: 10, color: T.inkTiny, letterSpacing: ".08em", marginTop: 6 }}>{label}</div>
       {sub && <div style={{ fontSize: 10, color: T.inkTiny, marginTop: 2 }}>{sub}</div>}
     </div>
   );

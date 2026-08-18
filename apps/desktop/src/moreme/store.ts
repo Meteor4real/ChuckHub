@@ -1578,7 +1578,7 @@ export function resetAllRanks() {
 // built-in rule-based ones, these are MANUALLY claimed (you decide when
 // you've earned them). Claim once, claim sticks; XP counts once.
 export const blankCustomAchievement = (): CustomAchievement => ({
-  id: uid(), title: "", desc: "", xp: 100,
+  id: uid(), title: "", desc: "", xp: 0,
 });
 export function addCustomAchievement(a: CustomAchievement) {
   updateState((s) => ({
@@ -2076,6 +2076,21 @@ export const ACHIEVEMENTS: AchievementDef[] = [
       s.projects.length > 0,
     ].filter(Boolean).length;
     return [have, 4];
+  } },
+  { id: "roadmap-steps-10", title: "Building It For Real", desc: "Check off ten steps across your Companies' roadmaps.", category: "special", progress: (a, s) => {
+    const done = s.ventures.reduce((n, v) => n + v.roadmap.filter((r) => r.done).length, 0);
+    return [done, 10];
+  } },
+  { id: "feed-connected", title: "The Calendar Knows", desc: "Connect a real feed — Canvas, Veracross, or Google Calendar — and sync it at least once.", category: "special", progress: (a, s) => {
+    const synced = [s.integrations.canvas, s.integrations.veracross, s.integrations.google].filter((f) => !!f.lastSyncAt).length;
+    return [Math.min(synced, 1), 1];
+  } },
+  { id: "weekend-friends-5", title: "Actually Went And Had Fun", desc: "Complete the weekend Friends & gaming block five times.", category: "special", progress: (a, s) => {
+    const done = Object.entries(s.completions).filter(([key]) => {
+      const id = key.split("::")[0];
+      return id.startsWith("tmpl-weekend-sat-friends") || id.startsWith("tmpl-weekend-sun-friends");
+    }).length;
+    return [done, 5];
   } },
 
 ];
