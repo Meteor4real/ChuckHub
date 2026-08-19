@@ -90,27 +90,38 @@ function queryActiveWindow(): Promise<{ app: string; title: string } | { fail: Q
     if (platform === "linux") checkXdotool();
     let cmd = "";
     if (platform === "win32") {
-      // PowerShell oneliner using PInvoke to call GetForegroundWindow +
-      // GetWindowText + GetWindowThreadProcessId, then Get-Process for app name.
+      // PowerShell using PInvoke to call GetForegroundWindow + GetWindowText
+      // + GetWindowThreadProcessId, then Get-Process for app name.
       //
       // Bug history: this used `$pid` for the out-param, which is a reserved
-      // PowerShell auto-variable bound to the current process. Writing to it
-      // either silently no-oped or surfaced an error, so the whole query
-      // returned empty and tracking looked broken on Windows. Rename to
-      // $procId. Also pass the C# source to Add-Type as -TypeDefinition
-      // explicitly so PowerShell doesn't try to treat it as a path.
-      cmd =
-        'powershell -NoProfile -ExecutionPolicy Bypass -Command "' +
-        "$sig=@'\n" +
-        "using System;using System.Runtime.InteropServices;using System.Text;\n" +
-        "public class W{[DllImport(\\\"user32.dll\\\")]public static extern IntPtr GetForegroundWindow();" +
-        "[DllImport(\\\"user32.dll\\\")]public static extern int GetWindowText(IntPtr h,StringBuilder s,int n);" +
-        "[DllImport(\\\"user32.dll\\\")]public static extern int GetWindowThreadProcessId(IntPtr h,out int procId);}\n" +
-        "'@; Add-Type -TypeDefinition $sig; " +
-        "$h=[W]::GetForegroundWindow(); $sb=New-Object System.Text.StringBuilder 512; [void][W]::GetWindowText($h,$sb,512); " +
-        "$procId=0; [void][W]::GetWindowThreadProcessId($h,[ref]$procId); " +
-        "$proc=(Get-Process -Id $procId -ErrorAction SilentlyContinue).ProcessName; " +
-        "Write-Output \"$proc|$($sb.ToString())\"\"";
+      // PowerShell auto-variable bound to the current process — renamed to
+      // $procId. It was then hand-escaped into a single -Command "..." string
+      // (backslash-doubled quotes throughout so the C# source and the final
+      // Write-Output line would survive Windows' argv quoting) — fragile, and
+      // one quote in the Write-Output line was escaped inconsistently with
+      // the rest of the script, breaking out of the outer quoted argument and
+      // producing "The string is missing the terminator: '." from PowerShell.
+      // -EncodedCommand sidesteps the whole class of bug: the script is
+      // ordinary text (no manual quote-escaping needed at all), Base64-
+      // encoded as UTF-16LE, so there's nothing for argv quoting to mangle.
+      const script = [
+        "$sig = @'",
+        "using System;using System.Runtime.InteropServices;using System.Text;",
+        'public class W{[DllImport("user32.dll")]public static extern IntPtr GetForegroundWindow();',
+        '[DllImport("user32.dll")]public static extern int GetWindowText(IntPtr h,StringBuilder s,int n);',
+        '[DllImport("user32.dll")]public static extern int GetWindowThreadProcessId(IntPtr h,out int procId);}',
+        "'@",
+        "Add-Type -TypeDefinition $sig",
+        "$h = [W]::GetForegroundWindow()",
+        "$sb = New-Object System.Text.StringBuilder 512",
+        "[void][W]::GetWindowText($h, $sb, 512)",
+        "$procId = 0",
+        "[void][W]::GetWindowThreadProcessId($h, [ref]$procId)",
+        "$proc = (Get-Process -Id $procId -ErrorAction SilentlyContinue).ProcessName",
+        'Write-Output "$proc|$($sb.ToString())"',
+      ].join("\n");
+      const encoded = Buffer.from(script, "utf16le").toString("base64");
+      cmd = `powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encoded}`;
     } else if (platform === "darwin") {
       cmd =
         "osascript -e 'tell application \"System Events\" to set p to first application process whose frontmost is true' " +
