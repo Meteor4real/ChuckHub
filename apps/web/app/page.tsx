@@ -25,39 +25,6 @@ const portable = {
 type Asset = { name: string; browser_download_url: string; size: number };
 type Release = { tag_name: string; html_url: string; published_at: string; assets: Asset[] };
 
-const rooms: { tag: string; title: string; body: string }[] = [
-  {
-    tag: "Calendar",
-    title: "An event model that actually holds your life",
-    body: "Month, week, and day timelines. Categories for class, iProject, business, ARG, meeting, travel, announcement. Recurrence, sub-task checklists, priority, time-conflict flags, and hidden 'unannounced' plans you reveal when you're ready.",
-  },
-  {
-    tag: "Get Ahead",
-    title: "Finish next week before next week starts",
-    body: "For every class, a % pre-done bar over the next 7, 14, or 30 days, plus an empire-wide hero. Crush the upcoming weeks early — the bar fills as you do — until walking into school is the last step, not the first.",
-  },
-  {
-    tag: "Companies",
-    title: "Your businesses, your number",
-    body: "Track every venture you run — status, monthly revenue, next action, and the real roadmap of steps you're taking to build it. MoreMe derives current MRR, lifetime, and a 6-month mini chart per venture. First Dollar, Five Figures — they're achievements you actually earn.",
-  },
-  {
-    tag: "GTD, the loop",
-    title: "Capture · Plan · Schedule · Review",
-    body: "A capture bar over every tab dumps anything into your inbox. Plans is the reference bucket for ideas and drafts. Overview triages the inbox and carries the Weekly Review right on the tab — no button, no modal, always current.",
-  },
-  {
-    tag: "Local + quiet",
-    title: "Levels you earn, reminders that fire",
-    body: "Earnable achievements on a steep XP curve — no busywork. Reminders fire as real OS notifications. Everything lives on this machine only, no account required, runs from the tray, and stays alive when the window's closed.",
-  },
-  {
-    tag: "NT5 News",
-    title: "A second tab, on the house",
-    body: "An on-device wire generates fresh anchor articles while the app is open, with a broadcast bar and a teleprompter Studio. It's a self-contained bonus surface — not required, not in your way, just there when you want it.",
-  },
-];
-
 export default function Page() {
   const [release, setRelease] = useState<Release | null>(null);
   const [loadErr, setLoadErr] = useState<string | null>(null);
@@ -136,10 +103,7 @@ export default function Page() {
         </h1>
 
         <p className="mt-5 max-w-2xl text-base leading-relaxed text-chuck-mute">
-          A real calendar, a Get-Ahead view that finishes school early, a
-          Companies dashboard for the businesses you run, GTD capture, and
-          earnable levels. Runs quietly in the background. Local to this
-          machine — no accounts, no cloud.
+          Davis&apos;s life OS. Local to this machine — no accounts, no cloud.
         </p>
 
         <div className="mt-8 h-[2px] w-full max-w-sm chuck-strip" />
@@ -209,23 +173,6 @@ export default function Page() {
           .
         </p>
       </header>
-
-      {/* What's inside */}
-      <section className="mt-16">
-        <div className="mb-6 flex items-center gap-3">
-          <span className="chuck-title text-sm">What&apos;s inside</span>
-          <div className="h-px flex-1 chuck-strip-thin" />
-        </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {rooms.map((r) => (
-            <div key={r.tag} className="chuck-panel p-5">
-              <div className="chuck-chip-live">{r.tag}</div>
-              <h3 className="mt-3 chuck-title text-base">{r.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-chuck-mute">{r.body}</p>
-            </div>
-          ))}
-        </div>
-      </section>
 
       <footer className="mt-16 flex items-center justify-center gap-3 font-mono text-[11px] uppercase tracking-widest text-chuck-mute">
         <span>MoreMe{release ? ` · ${release.tag_name}` : ""}</span>
