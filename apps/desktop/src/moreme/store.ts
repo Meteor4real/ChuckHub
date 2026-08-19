@@ -906,6 +906,16 @@ export function clearIcsFeed(source: IcsSource) {
 
 const ICS_CATEGORY: Record<IcsSource, Category> = { canvas: "school", veracross: "class", google: "personal" };
 
+// Canvas's own .ics feed suffixes every assignment/event title with its
+// course in brackets — "Reading Quiz 1 [English 9]" — so the course name is
+// already sitting right there. Strip it for display and use it to link the
+// event to a Class, auto-creating one the first time a course is seen.
+function splitCanvasCourse(rawTitle: string): { title: string; course?: string } {
+  const m = /^(.*)\s\[([^[\]]+)\]\s*$/.exec(rawTitle);
+  if (!m) return { title: rawTitle };
+  return { title: m[1].trim(), course: m[2].trim() };
+}
+
 export async function syncIcsFeed(source: IcsSource): Promise<{ ok: boolean; count?: number; error?: string }> {
   const url = loadState().integrations[source]?.url;
   if (!url) return { ok: false, error: "No URL set." };
@@ -928,16 +938,38 @@ export async function syncIcsFeed(source: IcsSource): Promise<{ ok: boolean; cou
   const category = ICS_CATEGORY[source];
   updateState((s) => {
     let events = s.events;
+    let classes = s.classes;
+    const classByName = new Map(classes.map((c) => [c.name.toLowerCase(), c]));
     for (const it of items) {
       const id = `${source}-${it.uid.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 80) || uid()}`;
       const existing = events.find((e) => e.id === id);
+
+      let title = it.summary;
+      let linkedClassId = existing?.linkedClassId;
+      if (source === "canvas") {
+        const split = splitCanvasCourse(it.summary);
+        title = split.title;
+        // Only auto-link if nothing's linked yet — a link the user cleared
+        // by hand (or set to a different class) stays that way on re-sync.
+        if (!linkedClassId && split.course) {
+          const key = split.course.toLowerCase();
+          let cls = classByName.get(key);
+          if (!cls) {
+            cls = { id: uid(), name: split.course };
+            classes = [...classes, cls];
+            classByName.set(key, cls);
+          }
+          linkedClassId = cls.id;
+        }
+      }
+
       const ev: CalEvent = {
-        id, title: it.summary, category, date: it.date,
+        id, title, category, date: it.date,
         until: it.endDate, allDay: it.allDay,
         start: it.start, end: it.end,
         location: it.location,
         notes: it.description,
-        linkedClassId: existing?.linkedClassId,
+        linkedClassId,
         checklist: existing?.checklist ?? [],
         priority: "normal", visibility: "visible", recurrence: { kind: "none" },
         reminders: existing?.reminders ?? [],
@@ -952,7 +984,7 @@ export async function syncIcsFeed(source: IcsSource): Promise<{ ok: boolean; cou
       events = existing ? events.map((e) => (e.id === id ? ev : e)) : [...events, ev];
     }
     return {
-      ...s, events,
+      ...s, events, classes,
       integrations: { ...s.integrations, [source]: { url, lastSyncAt: Date.now(), lastCount: items.length, lastError: undefined } },
     };
   });

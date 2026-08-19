@@ -80,7 +80,7 @@ export function IntegrationsSection({ s }: { s: State }) {
         Settings → pick a calendar on the left → "Secret address in iCal format" (under Integrate calendar).
       </div>
       <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", alignItems: "start" }}>
-        <FeedCard s={s} source="canvas" label="Canvas" blurb="Assignments and class due dates, pulled straight from Canvas — no more adding them by hand." />
+        <FeedCard s={s} source="canvas" label="Canvas" blurb="Assignments and due dates, pulled straight from Canvas — classes auto-create and link from the course in each item's title, so Get Ahead just works." />
         <FeedCard s={s} source="veracross" label="Veracross" blurb="The live Student Portal schedule. Re-sync whenever it changes and MoreMe follows." />
         <FeedCard s={s} source="google" label="Google Calendar" blurb="Any Google calendar's secret iCal address — personal events, a shared family calendar, whatever you point it at." />
       </div>
