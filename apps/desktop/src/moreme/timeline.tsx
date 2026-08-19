@@ -167,7 +167,7 @@ function DayTypeBanner({ s, date }: { s: State; date: string }) {
       </div>
       {tmplId && !applied && (
         <div style={{ marginTop: 6, fontSize: 11, color: T.inkTiny, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <span>{ROUTINE_TEMPLATES[tmplId].label} isn't on the calendar yet — {ROUTINE_TEMPLATES[tmplId].items.map((it) => `${it.title} ${it.start}–${it.end}`).join(", ")}.</span>
+          <span>{ROUTINE_TEMPLATES[tmplId].label} isn't on the calendar yet — {ROUTINE_TEMPLATES[tmplId].items.map((it) => `${it.title} ${fmtTime(it.start)}–${fmtTime(it.end)}`).join(", ")}.</span>
           <button
             className="mm-btn"
             style={{ padding: "2px 8px", fontSize: 10 }}

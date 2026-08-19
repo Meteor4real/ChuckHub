@@ -1016,7 +1016,7 @@ function RoutineTemplateCard({ id, s }: { id: RoutineTemplateId; s: State }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
         {def.items.map((it) => (
           <div key={it.slug} style={{ fontSize: 11, color: T.inkSoft }}>
-            <b style={{ color: T.ink }}>{it.title}</b> · {it.start}–{it.end}
+            <b style={{ color: T.ink }}>{it.title}</b> · {fmtTime(it.start)}–{fmtTime(it.end)}
             <div style={{ color: T.inkTiny, marginTop: 1 }}>{it.checklist.join(" · ")}</div>
           </div>
         ))}

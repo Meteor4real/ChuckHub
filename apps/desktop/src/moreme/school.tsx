@@ -9,7 +9,7 @@ import { useState } from "react";
 import { T } from "./styles";
 import type { SchoolBlock, SchoolMod, State } from "./types";
 import {
-  addSchoolBlock, blankSchoolMod, generateSchoolModEvents, removeSchoolBlock,
+  addSchoolBlock, blankSchoolMod, fmtTime, generateSchoolModEvents, removeSchoolBlock,
   removeSchoolMod, removeSchoolModEvents, schoolModEventsApplied, setLunchSlot,
   updateSchoolBlock, upsertSchoolMod,
 } from "./store";
@@ -107,7 +107,7 @@ function BlockRow({ modId, weekday, b, s }: { modId: string; weekday: number; b:
   const cls = b.linkedClassId ? s.classes.find((c) => c.id === b.linkedClassId) : undefined;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, borderLeft: `3px solid ${tone}`, paddingLeft: 8 }}>
-      <span style={{ width: 92, color: T.inkTiny, fontFamily: "ui-monospace, monospace", fontSize: 10 }}>{b.start}–{b.end}</span>
+      <span style={{ width: 132, color: T.inkTiny, fontFamily: "ui-monospace, monospace", fontSize: 10 }}>{fmtTime(b.start)}–{fmtTime(b.end)}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <b>{b.label}</b>
         {(b.room || b.teacher) && <span style={{ color: T.inkTiny }}> · {[b.room, b.teacher].filter(Boolean).join(" · ")}</span>}
