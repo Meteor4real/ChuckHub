@@ -319,7 +319,7 @@ export const DAY_TYPE_LABEL: Record<DayType, string> = {
 // START 9th grade (the fall). The current grade is DERIVED from today's date
 // vs. that anchor, rolling over each August — so it advances automatically
 // every school year with no manual bump. `path` is the Upper School pathway.
-export type SchoolPath = "Inquiry" | "Global Impact Diploma" | "Innovation Diploma";
+export type SchoolPath = "Inquiry" | "Innovation" | "Impact";
 export type School = {
   grade9Year: number;     // e.g. 2026 = you enter Grade 9 in Aug 2026
   path: SchoolPath;

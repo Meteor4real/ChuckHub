@@ -1105,7 +1105,7 @@ function Toggle({ on, label, onClick, disabled }: { on: boolean; label: string; 
   );
 }
 function SchoolCard({ s }: { s: State }) {
-  const paths: SchoolPath[] = ["Inquiry", "Global Impact Diploma", "Innovation Diploma"];
+  const paths: SchoolPath[] = ["Inquiry", "Innovation", "Impact"];
   const incoming9 = new Date().getFullYear() + (new Date().getMonth() >= 7 ? 1 : 0);
   // offer a sensible range of "year you started 9th grade"
   const years: number[] = [];

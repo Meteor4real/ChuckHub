@@ -48,11 +48,13 @@ releasable.
 
 A calendar-first life OS for a Mount Vernon Upper School student. Real school
 research: The Mount Vernon School (Sandy Springs, GA), grades 9-12, three
-Upper School pathways — **Inquiry** (the owner's path; the flagship depth
+Upper School Pathways — **Inquiry** (the owner's path; the flagship depth
 track across Humanities/Numeracy/Scientific Inquiry/Maker-Arts-Design),
-Global Impact Diploma, and Innovation Diploma. **iProject** (independent
-passion-project, the story's "GTD") is a graduation requirement that starts
-in Grade 9 on every path. The owner enters **Grade 9 in the 2026-27 year**.
+Innovation, and Impact. (Global Impact Diploma is a real but separate
+4-year program at Mount Vernon, not one of the three Pathways — not
+modeled here.) **iProject** (independent passion-project, the story's
+"GTD") is a graduation requirement that starts in Grade 9 on every path.
+The owner enters **Grade 9 in the 2026-27 year**.
 Grade level **auto-advances every August** (`gradeNumber`/`gradeLabel`,
 rollover month = August) — anchored to `school.grade9Year`, configurable in
 Projects → School, never manually bumped.
