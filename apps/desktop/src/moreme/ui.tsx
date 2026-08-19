@@ -18,7 +18,7 @@ import {
   inboxToProject, insights, iso, isDone, levelInfo, loadState, logDistraction, monthLabel,
   removeClass, removeDistraction, removeEvent, removeInbox,
   removeProject, revealEvent, schoolYearLabel, setReward, setSchool,
-  streakInfo, subscribeState, today, toggleDone, uid, upcomingWithReminders,
+  loggingStreakInfo, streakInfo, subscribeState, today, toggleDone, uid, upcomingWithReminders,
   upsertClass, upsertEvent, upsertProject, xpForDate,
 } from "./store";
 import { DayView, WeekView, shiftWeek } from "./timeline";
@@ -589,12 +589,31 @@ function TodayView({ s, onEdit }: { s: State; onEdit: (e: CalEvent) => void }) {
           <EmpirePulseCard s={s} />
           <FitnessCardToday s={s} onOpenLog={() => setFitnessModal(true)} />
           <ScreenCardToday s={s} onOpenLog={() => setScreenModal("log")} onOpenUrge={() => setScreenModal("urge")} />
+          <LoggingStreakCard s={s} />
         </div>
       </div>
 
       {screenModal === "log" && <LogSessionModal onClose={() => setScreenModal(null)} />}
       {screenModal === "urge" && <UrgeModal s={s} onClose={() => setScreenModal(null)} />}
       {fitnessModal && <LogFitnessModal onClose={() => setFitnessModal(false)} />}
+    </div>
+  );
+}
+
+// No XP, no reward, nothing to earn here — just whether the logs are real.
+// Insights and Weekly Review are only as honest as what actually gets
+// logged, so seeing that plainly (not as a score) is the point.
+function LoggingStreakCard({ s }: { s: State }) {
+  const { current, totalDays } = loggingStreakInfo(s);
+  return (
+    <div className="mm-card" style={{ padding: 14 }}>
+      <div style={{ fontSize: 11, letterSpacing: ".1em", color: T.inkTiny, marginBottom: 6 }}>Logging streak</div>
+      <div style={{ fontSize: 12, color: T.inkSoft, lineHeight: 1.5 }}>
+        {current > 0
+          ? `${current} day${current === 1 ? "" : "s"} straight telling it something real — a screen session, an urge, honest school help.`
+          : "Nothing logged today. Insights and Weekly Review only know what actually gets written down."}
+        {totalDays > 0 && <span style={{ color: T.inkTiny }}> · {totalDays} day{totalDays === 1 ? "" : "s"} total.</span>}
+      </div>
     </div>
   );
 }

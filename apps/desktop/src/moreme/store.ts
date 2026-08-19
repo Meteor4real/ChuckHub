@@ -652,6 +652,40 @@ export function streakInfo(s: State = loadState()): { current: number; best: num
   return { current, best };
 }
 
+// ── logging streak (honesty, not output) ────────────────────────────────────
+// A day "logged" is a day you told the app something real about yourself —
+// a screen session, an urge, or a school item's help marked honestly —
+// regardless of whether the day itself went well. Deliberately separate from
+// the routine-completion streak above: that one rewards doing things, this
+// one just tracks whether you're bothering to write down the truth. No XP,
+// no reward tied to it anywhere — it's shown because an accurate Insights
+// tab and an honest Weekly Review only work if the logs are real, and that's
+// worth seeing at a glance.
+function dayLogged(date: string, s: State): boolean {
+  if (s.screenSessions.some((x) => x.date === date)) return true;
+  if (s.urges.some((x) => x.date === date)) return true;
+  return s.events.some((e) => e.category === "school" && e.date === date && e.helpUsed && isDone(e, date, s));
+}
+export function loggingStreakInfo(s: State = loadState()): { current: number; best: number; totalDays: number } {
+  let current = 0;
+  let d = today();
+  if (!dayLogged(d, s)) d = addDays(d, -1);
+  while (dayLogged(d, s)) { current++; d = addDays(d, -1); }
+  const dates = new Set<string>();
+  for (const x of s.screenSessions) dates.add(x.date);
+  for (const x of s.urges) dates.add(x.date);
+  for (const e of s.events) if (e.category === "school" && e.helpUsed && isDone(e, e.date, s)) dates.add(e.date);
+  const sorted = [...dates].sort();
+  let best = current, run = 0, prev = "";
+  for (const day of sorted) {
+    if (!dayLogged(day, s)) { run = 0; prev = day; continue; }
+    run = prev && addDays(prev, 1) === day ? run + 1 : 1;
+    best = Math.max(best, run);
+    prev = day;
+  }
+  return { current, best, totalDays: dates.size };
+}
+
 // ── event CRUD ──────────────────────────────────────────────────────────────
 export const blankEvent = (date: string): CalEvent => ({
   id: uid(), title: "", category: "personal", date, allDay: false,
@@ -1875,6 +1909,8 @@ type Aggregates = {
   schoolPrepared: number;          // completed school items with prepared=true
   schoolAllYours: number;          // completed school items with helpUsed === "none"
   schoolHonestlyLogged: number;    // completed school items with helpUsed set (any value)
+  loggingStreakBest: number;       // longest run of consecutive days with any real log
+  loggingDaysTotal: number;        // distinct days with any real log, total
   // ── fitness ───────────────────────────────────────────────────────────
   fitnessCount: number;            // total completed fitness-category occurrences
   fitnessDaysTotal: number;        // distinct days with ≥1 fitness completion
@@ -2044,6 +2080,7 @@ function aggregate(s: State): Aggregates {
     routineFirstDays, earnedItDays,
     schoolPrepared, schoolAllYours, schoolHonestlyLogged,
     fitnessCount: (byCategory.fitness ?? 0) + s.fitnessSessions.length, fitnessDaysTotal, fitnessStreak, longFitnessDone,
+    loggingStreakBest: loggingStreakInfo(s).best, loggingDaysTotal: loggingStreakInfo(s).totalDays,
   };
 }
 
@@ -2110,6 +2147,11 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: "learn-first-10", title: "Read, Then Did — Ten Times", desc: "Ten school items completed prepared.", category: "school", progress: (a) => [a.schoolPrepared, 10] },
   { id: "honest-school", title: "Told The Truth About The Help", desc: "Mark a school item's help honestly (any value).", category: "school", progress: (a) => [Math.min(a.schoolHonestlyLogged, 1), 1] },
   { id: "all-yours-5", title: "All Me, Five Times", desc: "Five school items completed with help = 'none'.", category: "school", progress: (a) => [a.schoolAllYours, 5] },
+
+  // Logging streak — cuts across screens/urges/school honesty. Not about
+  // doing more; about not going quiet on the truth for a stretch.
+  { id: "logging-streak-7", title: "You Actually Wrote It Down", desc: "7 days straight logging something real — a screen session, an urge, or honest school help.", category: "discipline", progress: (a) => [a.loggingStreakBest, 7] },
+  { id: "logging-days-30", title: "Thirty Days Of Real Data", desc: "30 total days with something honestly logged.", category: "discipline", progress: (a) => [a.loggingDaysTotal, 30] },
 
   // Special — the whole-system milestones, not tied to one track
   { id: "hundred-days", title: "100 Days In", desc: "Been running MoreMe for 100 days. Still here.", category: "special", progress: (a, s) => [Math.min(Math.floor((Date.now() - s.startedAt) / 86_400_000), 100), 100] },
