@@ -245,6 +245,7 @@ export function upsertSchoolMod(m: SchoolMod) {
     ...s,
     schoolMods: s.schoolMods.some((x) => x.id === m.id) ? s.schoolMods.map((x) => (x.id === m.id ? m : x)) : [...s.schoolMods, m],
   }));
+  generateSchoolModEvents(m.id);
 }
 export function removeSchoolMod(id: string) {
   updateState((s) => ({ ...s, schoolMods: s.schoolMods.filter((m) => m.id !== id) }));
@@ -314,6 +315,7 @@ export function setLunchSlot(modId: string, weekday: number, subject: string, ro
       return { ...m, days: { ...m.days, [weekday]: day } };
     }),
   }));
+  generateSchoolModEvents(modId);
 }
 
 export function addSchoolBlock(modId: string, weekday: number, block: Omit<SchoolBlock, "id">) {
@@ -325,6 +327,7 @@ export function addSchoolBlock(modId: string, weekday: number, block: Omit<Schoo
       return { ...m, days: { ...m.days, [weekday]: day } };
     }),
   }));
+  generateSchoolModEvents(modId);
 }
 export function updateSchoolBlock(modId: string, weekday: number, blockId: string, patch: Partial<SchoolBlock>) {
   updateState((s) => ({
@@ -335,6 +338,7 @@ export function updateSchoolBlock(modId: string, weekday: number, blockId: strin
       return { ...m, days: { ...m.days, [weekday]: day } };
     }),
   }));
+  generateSchoolModEvents(modId);
 }
 export function removeSchoolBlock(modId: string, weekday: number, blockId: string) {
   updateState((s) => ({
@@ -344,11 +348,14 @@ export function removeSchoolBlock(modId: string, weekday: number, blockId: strin
       return { ...m, days: { ...m.days, [weekday]: (m.days[weekday] ?? []).filter((b) => b.id !== blockId) } };
     }),
   }));
+  generateSchoolModEvents(modId);
 }
 
 // Lay a mod's blocks onto the calendar as recurring weekly events, one per
 // (weekday, block) pair, bounded to the mod's date range. Idempotent —
-// re-running (e.g. after editing blocks) replaces the same set.
+// re-running replaces the same set. Called automatically after every edit
+// to a mod's blocks (see the mutators above) — a Mod's calendar presence is
+// a computed function of its data, not a separate manual "publish" step.
 const schoolModEventPrefix = (modId: string) => `schoolmod-${modId}-`;
 export function generateSchoolModEvents(modId: string) {
   updateState((s) => {
@@ -513,7 +520,31 @@ export function loadState(): State {
       };
     } else cache = seedState();
   } catch { cache = seedState(); }
+  ensureDefaultSchedule();
   return cache;
+}
+
+// One-time-only: the Weekday and Weekend routines run indefinitely and
+// aren't tied to a trip, so there's no reason to make you click "Apply" to
+// get your own real routine onto your own calendar — they go live the first
+// time state ever loads. (Beach/Anywhere stay manual: they're bounded to a
+// date range you pick, because they only make sense once an actual trip is
+// happening.) Any School Mod already sitting in state (the seeded Mod 1, or
+// one from an earlier install that never got "Add to calendar" clicked)
+// gets published too. Runs at most once per install — an explicit removal
+// afterward (routine "Remove from calendar", or emptying a Mod's blocks)
+// sticks instead of reappearing on the next launch.
+const SCHEDULE_AUTOSEED_KEY = "moreme.schedule.autoseed.v1";
+const SCHEDULE_ANCHOR_DATE = "2020-01-01"; // arbitrary far-past anchor so "indefinite" really means it
+function ensureDefaultSchedule() {
+  if (!cache) return;
+  try {
+    if (localStorage.getItem(SCHEDULE_AUTOSEED_KEY)) return;
+    for (const m of cache.schoolMods) generateSchoolModEvents(m.id);
+    if (!routineTemplateApplied("weekday", cache)) applyRoutineTemplate("weekday", SCHEDULE_ANCHOR_DATE);
+    if (!routineTemplateApplied("weekend", cache)) applyRoutineTemplate("weekend", SCHEDULE_ANCHOR_DATE);
+    localStorage.setItem(SCHEDULE_AUTOSEED_KEY, "1");
+  } catch { /* ignore — best-effort default, never block loading state over it */ }
 }
 
 export function updateState(mut: (s: State) => State): State {

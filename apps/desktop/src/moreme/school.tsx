@@ -1,16 +1,17 @@
 // MoreMe — Mount Vernon mod schedule. The real structure: 4 Mods/year, 5
 // rotating periods whose order changes daily (no fixed weekly grid), a
 // fixed 9:30-10:00 special block per weekday, and a lunch slot that splits
-// around lunch based on room floor. Built as a manual per-day block editor
-// since the full bell schedule / rotation isn't known yet — real times
-// only, nothing guessed. Fill it in as you learn each Mod's actual rotation.
+// around lunch based on room floor. Per-day block editor — real times only,
+// nothing guessed. Every block is live on the calendar automatically the
+// moment it's added or edited (generateSchoolModEvents runs after every
+// mutator in store.ts); there's no separate "publish" step.
 
 import { useState } from "react";
 import { T } from "./styles";
 import type { SchoolBlock, SchoolMod, State } from "./types";
 import {
-  addSchoolBlock, blankSchoolMod, fmtTime, generateSchoolModEvents, removeSchoolBlock,
-  removeSchoolMod, removeSchoolModEvents, schoolModEventsApplied, setLunchSlot,
+  addSchoolBlock, blankSchoolMod, fmtTime, removeSchoolBlock,
+  removeSchoolMod, schoolModEventsApplied, setLunchSlot,
   updateSchoolBlock, upsertSchoolMod,
 } from "./store";
 
@@ -50,12 +51,12 @@ export function SchoolModsCard({ s }: { s: State }) {
 }
 
 function SchoolModRow({ m, s, open, onToggle }: { m: SchoolMod; s: State; open: boolean; onToggle: () => void }) {
-  const applied = schoolModEventsApplied(m.id, s);
+  const live = schoolModEventsApplied(m.id, s);
   return (
-    <div style={{ border: `1px solid ${applied ? T.mint : T.line}`, borderRadius: 10, padding: 10 }}>
+    <div style={{ border: `1px solid ${live ? T.mint : T.line}`, borderRadius: 10, padding: 10 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }} onClick={onToggle}>
         <b style={{ fontSize: 13, flex: 1 }}>{m.label}</b>
-        {applied && <span className="mm-pill" style={{ background: T.mint, color: T.bg }}>On calendar</span>}
+        {live && <span className="mm-pill" style={{ background: T.mint, color: T.bg }}>Live on calendar</span>}
         <span style={{ color: T.inkTiny, fontSize: 11 }}>{open ? "▲" : "▼"}</span>
       </div>
       {open && (
@@ -69,13 +70,13 @@ function SchoolModRow({ m, s, open, onToggle }: { m: SchoolMod; s: State; open: 
             <Field label="Ends"><input type="date" value={m.endDate} onChange={(e) => upsertSchoolMod({ ...m, endDate: e.target.value })} /></Field>
           </div>
 
+          <div style={{ fontSize: 10, color: T.inkTiny }}>
+            Every block below is live on the calendar automatically as you add or edit it — no publish step.
+          </div>
+
           {WEEKDAYS.map((w) => <DayEditor key={w.d} modId={m.id} weekday={w.d} label={w.label} blocks={m.days[w.d] ?? []} s={s} />)}
 
-          <div style={{ display: "flex", gap: 6 }}>
-            <button className="mm-btn mm-btn-primary" style={{ flex: 1 }} onClick={() => generateSchoolModEvents(m.id)}>{applied ? "Update calendar" : "Add to calendar"}</button>
-            {applied && <button className="mm-btn" onClick={() => removeSchoolModEvents(m.id)}>Remove from calendar</button>}
-            <button className="mm-btn mm-btn-danger" onClick={() => { if (confirm(`Delete ${m.label} and its calendar events?`)) removeSchoolMod(m.id); }}>Delete mod</button>
-          </div>
+          <button className="mm-btn mm-btn-danger" onClick={() => { if (confirm(`Delete ${m.label} and its calendar events?`)) removeSchoolMod(m.id); }}>Delete mod</button>
         </div>
       )}
     </div>
