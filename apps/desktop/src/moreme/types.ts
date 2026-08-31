@@ -326,9 +326,11 @@ export type School = {
 };
 
 // ── Mount Vernon Upper School mod schedule ─────────────────────────────────
-// The real structure: 4 "Mods" per year, each with its own 5 rotating
-// periods (P1-P5) whose ORDER changes day to day — there's no single fixed
-// weekly grid. A fixed 30-min special block sits at 9:30-10:00 every day
+// The real structure: 4 "Mods" per year, each with its own 5 periods
+// (P1-P5) whose order is different on each weekday — Monday's order isn't
+// Tuesday's — but each weekday's own order is fixed and repeats every week
+// with no reset or drift, so it's keyed by weekday, not by an independent
+// day-counter. A fixed 30-min special block sits at 9:30-10:00 every day
 // (which one depends on the weekday). Whichever period lands in the
 // lunch-adjacent slot on a given day splits around lunch based on that
 // period's room floor (1 or 3 -> B Lunch, everything else -> A Lunch; a

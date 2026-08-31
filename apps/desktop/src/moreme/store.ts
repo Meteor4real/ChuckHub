@@ -199,10 +199,14 @@ export function blankSchoolMod(number: number): SchoolMod {
 }
 
 // Davis's real Grade 9 Module 1 schedule — Aug 12 to Oct 8, advisor Tyler
-// Dale. The 5 periods rotate order day to day (no fixed weekly grid); this
-// is the actual rotation as given, not a guess. Seeded once (fresh installs
-// via seedState, existing installs via a one-time loadState migration) so
-// it shows up without Davis re-typing 35 blocks by hand.
+// Dale. The 5 periods sit in a different order each weekday (Monday's order
+// differs from Tuesday's, etc.), but each weekday's own order is fixed and
+// repeats every week — it doesn't drift or reset, so keying blocks by
+// weekday (not by some independent "Day N" rotation counter) is correct,
+// not a simplification. This is the actual schedule as given, not a guess.
+// Seeded once (fresh installs via seedState, existing installs via a
+// one-time loadState migration) so it shows up without Davis re-typing 35
+// blocks by hand.
 function realMod1(): SchoolMod {
   const per = (label: string, teacher: string, room: string, start: string, end: string): SchoolBlock =>
     ({ id: uid(), kind: "period", label, teacher, room, start, end });

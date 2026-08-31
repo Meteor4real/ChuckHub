@@ -1,10 +1,12 @@
 // MoreMe — Mount Vernon mod schedule. The real structure: 4 Mods/year, 5
-// rotating periods whose order changes daily (no fixed weekly grid), a
-// fixed 9:30-10:00 special block per weekday, and a lunch slot that splits
-// around lunch based on room floor. Per-day block editor — real times only,
-// nothing guessed. Every block is live on the calendar automatically the
-// moment it's added or edited (generateSchoolModEvents runs after every
-// mutator in store.ts); there's no separate "publish" step.
+// periods whose order differs by weekday (Monday's order isn't Tuesday's)
+// but is fixed and repeats every week — no independent day-counter, no
+// reset, it just tracks the calendar's own weekday. A fixed 9:30-10:00
+// special block per weekday, and a lunch slot that splits around lunch
+// based on room floor. Per-day block editor — real times only, nothing
+// guessed. Every block is live on the calendar automatically the moment
+// it's added or edited (generateSchoolModEvents runs after every mutator in
+// store.ts); there's no separate "publish" step.
 
 import { useState } from "react";
 import { T } from "./styles";
@@ -31,8 +33,9 @@ export function SchoolModsCard({ s }: { s: State }) {
     <div className="mm-card" style={{ padding: 16 }}>
       <div className="serif" style={{ fontSize: 16, marginBottom: 4 }}>Mod Schedule</div>
       <div style={{ fontSize: 11, color: T.inkTiny, marginBottom: 10, lineHeight: 1.5 }}>
-        4 Mods a year. Periods rotate order day to day, so build each weekday's real blocks as you learn them —
-        nothing here is guessed. The 9:30–10:00 special block is filled in automatically per weekday.
+        4 Mods a year. Each weekday has its own fixed period order (it doesn't reset or drift — Monday's
+        order is always Monday's), so build each weekday's real blocks as you learn them — nothing here is
+        guessed. The 9:30–10:00 special block is filled in automatically per weekday.
         Link a period to a Class (Projects → Classes) and its assignments show up under Get Ahead.
       </div>
       {s.schoolMods.length === 0 && (
