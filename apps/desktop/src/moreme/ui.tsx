@@ -941,6 +941,16 @@ function EventEditor({ s, draft, onClose, onSaved }: { s: State; draft: CalEvent
             <ChecklistEditor items={e.checklist} onChange={(items) => set("checklist", items)} />
           </Field>
 
+          {e.category === "school" && e.externalSource === "canvas" && (
+            <div style={{ fontSize: 11, display: "flex", alignItems: "center", gap: 6 }}>
+              {e.canvasSubmittedAt ? (
+                <span style={{ color: T.mint }}>✓ Submitted on Canvas, {new Date(e.canvasSubmittedAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</span>
+              ) : (
+                <span style={{ color: T.inkTiny }}>Not submitted on Canvas yet — this is Canvas's own record, not your checklist above.</span>
+              )}
+            </div>
+          )}
+
           {e.category === "school" && (
             <div style={{ padding: 12, background: T.sunk, border: `1px dashed ${T.mint}55`, borderRadius: 10, display: "flex", flexDirection: "column", gap: 10 }}>
               <div style={{ fontSize: 11, letterSpacing: ".1em", color: T.mint }}>

@@ -65,6 +65,12 @@ export type CalEvent = {
   prepared?: boolean;           // "I read what I needed before I dove in"
   helpUsed?: HelpKind;          // "none" | "search" | "ai" | "friend" | "mixed"
   learned?: string;             // one-line takeaway, your own words
+  // Objective truth from the real Canvas API (not self-reported): when your
+  // submission actually posted, per Canvas's own record. Separate from the
+  // honesty-log fields above and from `status`/completions — those are your
+  // own tracking inside MoreMe; this is Canvas confirming the assignment
+  // actually went in. Only ever set by syncCanvasApi, never by hand.
+  canvasSubmittedAt?: number;
   // Set when this event was imported from an external calendar feed (Canvas,
   // Veracross) rather than created by hand. Drives a small badge in the UI —
   // editing still works, but re-syncing overwrites title/date/time/location
@@ -91,6 +97,7 @@ export type Class = {
   color?: string;      // optional accent override
   room?: string;       // where it meets
   period?: ClassPeriod; // weekly meeting pattern (drives the timetable generator)
+  canvasCourseId?: string; // set once matched/created from the Canvas API — stable re-match key
 };
 
 // A freeform note / plan. The "folders of plans in development" bucket — the
@@ -405,10 +412,25 @@ export type IcsFeedState = {
   lastCount?: number;
   lastError?: string;
 };
+// The real Canvas REST API — a personal access token, not a calendar link.
+// Superset of the .ics feed: real course names + teachers (not guessed from
+// a bracketed title), and actual submission status per assignment, which an
+// .ics feed can never carry (read-only calendar data has no concept of
+// "submitted"). The token itself never leaves this machine — see
+// syncCanvasApi in store.ts.
+export type CanvasApiState = {
+  domain?: string;       // e.g. "canvas.mountvernonschool.org"
+  token?: string;
+  lastSyncAt?: number;
+  lastCourseCount?: number;
+  lastAssignmentCount?: number;
+  lastError?: string;
+};
 export type Integrations = {
   canvas: IcsFeedState;
   veracross: IcsFeedState;
   google: IcsFeedState;
+  canvasApi: CanvasApiState;
 };
 
 // ── Level economy: fewer levels, much heavier XP per level ────────────────

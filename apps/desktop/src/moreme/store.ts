@@ -443,7 +443,7 @@ function seedState(): State {
     unlockedAchievements: {},
     startedAt: Date.now(),
     dayTypes: {},
-    integrations: { canvas: {}, veracross: {}, google: {} },
+    integrations: { canvas: {}, veracross: {}, google: {}, canvasApi: {} },
   };
 }
 
@@ -520,6 +520,7 @@ export function loadState(): State {
           canvas: p.integrations?.canvas ?? {},
           veracross: p.integrations?.veracross ?? {},
           google: p.integrations?.google ?? {},
+          canvasApi: p.integrations?.canvasApi ?? {},
         },
       };
     } else cache = seedState();
@@ -1071,6 +1072,136 @@ export async function syncIcsFeed(source: IcsSource): Promise<{ ok: boolean; cou
     };
   });
   return { ok: true, count: items.length };
+}
+
+// ── Canvas REST API (submission status, real course/teacher names) ────────
+// A superset of the .ics feed above — see CanvasApiState in types.ts for
+// why. The token is only ever stored in local state (this machine's
+// localStorage) and only ever sent to the configured Canvas domain over
+// window.hub.net (main-process fetch); it's never written to any file this
+// app commits.
+export function setCanvasApiToken(domain: string, token: string) {
+  const d = domain.trim().replace(/^https?:\/\//i, "").replace(/\/.*$/, "");
+  const t = token.trim();
+  updateState((s) => ({
+    ...s,
+    integrations: { ...s.integrations, canvasApi: { ...s.integrations.canvasApi, domain: d || undefined, token: t || undefined } },
+  }));
+  // The API can do everything the .ics feed did and more — having both
+  // active would double-import every assignment under two different id
+  // schemes. Drop the old feed once a real token is set.
+  if (d && t && loadState().integrations.canvas.url) clearIcsFeed("canvas");
+}
+export function clearCanvasApi() {
+  updateState((s) => ({
+    ...s,
+    events: s.events.filter((e) => !e.id.startsWith("canvas-api-")),
+    integrations: { ...s.integrations, canvasApi: {} },
+  }));
+}
+
+type CanvasCourse = { id: number; name?: string; course_code?: string; teachers?: { display_name?: string }[] };
+type CanvasAssignment = { id: number; name: string; due_at: string | null; submission?: { submitted_at?: string | null } };
+
+export async function syncCanvasApi(): Promise<{ ok: boolean; courses?: number; assignments?: number; error?: string }> {
+  const { domain, token } = loadState().integrations.canvasApi;
+  if (!domain || !token) return { ok: false, error: "No Canvas API token set." };
+  if (typeof window === "undefined" || !window.hub?.net) return { ok: false, error: "Not available outside the desktop app." };
+
+  const base = `https://${domain}/api/v1`;
+  const headers = { Authorization: `Bearer ${token}`, Accept: "application/json" };
+  const fail = (err: string) => {
+    updateState((s) => ({ ...s, integrations: { ...s.integrations, canvasApi: { ...s.integrations.canvasApi, lastError: err } } }));
+    return { ok: false, error: err };
+  };
+
+  const coursesRes = await window.hub.net({ method: "GET", url: `${base}/courses?enrollment_state=active&include[]=teachers&per_page=100`, headers });
+  if (!coursesRes.ok || !Array.isArray(coursesRes.data)) {
+    return fail(coursesRes.error || `Course list request failed (status ${coursesRes.status}).`);
+  }
+  const courses = coursesRes.data as CanvasCourse[];
+
+  // Match/create a Class per course — canvasCourseId is the stable key once
+  // set; falls back to a name match so a class you already created by hand
+  // gets adopted instead of duplicated. Teacher only backfills an empty
+  // field — never overwrites one you've set yourself.
+  updateState((s) => {
+    let classes = s.classes;
+    for (const course of courses) {
+      const name = (course.name || course.course_code || "").trim();
+      if (!name) continue;
+      const courseId = String(course.id);
+      const teacher = course.teachers?.[0]?.display_name?.trim();
+      const existing = classes.find((c) => c.canvasCourseId === courseId) ?? classes.find((c) => c.name.toLowerCase() === name.toLowerCase());
+      if (!existing) {
+        classes = [...classes, { id: uid(), name, canvasCourseId: courseId, teacher }];
+      } else {
+        classes = classes.map((c) => (c.id === existing.id ? { ...c, canvasCourseId: courseId, teacher: c.teacher || teacher } : c));
+      }
+    }
+    return { ...s, classes };
+  });
+
+  let assignmentCount = 0;
+  const errors: string[] = [];
+  for (const course of courses) {
+    const asgRes = await window.hub.net({
+      method: "GET",
+      url: `${base}/courses/${course.id}/assignments?include[]=submission&order_by=due_at&per_page=100`,
+      headers,
+    });
+    if (!asgRes.ok || !Array.isArray(asgRes.data)) {
+      errors.push(`${course.name || course.id}: ${asgRes.error || `status ${asgRes.status}`}`);
+      continue;
+    }
+    const assignments = asgRes.data as CanvasAssignment[];
+    updateState((s) => {
+      const cls = s.classes.find((c) => c.canvasCourseId === String(course.id));
+      let events = s.events;
+      for (const a of assignments) {
+        if (!a.due_at) continue; // no due date -> nothing honest to put on a calendar
+        const due = new Date(a.due_at);
+        const id = `canvas-api-${a.id}`;
+        const existing = events.find((e) => e.id === id);
+        const dueMin = due.getHours() * 60 + due.getMinutes();
+        const ev: CalEvent = {
+          id, title: a.name, category: "school", date: iso(due),
+          allDay: false, start: fromMin(dueMin), end: fromMin(Math.min(23 * 60 + 59, dueMin + 15)),
+          notes: existing?.notes,
+          linkedClassId: cls?.id ?? existing?.linkedClassId,
+          checklist: existing?.checklist ?? [],
+          priority: "normal", visibility: "visible", recurrence: { kind: "none" },
+          reminders: existing?.reminders ?? [],
+          xp: existing?.xp ?? DEFAULT_XP_BY_CATEGORY.school,
+          status: existing?.status ?? "planned",
+          createdAt: existing?.createdAt ?? Date.now(),
+          // Honesty-log fields are the user's own reflection — a re-sync must never clobber them.
+          prepared: existing?.prepared, helpUsed: existing?.helpUsed, learned: existing?.learned,
+          externalSource: "canvas",
+          canvasSubmittedAt: a.submission?.submitted_at ? new Date(a.submission.submitted_at).getTime() : undefined,
+        };
+        events = existing ? events.map((e) => (e.id === id ? ev : e)) : [...events, ev];
+        assignmentCount++;
+      }
+      return { ...s, events };
+    });
+  }
+
+  updateState((s) => ({
+    ...s,
+    integrations: {
+      ...s.integrations,
+      canvasApi: {
+        ...s.integrations.canvasApi,
+        lastSyncAt: Date.now(),
+        lastCourseCount: courses.length,
+        lastAssignmentCount: assignmentCount,
+        lastError: errors.length ? errors.slice(0, 3).join("; ") : undefined,
+      },
+    },
+  }));
+
+  return { ok: true, courses: courses.length, assignments: assignmentCount };
 }
 
 // ── notes / plans ─────────────────────────────────────────────────────────
