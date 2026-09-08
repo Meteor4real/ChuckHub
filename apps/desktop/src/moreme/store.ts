@@ -529,23 +529,30 @@ export function loadState(): State {
   return cache;
 }
 
-// One-time-only: the Weekday and Weekend routines run indefinitely and
-// aren't tied to a trip, so there's no reason to make you click "Apply" to
-// get your own real routine onto your own calendar — they go live the first
-// time state ever loads. (Beach/Anywhere stay manual: they're bounded to a
-// date range you pick, because they only make sense once an actual trip is
-// happening.) Any School Mod already sitting in state (the seeded Mod 1, or
-// one from an earlier install that never got "Add to calendar" clicked)
-// gets published too. Runs at most once per install — an explicit removal
-// afterward (routine "Remove from calendar", or emptying a Mod's blocks)
-// sticks instead of reappearing on the next launch.
+// Weekday and Weekend routines run indefinitely and aren't tied to a trip,
+// so there's no reason to make you click "Apply" to get your own real
+// routine onto your own calendar — they go live the first time state ever
+// loads. (Beach/Anywhere stay manual: they're bounded to a date range you
+// pick, because they only make sense once an actual trip is happening.)
+// Runs at most once per install (SCHEDULE_AUTOSEED_KEY) — an explicit
+// removal afterward ("Remove from calendar") sticks instead of reappearing.
 const SCHEDULE_AUTOSEED_KEY = "moreme.schedule.autoseed.v1";
 const SCHEDULE_ANCHOR_DATE = "2020-01-01"; // arbitrary far-past anchor so "indefinite" really means it
 function ensureDefaultSchedule() {
   if (!cache) return;
   try {
+    // Publishing a Mod's blocks is NOT gated behind the once-only flag below
+    // — it's cheap and idempotent, so this just checks "does every Mod with
+    // real blocks actually have calendar events" on every single load and
+    // fixes it if not. That guards against the one-time routine seed below
+    // ever failing partway through and never reaching the flag write, which
+    // would otherwise leave a real Mod's periods permanently missing from
+    // the calendar with nothing to self-heal it.
+    for (const m of cache.schoolMods) {
+      const hasBlocks = Object.values(m.days).some((day) => (day?.length ?? 0) > 0);
+      if (hasBlocks && !schoolModEventsApplied(m.id, cache)) generateSchoolModEvents(m.id);
+    }
     if (localStorage.getItem(SCHEDULE_AUTOSEED_KEY)) return;
-    for (const m of cache.schoolMods) generateSchoolModEvents(m.id);
     if (!routineTemplateApplied("weekday", cache)) applyRoutineTemplate("weekday", SCHEDULE_ANCHOR_DATE);
     if (!routineTemplateApplied("weekend", cache)) applyRoutineTemplate("weekend", SCHEDULE_ANCHOR_DATE);
     localStorage.setItem(SCHEDULE_AUTOSEED_KEY, "1");

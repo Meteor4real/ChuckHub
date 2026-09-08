@@ -76,25 +76,29 @@ function CanvasApiCard({ s }: { s: State }) {
   const api = s.integrations.canvasApi;
   const [domain, setDomain] = useState(api.domain ?? "");
   const [token, setToken] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [phase, setPhase] = useState<"idle" | "saving" | "syncing" | "saved-ok" | "saved-fail">("idle");
   const connected = !!api.domain && !!api.token;
+  const busy = phase === "saving" || phase === "syncing";
 
   async function save() {
+    if (!domain.trim() || !token.trim()) return;
     setCanvasApiToken(domain, token);
     setToken("");
-    if (!domain.trim()) return;
-    setBusy(true);
-    try { await syncCanvasApi(); } finally { setBusy(false); }
+    setPhase("saving");
+    const res = await syncCanvasApi();
+    setPhase(res.ok ? "saved-ok" : "saved-fail");
   }
   async function syncNow() {
-    setBusy(true);
-    try { await syncCanvasApi(); } finally { setBusy(false); }
+    setPhase("syncing");
+    const res = await syncCanvasApi();
+    setPhase(res.ok ? "saved-ok" : "saved-fail");
   }
   function clear() {
     if (!confirm("Disconnect Canvas and remove everything it imported from your calendar?")) return;
     clearCanvasApi();
     setDomain("");
     setToken("");
+    setPhase("idle");
   }
 
   return (
@@ -123,11 +127,26 @@ function CanvasApiCard({ s }: { s: State }) {
             onChange={(e) => setToken(e.target.value)}
             style={{ flex: 1, fontSize: 11 }}
           />
-          <button className="mm-btn mm-btn-primary" onClick={save} disabled={busy || !domain.trim() || !token.trim()}>Save</button>
+          <button className="mm-btn mm-btn-primary" onClick={save} disabled={busy || !domain.trim() || !token.trim()}>
+            {phase === "saving" ? "Saving…" : "Save"}
+          </button>
         </div>
       </div>
+      {/* Loud, impossible-to-miss feedback right under the buttons — the tiny
+          status line below is easy to skim past, and a slow first sync with
+          nothing else changing on screen reads exactly like the button did
+          nothing. */}
+      {phase === "saving" && (
+        <div style={{ fontSize: 11, color: T.mint, marginBottom: 6 }}>Saving and fetching your courses + assignments — this can take a few seconds…</div>
+      )}
+      {phase === "saved-ok" && (
+        <div style={{ fontSize: 11, color: T.mint, marginBottom: 6 }}>✓ Saved and synced.</div>
+      )}
+      {phase === "saved-fail" && (
+        <div style={{ fontSize: 11, color: T.warn, marginBottom: 6 }}>Saved the token, but the sync failed — see the error below.</div>
+      )}
       <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-        <button className="mm-btn" onClick={syncNow} disabled={busy || !connected}>{busy ? "Syncing…" : "Sync now"}</button>
+        <button className="mm-btn" onClick={syncNow} disabled={busy || !connected}>{phase === "syncing" ? "Syncing…" : "Sync now"}</button>
         {connected && <button className="mm-btn mm-btn-danger" onClick={clear}>Disconnect</button>}
         <span style={{ fontSize: 10, color: api.lastError ? T.warn : T.inkTiny, flex: 1, minWidth: 160 }}>
           {api.lastError
