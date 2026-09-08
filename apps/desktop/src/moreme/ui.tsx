@@ -772,7 +772,7 @@ function CalendarView({ s, onEdit }: { s: State; onEdit: (e: CalEvent) => void }
                     key={e.id}
                     className={"mm-chip" + (isDone(e, cell.date, s) ? " done" : "")}
                     style={{ ["--c" as never]: CATEGORY_META[e.category].color, cursor: "pointer" }}
-                    title="Click to edit"
+                    title={[e.title || CATEGORY_META[e.category].label, e.checklist.map((c) => c.text).join(" · ")].filter(Boolean).join("\n")}
                     onClick={(ev) => { ev.stopPropagation(); onEdit(e); }}
                   >
                     <span style={{ color: CATEGORY_META[e.category].color, flex: "none" }}>{CATEGORY_META[e.category].glyph}</span>

@@ -92,11 +92,20 @@ function Column({ date, s, onEdit }: { date: string; s: State; onEdit: (e: CalEv
           const meta = CATEGORY_META[e.category];
           const done = isDone(e, date, s);
           const conflict = conflicts.has(e.id);
+          // What's actually in it, right on the block — no reason a routine
+          // should only reveal its checklist inside the full edit form.
+          const checklistPreview = e.checklist.map((c) => c.text).join(" · ");
+          const tooltip = [
+            e.title || meta.label,
+            `${fmtTime(e.start)}–${fmtTime(e.end)}`,
+            e.location,
+            checklistPreview,
+          ].filter(Boolean).join("\n");
           return (
             <div
               key={e.id}
               onClick={(ev) => { ev.stopPropagation(); onEdit(e); }}
-              title={`${e.title || meta.label}\n${fmtTime(e.start)}–${fmtTime(e.end)}${e.location ? "\n" + e.location : ""}`}
+              title={tooltip}
               style={{
                 position: "absolute", left: 4, right: 4, top: p.top + 1, height: Math.max(p.height - 2, 18),
                 background: meta.color + "22", borderLeft: `3px solid ${meta.color}`,
@@ -120,6 +129,11 @@ function Column({ date, s, onEdit }: { date: string; s: State; onEdit: (e: CalEv
               {p.height > 30 && (
                 <div style={{ fontSize: 10, color: T.inkSoft, marginTop: 2 }}>
                   {fmtTime(e.start)}–{fmtTime(e.end)}{e.location ? ` · ${e.location}` : ""}
+                </div>
+              )}
+              {p.height > 48 && checklistPreview && (
+                <div style={{ fontSize: 9, color: T.inkTiny, marginTop: 2, display: "-webkit-box", WebkitLineClamp: Math.max(1, Math.floor((p.height - 48) / 12)), WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                  {checklistPreview}
                 </div>
               )}
             </div>
