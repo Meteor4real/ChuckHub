@@ -705,7 +705,7 @@ function QuoteBanner({ quote }: { quote: { text: string; by: string } }) {
 
 // ── Calendar ────────────────────────────────────────────────────────────────
 function CalendarView({ s, onEdit }: { s: State; onEdit: (e: CalEvent) => void }) {
-  const [mode, setMode] = useState<CalMode>("month");
+  const [mode, setMode] = useState<CalMode>("week");
   const [cursor, setCursor] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; });
   const [sel, setSel] = useState(today());
   const [manage, setManage] = useState(false);

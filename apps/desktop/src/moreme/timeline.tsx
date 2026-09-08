@@ -51,6 +51,17 @@ function HourLabels() {
   return <div style={{ width: 38, position: "relative", top: -6 }}>{rows}</div>;
 }
 
+// All-day items (due today, no specific time) don't get their own separate
+// strip anymore — they're pinned into the last few minutes of the visible
+// window instead, stacked if there's more than one, so the whole day (timed
+// or not) reads as one continuous timeline instead of two disconnected
+// areas.
+const ALLDAY_SLOT_H = 20;
+function allDaySlot(index: number): { top: number; height: number } {
+  const bottom = GRID_H - index * (ALLDAY_SLOT_H + 3);
+  return { top: bottom - ALLDAY_SLOT_H, height: ALLDAY_SLOT_H };
+}
+
 function Column({ date, s, onEdit }: { date: string; s: State; onEdit: (e: CalEvent) => void }) {
   const evs = eventsOnDate(date, s);
   const conflicts = conflictIds(date, s);
@@ -71,18 +82,6 @@ function Column({ date, s, onEdit }: { date: string; s: State; onEdit: (e: CalEv
 
   return (
     <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", borderLeft: `1px solid ${T.line}` }}>
-      <div style={{ borderBottom: `1px solid ${T.line}`, padding: "4px 6px", minHeight: 32 }}>
-        {allDay.length === 0 ? <div style={{ fontSize: 10, color: T.inkTiny }}>—</div> : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            {allDay.map((e) => (
-              <button key={e.id} onClick={() => onEdit(e)} title={e.title}
-                style={{ textAlign: "left", padding: "2px 6px", fontSize: 10, borderRadius: 5, border: "none", color: T.bg, fontWeight: 700, background: CATEGORY_META[e.category].color, cursor: "pointer", opacity: isDone(e, date, s) ? 0.5 : 1, textDecoration: isDone(e, date, s) ? "line-through" : "none" }}>
-                {e.title || CATEGORY_META[e.category].label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
       <div style={{ position: "relative", height: GRID_H, background: T.sunk }} onClick={onClickEmpty}>
         {Array.from({ length: (SPAN_MIN / 60) + 1 }).map((_, i) => (
           <div key={i} style={{ position: "absolute", left: 0, right: 0, top: i * PX_PER_HR, borderTop: `1px solid ${T.line}`, opacity: 0.5 }} />
@@ -120,9 +119,39 @@ function Column({ date, s, onEdit }: { date: string; s: State; onEdit: (e: CalEv
               </div>
               {p.height > 30 && (
                 <div style={{ fontSize: 10, color: T.inkSoft, marginTop: 2 }}>
-                  {fmtTime(e.start)}{e.location ? ` · ${e.location}` : ""}
+                  {fmtTime(e.start)}–{fmtTime(e.end)}{e.location ? ` · ${e.location}` : ""}
                 </div>
               )}
+            </div>
+          );
+        })}
+        {allDay.map((e, i) => {
+          const p = allDaySlot(i);
+          const meta = CATEGORY_META[e.category];
+          const done = isDone(e, date, s);
+          return (
+            <div
+              key={e.id}
+              onClick={(ev) => { ev.stopPropagation(); onEdit(e); }}
+              title={`${e.title || meta.label} — due today, no set time${e.location ? "\n" + e.location : ""}`}
+              style={{
+                position: "absolute", left: 4, right: 4, top: p.top, height: p.height,
+                background: meta.color + "33", borderLeft: `3px solid ${meta.color}`,
+                borderRadius: 5, padding: "2px 6px", cursor: "pointer", overflow: "hidden",
+                display: "flex", alignItems: "center", gap: 4,
+                opacity: done ? 0.5 : 1, textDecoration: done ? "line-through" : "none",
+              }}
+            >
+              <button
+                className="mm-donebtn"
+                data-done={done}
+                onClick={(ev) => { ev.stopPropagation(); toggleDone(e.id, date); }}
+                title={done ? "Mark not done" : "Complete (+XP)"}
+                style={{ width: 12, height: 12, flex: "none", borderRadius: 3, border: `1.5px solid ${meta.color}`, background: done ? meta.color : "transparent", color: T.bg, cursor: "pointer", fontSize: 9, lineHeight: 1, padding: 0 }}
+              >{done ? "✓" : ""}</button>
+              <b style={{ fontSize: 10, color: T.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {e.visibility === "hidden" ? "• " : ""}{e.title || meta.label}
+              </b>
             </div>
           );
         })}
